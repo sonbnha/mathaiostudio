@@ -98,7 +98,14 @@ export function RenewModalProvider({ children }: { children: React.ReactNode }) 
           try {
             localStorage.removeItem('mathaio_cached_user');
           } catch {}
+          return;
         }
+      } else if (e?.detail === null) {
+        setCurrentUser(null);
+        try {
+          localStorage.removeItem('mathaio_cached_user');
+        } catch {}
+        return;
       }
       fetchCurrentUser();
     };

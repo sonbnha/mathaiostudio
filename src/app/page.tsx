@@ -206,15 +206,24 @@ function HomeContent() {
           localStorage.setItem('mathaio_cached_user', JSON.stringify(userObj));
         } catch {}
         setIsAuthLoading(false);
-      } else if (data?.user === null) {
+      } else if (data?.user === null || data === null) {
         setCurrentUser(null);
+        setMigrateToastMsg(null);
         try {
           localStorage.removeItem('mathaio_cached_user');
         } catch {}
         setIsAuthLoading(false);
+        return; // Đăng xuất: dừng ngay, không gọi /api/auth/me và tuyệt đối không bắn toast nâng cấp VIP
       } else if (data?.key) {
         setLicenseKey(data.key);
         checkLicenseKey(data.key);
+      }
+
+      // Chỉ hiển thị toast nâng cấp/gia hạn VIP khi thực sự có sự kiện kích hoạt key và người dùng đang đăng nhập
+      const isRedeem = e.type === 'license-redeemed' || data?.keyCode || (data?.success && (data?.newRemainingQuota !== undefined || data?.user?.is_vip));
+      if (isRedeem && (userObj || currentUser)) {
+        setMigrateToastMsg('🎉 Gia hạn bản quyền License Key thành công!');
+        setTimeout(() => setMigrateToastMsg(null), 6000);
       }
 
       // Tái xác thực ngầm để đảm bảo đồng bộ 100% dữ liệu ví từ Neon DB
@@ -229,9 +238,6 @@ function HomeContent() {
           }
         })
         .catch(() => {});
-
-      setMigrateToastMsg('🎉 Gia hạn bản quyền License Key thành công!');
-      setTimeout(() => setMigrateToastMsg(null), 6000);
     };
 
     window.addEventListener('auth-updated', handleAuthUpdated);
@@ -629,11 +635,19 @@ function HomeContent() {
     } catch (e) {
       console.warn('Lỗi đăng xuất:', e);
     } finally {
+      // 0. Xóa ngay lập tức mọi toast thông báo nâng cấp / gia hạn
+      setMigrateToastMsg(null);
+
       // 1. Xóa session/cookie xác thực và điều hướng về trạng thái khách
       setCurrentUser(null);
       setIsUserDropdownOpen(false);
+      setLicenseKey('');
+      setLicenseStatus(null);
+      setCustomerName(null);
       try {
         localStorage.removeItem('mathaio_cached_user');
+        localStorage.removeItem('mathviz_license_key');
+        localStorage.removeItem('mathviz_customer_name');
       } catch {}
       window.dispatchEvent(new CustomEvent('auth-updated', { detail: { user: null } }));
       window.dispatchEvent(new CustomEvent('user-updated', { detail: null }));
@@ -2811,7 +2825,7 @@ function HomeContent() {
       )}
 
       {/* Toast thông báo tự động chuyển đổi Key */}
-      {migrateToastMsg && (
+      {migrateToastMsg && currentUser && (
         <div className="fixed bottom-12 right-6 z-50 p-4 rounded-2xl bg-slate-900/95 text-white border border-amber-500/40 shadow-2xl flex items-center gap-3 animate-in slide-in-from-bottom-5 duration-300 max-w-md backdrop-blur-md">
           <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
             <Crown className="w-5 h-5" />

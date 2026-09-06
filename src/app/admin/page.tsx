@@ -51,9 +51,7 @@ import {
 } from 'lucide-react';
 import { APP_VERSION, formatDateVN, formatDateTimeVN } from '@/config/version';
 import { CHANGELOG } from '@/config/changelog';
-import UserKeyDetailModal, { UserKeyDetailData } from '@/components/UserKeyDetailModal';
-import UserProfileModal, { UserProfileData } from '@/components/UserProfileModal';
-import VipSubscriptionModal, { VipSubscriptionData } from '@/components/VipSubscriptionModal';
+import AccountDetailsModal, { AccountDetailsData } from '@/components/admin/AccountDetailsModal';
 
 export interface ChangelogItem {
   id: string;
@@ -229,14 +227,8 @@ export default function UnifiedAdminPage() {
   const [copiedSuccessKey, setCopiedSuccessKey] = useState(false);
   const [copiedCustomerMessage, setCopiedCustomerMessage] = useState(false);
 
-  // User Key Detail Modal State
-  const [selectedUserKey, setSelectedUserKey] = useState<UserKeyDetailData | null>(null);
-
-  // User Profile Modal State
-  const [selectedUserProfile, setSelectedUserProfile] = useState<UserProfileData | null>(null);
-
-  // VIP Subscription Modal State
-  const [selectedVipInfo, setSelectedVipInfo] = useState<VipSubscriptionData | null>(null);
+  // Unified Account & VIP Subscription Details Modal State
+  const [selectedAccountModal, setSelectedAccountModal] = useState<AccountDetailsData | null>(null);
 
   // User Accounts Management State (Admin Only)
   const [userAccounts, setUserAccounts] = useState<UserAccountItem[]>([]);
@@ -2130,12 +2122,23 @@ export default function UnifiedAdminPage() {
                                   type="button"
                                   onClick={() => {
                                     const fullUser = userAccounts.find((u) => u.id === k.usedBy?.id);
-                                    setSelectedUserKey({
+                                    setSelectedAccountModal({
                                       user: {
                                         ...k.usedBy,
                                         ...(fullUser || {}),
                                       },
-                                      key: k,
+                                      licenseKey: {
+                                        id: k.id,
+                                        key: k.key,
+                                        durationDays: k.durationDays,
+                                        duration_days: k.duration_days,
+                                        maxUsage: k.maxUsage,
+                                        max_usage: k.max_usage,
+                                        totalCredits: k.totalCredits,
+                                        usedAt: k.usedAt,
+                                        used_at: k.used_at,
+                                        createdBy: k.createdBy,
+                                      },
                                     });
                                   }}
                                   className="inline-flex items-center gap-1.5 font-medium text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 hover:underline transition-colors cursor-pointer text-left"
@@ -2306,7 +2309,29 @@ export default function UnifiedAdminPage() {
                             <div className="flex flex-col justify-center">
                               <button
                                 type="button"
-                                onClick={() => setSelectedUserProfile(u)}
+                                onClick={() => {
+                                  const matchedKey = keys.find((k) => k.usedBy?.id === u.id);
+                                  const fallbackKey = u.lastActivatedKey || u.last_activated_key;
+                                  setSelectedAccountModal({
+                                    user: u,
+                                    licenseKey: matchedKey ? {
+                                      id: matchedKey.id,
+                                      key: matchedKey.key,
+                                      durationDays: matchedKey.durationDays,
+                                      duration_days: matchedKey.duration_days,
+                                      maxUsage: matchedKey.maxUsage,
+                                      max_usage: matchedKey.max_usage,
+                                      totalCredits: matchedKey.totalCredits,
+                                      usedAt: matchedKey.usedAt,
+                                      used_at: matchedKey.used_at,
+                                      createdBy: matchedKey.createdBy,
+                                    } : (fallbackKey ? {
+                                      key: fallbackKey.key,
+                                      usedAt: fallbackKey.used_at,
+                                      used_at: fallbackKey.used_at,
+                                    } : null),
+                                  });
+                                }}
                                 className="text-left font-medium text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 hover:underline transition-colors block cursor-pointer"
                                 title="Bấm để xem hồ sơ tài khoản"
                               >
@@ -2333,9 +2358,25 @@ export default function UnifiedAdminPage() {
                                 type="button"
                                 onClick={() => {
                                   const matchedKey = keys.find((k) => k.usedBy?.id === u.id);
-                                  setSelectedVipInfo({
+                                  const fallbackKey = u.lastActivatedKey || u.last_activated_key;
+                                  setSelectedAccountModal({
                                     user: u,
-                                    lastActivatedKey: u.lastActivatedKey || u.last_activated_key || (matchedKey ? { key: matchedKey.key, used_at: matchedKey.usedAt } : null),
+                                    licenseKey: matchedKey ? {
+                                      id: matchedKey.id,
+                                      key: matchedKey.key,
+                                      durationDays: matchedKey.durationDays,
+                                      duration_days: matchedKey.duration_days,
+                                      maxUsage: matchedKey.maxUsage,
+                                      max_usage: matchedKey.max_usage,
+                                      totalCredits: matchedKey.totalCredits,
+                                      usedAt: matchedKey.usedAt,
+                                      used_at: matchedKey.used_at,
+                                      createdBy: matchedKey.createdBy,
+                                    } : (fallbackKey ? {
+                                      key: fallbackKey.key,
+                                      usedAt: fallbackKey.used_at,
+                                      used_at: fallbackKey.used_at,
+                                    } : null),
                                   });
                                 }}
                                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-600/50 hover:bg-amber-100 dark:hover:bg-amber-900/50 hover:shadow-sm transition-all cursor-pointer whitespace-nowrap"
@@ -3585,25 +3626,11 @@ export default function UnifiedAdminPage() {
         </div>
       )}
 
-      {/* MODAL CHI TIẾT TÀI KHOẢN KÍCH HOẠT KEY */}
-      <UserKeyDetailModal
-        isOpen={selectedUserKey !== null}
-        onClose={() => setSelectedUserKey(null)}
-        data={selectedUserKey}
-      />
-
-      {/* MODAL XEM HỒ SƠ TÀI KHOẢN (USER PROFILE) */}
-      <UserProfileModal
-        isOpen={selectedUserProfile !== null}
-        onClose={() => setSelectedUserProfile(null)}
-        user={selectedUserProfile}
-      />
-
-      {/* MODAL CHI TIẾT GÓI VIP (VIP SUBSCRIPTION) */}
-      <VipSubscriptionModal
-        isOpen={selectedVipInfo !== null}
-        onClose={() => setSelectedVipInfo(null)}
-        data={selectedVipInfo}
+      {/* MODAL CHI TIẾT TÀI KHOẢN & GÓI VIP ĐỒNG BỘ */}
+      <AccountDetailsModal
+        isOpen={selectedAccountModal !== null}
+        onClose={() => setSelectedAccountModal(null)}
+        data={selectedAccountModal}
       />
     </div>
   );

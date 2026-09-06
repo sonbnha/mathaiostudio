@@ -167,6 +167,7 @@ export function computeLicenseStatus({
     );
     const isTrial = Boolean(
       guestLicenseStatus?.keyType === 'trial' ||
+      guestKey?.toUpperCase().startsWith('AIO-TR-') ||
       guestKey?.toUpperCase().startsWith('MV-TR-') ||
       guestKey?.toUpperCase().includes('TRIAL')
     );

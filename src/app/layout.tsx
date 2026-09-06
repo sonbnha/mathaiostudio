@@ -5,8 +5,13 @@ import { ApiKeyModal } from "@/components/ApiKeyModal";
 import { RenewModalProvider } from "@/context/RenewModalContext";
 
 export const metadata: Metadata = {
-  title: "MathViz Studio",
-  description: "MathViz Studio - Mô hình hóa hình học & lượng giác AI",
+  title: "MathAIO - Nền tảng Toán học All-in-One",
+  description: "MathAIO Studio - Nền tảng Toán học All-in-One: Mô hình hóa hình học & lượng giác AI, soạn giáo án chuẩn 5512",
+  openGraph: {
+    title: "MathAIO - Nền tảng Toán học All-in-One",
+    description: "MathAIO Studio - Nền tảng Toán học All-in-One: Mô hình hóa hình học & lượng giác AI, soạn giáo án chuẩn 5512",
+    siteName: "MathAIO",
+  },
 };
 
 export default function RootLayout({

@@ -54,9 +54,9 @@ export const CHANGELOG: VersionRelease[] = [
   {
     version: "v1.0.0",
     date: "02/09/2026",
-    title: "Phát Hành Chính Thức MathViz Studio v1.0.0 (Stable Release)",
+    title: "Phát Hành Chính Thức MathAIO Studio v1.0.0 (Stable Release)",
     changes: [
-      { type: "feat", description: "Phát hành phiên bản ổn định chính thức MathViz Studio v1.0.0" },
+      { type: "feat", description: "Phát hành phiên bản ổn định chính thức MathAIO Studio v1.0.0" },
       { type: "feat", description: "Tích hợp Chuỗi Model Cascade Gemini 3 (3.6-flash -> 3.5-flash) kèm cơ chế tự động Retry với Random Jitter chống quá tải" },
       { type: "fix", description: "Loại bỏ model cũ đã ngừng cung cấp và nâng cấp toàn diện thuật toán xử lý lỗi kết nối AI" },
       { type: "improve", description: "Tối ưu hóa toàn diện hiệu năng và độ chuẩn xác khi tạo hình học phẳng, đường tròn, toán thực tế và mã TikZ LaTeX" },
@@ -96,7 +96,7 @@ export const CHANGELOG: VersionRelease[] = [
   {
     version: "v0.1.0-alpha",
     date: "31/08/2026",
-    title: "Khởi tạo MathViz Studio Alpha",
+    title: "Khởi tạo MathAIO Studio Alpha",
     changes: [
       { type: "feat", description: "Khởi chạy hệ thống tạo hình học và trực quan hóa toán học" },
       { type: "feat", description: "Hỗ trợ chuyển đổi Dark / Light Mode cho canvas" },

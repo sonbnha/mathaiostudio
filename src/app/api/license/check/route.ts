@@ -57,6 +57,7 @@ export async function POST(req: NextRequest) {
 
     const upperKey = keyRecord.key.toUpperCase();
     const isTrial =
+      upperKey.startsWith('AIO-TR-') ||
       upperKey.startsWith('MV-TR-') ||
       upperKey.includes('TRIAL') ||
       upperKey.includes('-TR-');

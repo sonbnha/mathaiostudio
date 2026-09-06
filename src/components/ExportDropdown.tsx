@@ -16,7 +16,7 @@ export const ExportDropdown: React.FC<ExportDropdownProps> = ({
   svgString,
   tikzCode = '',
   onExportTikz,
-  fileName = 'mathviz-diagram',
+  fileName = 'mathaio-diagram',
   disabled = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);

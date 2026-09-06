@@ -1,6 +1,6 @@
 # Nhật Ký Thay Đổi (Changelog)
 
-Tất cả các thay đổi đáng chú ý của dự án **MathViz Studio** sẽ được ghi chép lại tại tài liệu này.
+Tất cả các thay đổi đáng chú ý của dự án **MathAIO Studio** sẽ được ghi chép lại tại tài liệu này.
 
 Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/vi/1.0.0/) và tuân thủ [Semantic Versioning](https://semver.org/).
 
@@ -70,7 +70,7 @@ Tất cả các thay đổi đáng chú ý của dự án **MathViz Studio** s�
 ## [1.0.0] - 02/09/2026
 
 ### ✨ Tính Năng Mới (Features)
-- Phát hành phiên bản ổn định chính thức **MathViz Studio v1.0.0 (Stable Release)**.
+- Phát hành phiên bản ổn định chính thức **MathAIO Studio v1.0.0 (Stable Release)**.
 - Tích hợp Chuỗi Model Cascade Gemini 3 (`gemini-2.5-flash` -> fallback) kèm cơ chế tự động Retry với Random Jitter chống quá tải.
 - Hoàn thiện hệ thống quản lý và xác thực bản quyền License Key, bảng điều khiển quản trị viên (Admin Dashboard) và đồng bộ phiên bản.
 

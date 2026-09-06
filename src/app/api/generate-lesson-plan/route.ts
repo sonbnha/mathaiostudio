@@ -207,7 +207,7 @@ CẤU TRÚC BẮT BUỘC THEO CÔNG VĂN 5512 BỔ SUNG NĂNG LỰC SỐ:
   * *Năng lực sử dụng công cụ, phương tiện học toán*: Sử dụng hiệu quả thước kẻ, compa, êke, máy tính cầm tay, phần mềm mô phỏng...
 - **Năng lực số (Yêu cầu trọng tâm mới)**:
   * Khai thác thiết bị số/máy tính cầm tay trong tính toán và kiểm tra kết quả.
-  * Ứng dụng phần mềm toán học (GeoGebra, phần mềm đồ thị hàm số, MathViz Studio, mô hình hình học trực quan) để quan sát, mô phỏng chuyển động, dự đoán tính chất hình học và trình bày dữ liệu học tập.
+  * Ứng dụng phần mềm toán học (GeoGebra, phần mềm đồ thị hàm số, MathAIO Studio, mô hình hình học trực quan) để quan sát, mô phỏng chuyển động, dự đoán tính chất hình học và trình bày dữ liệu học tập.
 - **Năng lực chung**:
   * *Tự chủ và tự học*: Chủ động tìm tòi, nghiên cứu SGK và hoàn thành phiếu học tập cá nhân.
   * *Giao tiếp và hợp tác*: Tương tác nhóm hiệu quả, thảo luận và phân công nhiệm vụ.
@@ -219,7 +219,7 @@ CẤU TRÚC BẮT BUỘC THEO CÔNG VĂN 5512 BỔ SUNG NĂNG LỰC SỐ:
 ---
 
 ## II. THIẾT BỊ DẠY HỌC VÀ HỌC LIỆU
-1. **Giáo viên**: SGK Bộ sách Thống nhất (Kết nối tri thức), Kế hoạch bài dạy, thiết bị trình chiếu/màn hình TV, phần mềm toán học (GeoGebra / MathViz Studio / phần mềm đồ thị), Phiếu học tập số 1 & số 2, thước thẳng chia vạch, compa, êke, bảng phụ.
+1. **Giáo viên**: SGK Bộ sách Thống nhất (Kết nối tri thức), Kế hoạch bài dạy, thiết bị trình chiếu/màn hình TV, phần mềm toán học (GeoGebra / MathAIO Studio / phần mềm đồ thị), Phiếu học tập số 1 & số 2, thước thẳng chia vạch, compa, êke, bảng phụ.
 2. **Học sinh**: SGK Bộ sách Thống nhất, vở ghi chép bài học, dụng cụ vẽ hình toán học (thước thẳng, compa, êke), máy tính cầm tay.
 
 ---

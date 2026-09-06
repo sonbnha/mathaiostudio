@@ -9,7 +9,7 @@ function generateRandomKey(prefix?: string): string {
     const cleanPrefix = prefix.trim().toUpperCase().replace(/-+$/, '');
     return `${cleanPrefix}-${p1}-${p2}`;
   }
-  return `MV-VIP-${p1}-${p2}`;
+  return `AIO-VIP-${p1}-${p2}`;
 }
 
 // GET: Fetch license keys (Admin or CTV/Staff)
@@ -256,7 +256,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 3. Chuẩn hóa tham số tạo key (Chỉ tạo key VIP bản quyền chính thức)
-    const effectivePrefix = prefix || 'MV-VIP';
+    const effectivePrefix = prefix || 'AIO-VIP';
 
     // Số ngày có hiệu lực (30, 90, 365, hoặc 0: vĩnh viễn)
     const days = durationDays !== undefined

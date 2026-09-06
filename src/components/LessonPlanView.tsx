@@ -571,7 +571,7 @@ export default function LessonPlanView({ licenseKey: parentKey = '' }: LessonPla
                     type="text"
                     value={customKey}
                     onChange={(e) => setCustomKey(e.target.value)}
-                    placeholder="Nhập mã MV-VIP-xxxx nếu có..."
+                    placeholder="Nhập mã AIO-VIP-xxxx nếu có..."
                     className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-cyan-500/30 uppercase shadow-xs"
                   />
                 </div>

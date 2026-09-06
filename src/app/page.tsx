@@ -1108,7 +1108,7 @@ function HomeContent() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `mathviz-diagram-${Date.now()}.svg`;
+    link.download = `mathaio-diagram-${Date.now()}.svg`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -1166,7 +1166,7 @@ function HomeContent() {
         const pngUrl = canvas.toDataURL('image/png', 1.0);
         const a = document.createElement('a');
         a.href = pngUrl;
-        a.download = `mathviz-diagram-${Date.now()}.png`;
+        a.download = `mathaio-diagram-${Date.now()}.png`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -1245,7 +1245,7 @@ function HomeContent() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `mathviz-diagram-${Date.now()}.tex`;
+    link.download = `mathaio-diagram-${Date.now()}.tex`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -1268,7 +1268,10 @@ function HomeContent() {
           </div>
           <div>
             <h1 className="text-xl font-bold bg-gradient-to-r from-slate-900 via-slate-800 to-slate-600 dark:from-white dark:via-slate-100 dark:to-slate-400 bg-clip-text text-transparent tracking-tight flex items-center gap-2">
-              MathViz Studio
+              MathAIO
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20 tracking-normal">
+                Studio
+              </span>
               <button
                 type="button"
                 onClick={() => setIsChangelogOpen(true)}
@@ -2140,7 +2143,7 @@ function HomeContent() {
                     svgString={svgOutput || ''}
                     tikzCode={tikzCode}
                     onExportTikz={handleExportTikz}
-                    fileName="mathviz-diagram"
+                    fileName="mathaio-diagram"
                     disabled={!svgOutput || isGenerating}
                   />
 
@@ -2436,7 +2439,7 @@ function HomeContent() {
       {/* 3. FOOTER / STATUS BAR (Shrink-0, luôn hiển thị rõ ràng ở đáy) */}
       <footer className="shrink-0 h-8 px-4 md:px-6 border-t border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between z-10">
         <div className="flex items-center gap-3">
-          <span>© {new Date().getFullYear()} MathViz Studio • Nền tảng mô hình hóa Toán học & Soạn giáo án</span>
+          <span>MathAIO Studio &copy; {new Date().getFullYear()} – Hệ thống Quản trị & Nền tảng Toán học All-in-One</span>
           <span className="hidden sm:inline text-slate-300 dark:text-slate-700">|</span>
           <span className="hidden sm:inline">Chuẩn Công văn 5512 BGD&ĐT</span>
           <button
@@ -2471,7 +2474,7 @@ function HomeContent() {
                     Lịch sử Phiên bản
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Nhật ký cập nhật & tính năng mới của MathViz Studio
+                    Nhật ký cập nhật & tính năng mới của MathAIO Studio
                   </p>
                 </div>
               </div>
@@ -2641,14 +2644,14 @@ function HomeContent() {
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center justify-between">
                   <span>Mã License Key</span>
-                  <span className="text-[10px] text-slate-400 font-normal">Định dạng: MV-VIP-xxxx</span>
+                  <span className="text-[10px] text-slate-400 font-normal">Định dạng: AIO-VIP-xxxx</span>
                 </label>
                 <div className="relative">
                   <input
                     type="text"
                     value={redeemKeyCode}
                     onChange={(e) => setRedeemKeyCode(e.target.value.toUpperCase())}
-                    placeholder="Ví dụ: MV-VIP-ABCD-1234"
+                    placeholder="Ví dụ: AIO-VIP-ABCD-1234"
                     className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-amber-500 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-slate-200 outline-none transition font-mono tracking-wider pr-16"
                     autoFocus
                     required
@@ -2747,7 +2750,7 @@ export default function HomePage() {
       fallback={
         <div className="h-screen w-full flex items-center justify-center bg-slate-50 dark:bg-slate-950 text-slate-500 text-xs gap-2">
           <Loader2 className="w-5 h-5 animate-spin text-cyan-500" />
-          <span>Đang tải MathViz Studio...</span>
+          <span>Đang tải MathAIO Studio...</span>
         </div>
       }
     >

@@ -178,7 +178,7 @@ export default function RenewLicenseModal({
                 type="text"
                 value={keyCode}
                 onChange={(e) => setKeyCode(e.target.value.toUpperCase())}
-                placeholder="Ví dụ: MV-VIP-XXXX-XXXX"
+                placeholder="Ví dụ: AIO-VIP-XXXX-XXXX"
                 disabled={loading}
                 autoFocus
                 className="w-full h-11 pl-3.5 pr-10 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-sm font-mono uppercase font-bold text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition"

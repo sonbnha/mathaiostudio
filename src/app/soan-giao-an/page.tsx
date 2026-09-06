@@ -49,10 +49,10 @@ export default function LessonPlanPage() {
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-bold text-base md:text-lg bg-gradient-to-r from-cyan-600 to-indigo-600 dark:from-cyan-400 dark:to-indigo-400 bg-clip-text text-transparent">
-                  MathViz Studio
+                  MathAIO
                 </span>
                 <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">
-                  {APP_VERSION.fullString}
+                  Studio
                 </span>
               </div>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:block">

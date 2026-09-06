@@ -201,7 +201,7 @@ export async function POST(req: NextRequest) {
       const sql = getDb();
 
       const cleanUsername = (username || (identifier.includes('@') ? identifier.split('@')[0] : identifier)).trim().toLowerCase();
-      const cleanEmail = (email || (identifier.includes('@') ? identifier : `${cleanUsername}@mathviz.local`)).trim().toLowerCase();
+      const cleanEmail = (email || (identifier.includes('@') ? identifier : `${cleanUsername}@mathaio.local`)).trim().toLowerCase();
 
       const existing = await sql`SELECT id FROM users WHERE LOWER(email) = ${cleanEmail} OR (username IS NOT NULL AND LOWER(username) = ${cleanUsername}) LIMIT 1`;
       if (existing && existing.length > 0) {

@@ -207,6 +207,15 @@ export default function UnifiedAdminPage() {
   const getMaskedKey = (key: string): string => {
     if (!key) return '';
     if (key.length <= 8) return key;
+    if (key.startsWith('AIO-VIP-')) {
+      return `AIO-••••-${key.slice(-4)}`;
+    }
+    if (key.startsWith('AIO-TR-')) {
+      return `AIO-TR-••••-${key.slice(-4)}`;
+    }
+    if (key.startsWith('AIO-')) {
+      return `AIO-••••-${key.slice(-4)}`;
+    }
     if (key.startsWith('MV-TR-')) {
       return `MV-TR-••••-${key.slice(-4)}`;
     }
@@ -483,7 +492,7 @@ export default function UnifiedAdminPage() {
           totalCredits: maxUsageValue,
           maxUsage: maxUsageValue,
           durationDays: Number(durationDays),
-          prefix: 'MV-VIP',
+          prefix: 'AIO-VIP',
         }),
       });
 
@@ -548,7 +557,7 @@ export default function UnifiedAdminPage() {
       ? new Date(newlyCreatedKey.expiresAt).toLocaleDateString('vi-VN')
       : '∞';
 
-    const message = `🎉 KÍCH HOẠT BẢN QUYỀN MATHVIZ
+    const message = `🎉 KÍCH HOẠT BẢN QUYỀN MATHAIO
 - Mã License Key: ${newlyCreatedKey.key}
 - Số lượt sử dụng: ${creditsStr}
 - Hạn sử dụng: ${expireStr}
@@ -576,7 +585,7 @@ export default function UnifiedAdminPage() {
       ? new Date(keyItem.expiresAt).toLocaleDateString('vi-VN')
       : '∞';
 
-    const message = `🎉 KÍCH HOẠT BẢN QUYỀN MATHVIZ
+    const message = `🎉 KÍCH HOẠT BẢN QUYỀN MATHAIO
 - Mã License Key: ${keyItem.key}
 - Số lượt sử dụng: ${creditsStr}
 - Hạn sử dụng: ${expireStr}
@@ -1081,7 +1090,7 @@ export default function UnifiedAdminPage() {
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="font-bold text-sm text-slate-900 dark:text-white tracking-tight">
-                  MathViz
+                  MathAIO
                 </span>
                 <span
                   className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase ${
@@ -1276,7 +1285,7 @@ export default function UnifiedAdminPage() {
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="font-bold text-sm text-slate-900 dark:text-white tracking-tight">
-                  MathViz
+                  MathAIO
                 </span>
                 <span
                   className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase ${
@@ -1736,7 +1745,7 @@ export default function UnifiedAdminPage() {
                           <tr key={k.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-950/50 transition">
                             <td className="py-2.5 px-4 font-mono text-xs whitespace-nowrap">
                               <div className="inline-flex items-center gap-1.5 font-mono text-xs">
-                                {k.key.startsWith('MV-TR-') || k.key.includes('TRIAL') ? (
+                                {k.key.startsWith('AIO-TR-') || k.key.startsWith('MV-TR-') || k.key.includes('TRIAL') ? (
                                   <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-sky-500/15 border border-sky-500/30 text-sky-700 dark:text-sky-300 font-bold">
                                     Trial
                                   </span>
@@ -1940,6 +1949,14 @@ export default function UnifiedAdminPage() {
                     </div>
                   )}
 
+                  {/* Preview mã key mới */}
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-dashed border-slate-300 dark:border-slate-800 text-xs flex items-center justify-between">
+                    <span className="text-slate-500 dark:text-slate-400">Định dạng key sinh ra:</span>
+                    <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                      AIO-VIP-••••-••••
+                    </span>
+                  </div>
+
                   <button
                     type="submit"
                     disabled={createKeyLoading || (isStaff && !isStaffUnlimited && staffCreatedCount >= (staffMaxCredits || 50))}
@@ -2054,7 +2071,7 @@ export default function UnifiedAdminPage() {
                             {/* 1. Mã Key (Masked Display & Toggle Reveal) */}
                             <td className="px-4 py-3 align-middle whitespace-nowrap">
                               <div className="inline-flex items-center gap-1.5 font-mono text-xs whitespace-nowrap">
-                                {k.key.startsWith('MV-TR-') || k.key.includes('TRIAL') ? (
+                                {k.key.startsWith('AIO-TR-') || k.key.startsWith('MV-TR-') || k.key.includes('TRIAL') ? (
                                   <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-sky-500/15 border border-sky-500/30 text-sky-700 dark:text-sky-300 font-bold shrink-0">
                                     Trial
                                   </span>
@@ -2683,7 +2700,7 @@ export default function UnifiedAdminPage() {
                   Bản Quyền Kích Hoạt Trực Tuyến
                 </span>
                 <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-wide uppercase">
-                  KÍCH HOẠT BẢN QUYỀN MATHVIZ
+                  KÍCH HOẠT BẢN QUYỀN MATHAIO
                 </h3>
               </div>
             </div>
@@ -3522,7 +3539,7 @@ export default function UnifiedAdminPage() {
 
       {/* Footer */}
       <footer className="border-t border-slate-200 dark:border-slate-800/60 py-4 px-4 flex flex-wrap items-center justify-between gap-2 max-w-7xl mx-auto w-full text-xs text-slate-500 dark:text-slate-500 z-10 transition-colors">
-        <span>MathViz Studio &copy; {new Date().getFullYear()} — Hệ thống Phân quyền Quản trị & Cộng tác viên</span>
+        <span>MathAIO Studio &copy; {new Date().getFullYear()} – Hệ thống Quản trị & Nền tảng Toán học All-in-One</span>
         <button
           type="button"
           onClick={() => setIsChangelogOpen(true)}
@@ -3549,7 +3566,7 @@ export default function UnifiedAdminPage() {
                     Lịch sử Phiên bản
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Nhật ký cập nhật & tính năng mới của MathViz Studio
+                    Nhật ký cập nhật & tính năng mới của MathAIO Studio
                   </p>
                 </div>
               </div>

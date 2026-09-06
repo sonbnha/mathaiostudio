@@ -1782,20 +1782,22 @@ export default function UnifiedAdminPage() {
                       ) : (
                         keys.slice(0, 5).map((k) => (
                           <tr key={k.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-950/50 transition">
-                            <td className="py-2.5 px-4 font-mono text-xs whitespace-nowrap w-[200px] min-w-[190px] max-w-[210px]">
-                              <div className="flex items-center justify-between gap-2 w-full max-w-[190px]">
+                            <td className="py-2.5 px-4 whitespace-nowrap w-[200px] min-w-[190px]">
+                              <div className="flex items-center justify-between w-[185px] h-[34px] bg-slate-50/90 dark:bg-slate-900/60 border border-slate-200/90 dark:border-slate-800 rounded-lg px-2.5 transition-all hover:border-slate-300 dark:hover:border-slate-700 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
                                 <span
                                   onClick={() => toggleRevealKey(k.id)}
-                                  title={revealedKeyIds.has(k.id) ? "Click để ẩn mã key" : `Click để xem đầy đủ (Mã: ${k.key})`}
-                                  className="font-mono text-xs md:text-sm font-medium text-slate-700 dark:text-slate-200 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors truncate select-all"
+                                  className="font-mono text-[12px] font-semibold text-slate-700 dark:text-slate-300 tracking-wide select-all cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 truncate mr-1.5"
+                                  title="Click để sao chép / xem đầy đủ"
                                 >
                                   {revealedKeyIds.has(k.id) ? k.key : getMaskedKey(k.key)}
                                 </span>
+
+                                {/* Nút copy luôn nằm cố định sát mép phải khung */}
                                 <button
                                   type="button"
                                   onClick={() => handleCopyKey(k.key, k.id)}
-                                  className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors shrink-0"
-                                  title="Sao chép mã key"
+                                  className="p-1 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white dark:hover:bg-slate-800 rounded-md transition-all shrink-0 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 hover:shadow-xs cursor-pointer"
+                                  title="Sao chép mã"
                                 >
                                   {copiedKeyId === k.id ? (
                                     <Check className="w-3.5 h-3.5 text-emerald-500" />
@@ -2055,21 +2057,21 @@ export default function UnifiedAdminPage() {
 
                 {/* Table Scrollable Body (Independent scroll) */}
                 <div className="flex-1 min-h-0 overflow-y-auto overflow-x-auto w-full">
-                  <table className="w-full min-w-[860px] border-collapse text-left text-xs">
+                  <table className="w-full min-w-[880px] border-collapse text-left text-xs">
                     <colgroup>
-                      <col className="w-[200px] min-w-[190px] max-w-[210px]" />
-                      <col className="w-[26%] min-w-[180px]" />
-                      <col className="w-[24%] min-w-[170px]" />
-                      <col className="w-[24%] min-w-[180px]" />
+                      <col className="w-[205px] min-w-[195px]" />
+                      <col className="w-[25%] min-w-[180px]" />
+                      <col className="w-[23%] min-w-[170px]" />
+                      <col className="w-[25%] min-w-[190px]" />
                       <col className="w-[105px] min-w-[105px]" />
                     </colgroup>
                     <thead className="sticky top-0 z-20 bg-slate-50/95 dark:bg-[#151c2c]/95 backdrop-blur-xs border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 uppercase tracking-wider text-xs font-bold shadow-xs">
                       <tr>
-                        <th className="py-3 px-4 w-[200px] min-w-[190px] max-w-[210px]">Mã Key</th>
-                        <th className="py-3 px-4 min-w-[180px]">Người Tạo</th>
-                        <th className="py-3 px-4 min-w-[170px]">Người Kích Hoạt</th>
-                        <th className="py-3 px-5 min-w-[180px]">Lượt Dùng & Hạn</th>
-                        <th className="py-3 px-3 text-center sticky right-0 z-30 bg-slate-100 dark:bg-[#182030] shadow-[-4px_0_8px_-2px_rgba(0,0,0,0.08)] w-[105px] min-w-[105px]">
+                        <th className="py-3 px-4 w-[205px] min-w-[195px] whitespace-nowrap">Mã Key</th>
+                        <th className="py-3 px-4 min-w-[180px] whitespace-nowrap">Người Tạo</th>
+                        <th className="py-3 px-4 min-w-[170px] whitespace-nowrap">Người Kích Hoạt</th>
+                        <th className="py-3 px-5 min-w-[190px] whitespace-nowrap">Lượt Dùng & Hạn</th>
+                        <th className="py-3 px-3 text-center sticky right-0 z-30 bg-slate-100 dark:bg-[#182030] shadow-[-4px_0_8px_-2px_rgba(0,0,0,0.08)] w-[105px] min-w-[105px] whitespace-nowrap">
                           Thao Tác
                         </th>
                       </tr>
@@ -2086,24 +2088,23 @@ export default function UnifiedAdminPage() {
                       ) : (
                         filteredKeys.map((k) => (
                           <tr key={k.id} className="group hover:bg-slate-50 dark:hover:bg-slate-800/30 transition">
-                            {/* 1. Mã Key (Masked Display & Click Reveal - Fixed width with right-aligned Copy button) */}
-                            <td className="px-4 py-3 align-middle whitespace-nowrap w-[200px] min-w-[190px] max-w-[210px]">
-                              <div className="flex items-center justify-between gap-2 w-full max-w-[190px]">
-                                {/* Chuỗi mã key dạng monospace */}
+                            {/* 1. Mã Key (Pill Box Container with Refined Monospace & Anchored Copy Button) */}
+                            <td className="px-4 py-3 align-middle whitespace-nowrap w-[205px] min-w-[195px]">
+                              <div className="flex items-center justify-between w-[185px] h-[34px] bg-slate-50/90 dark:bg-slate-900/60 border border-slate-200/90 dark:border-slate-800 rounded-lg px-2.5 transition-all hover:border-slate-300 dark:hover:border-slate-700 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
                                 <span
                                   onClick={() => toggleRevealKey(k.id)}
-                                  title={revealedKeyIds.has(k.id) ? "Click để ẩn mã key" : `Click để xem đầy đủ (Mã: ${k.key})`}
-                                  className="font-mono text-xs md:text-sm font-medium text-slate-700 dark:text-slate-200 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors truncate select-all"
+                                  className="font-mono text-[12px] font-semibold text-slate-700 dark:text-slate-300 tracking-wide select-all cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 truncate mr-1.5"
+                                  title="Click để sao chép / xem đầy đủ"
                                 >
                                   {revealedKeyIds.has(k.id) ? k.key : getMaskedKey(k.key)}
                                 </span>
 
-                                {/* Nút copy luôn neo cố định ở bên phải */}
+                                {/* Nút copy luôn nằm cố định sát mép phải khung */}
                                 <button
                                   type="button"
                                   onClick={() => handleCopyKey(k.key, k.id)}
-                                  className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors shrink-0"
-                                  title="Sao chép mã key"
+                                  className="p-1 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white dark:hover:bg-slate-800 rounded-md transition-all shrink-0 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 hover:shadow-xs cursor-pointer"
+                                  title="Sao chép mã"
                                 >
                                   {copiedKeyId === k.id ? (
                                     <Check className="w-3.5 h-3.5 text-emerald-500" />

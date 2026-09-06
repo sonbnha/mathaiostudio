@@ -31,6 +31,7 @@ import {
   ChevronDown,
   Bookmark,
   Crown,
+  UserPlus,
 } from 'lucide-react';
 import Link from 'next/link';
 import { APP_VERSION, formatDateVN } from '@/config/version';
@@ -46,7 +47,7 @@ import UnifiedProblemInput from '@/components/UnifiedProblemInput';
 import SavedCollection from '@/components/SavedCollection';
 import ExportDropdown from '@/components/ExportDropdown';
 import InteractiveSvgEditor from '@/components/InteractiveSvgEditor';
-import AuthModal, { AuthUser } from '@/components/AuthModal';
+import type { AuthUser } from '@/components/AuthModal';
 import { useRenewModal } from '@/context/RenewModalContext';
 import { computeLicenseStatus } from '@/lib/licenseStatus';
 import { REAL_WORLD_MATH_SAMPLES } from '@/data/samplePrompts';
@@ -165,7 +166,6 @@ function HomeContent() {
 
   // Feature 3: User Authentication & Neon DB Sync
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const userDropdownRef = useRef<HTMLDivElement>(null);
   const [isSyncingCollection, setIsSyncingCollection] = useState(false);
@@ -1428,17 +1428,13 @@ function HomeContent() {
                       <p className="text-[11px] text-slate-300 leading-tight">
                         Đăng nhập để liên kết key này vĩnh viễn vào tài khoản của bạn, tránh bị mất khi đổi máy hoặc xóa cache.
                       </p>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setIsAuthModalOpen(true);
-                        }}
+                      <Link
+                        href="/login"
                         className="mt-2.5 w-full py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950 font-bold text-[11px] shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer"
                       >
                         <LogIn className="w-3.5 h-3.5" />
                         <span>Đăng nhập liên kết ngay</span>
-                      </button>
+                      </Link>
                     </div>
                   </div>
                 );
@@ -1504,16 +1500,23 @@ function HomeContent() {
 
           {/* User Auth Section: Login Button for Guests or User Profile for Logged-in */}
           {!currentUser ? (
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => setIsAuthModalOpen(true)}
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+              <Link
+                href="/login"
                 className="h-10 px-3 sm:px-3.5 rounded-xl text-xs font-semibold bg-gradient-to-r from-blue-600 via-cyan-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white flex items-center gap-1.5 shadow-sm hover:shadow transition-all cursor-pointer shrink-0"
-                title="Đăng nhập hoặc đăng ký tài khoản"
+                title="Đăng nhập tài khoản MathAIO"
               >
                 <LogIn className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Đăng nhập</span>
-              </button>
+              </Link>
+              <Link
+                href="/register"
+                className="h-10 px-2.5 sm:px-3 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 shadow-xs hover:shadow transition-all cursor-pointer shrink-0"
+                title="Đăng ký tài khoản nhận 10 lượt Trial"
+              >
+                <UserPlus className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                <span className="hidden sm:inline">Đăng ký</span>
+              </Link>
             </div>
           ) : (
             <div className="flex items-center gap-2 shrink-0">
@@ -2658,16 +2661,13 @@ function HomeContent() {
                     Bạn chưa đăng nhập. Key sẽ lưu tạm trên trình duyệt này.
                   </span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsRedeemModalOpen(false);
-                    setIsAuthModalOpen(true);
-                  }}
+                <Link
+                  href="/login"
+                  onClick={() => setIsRedeemModalOpen(false)}
                   className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline shrink-0 cursor-pointer"
                 >
                   Đăng nhập ngay →
-                </button>
+                </Link>
               </div>
             )}
 
@@ -2743,16 +2743,6 @@ function HomeContent() {
         </div>
       )}
 
-      {/* Neon User Authentication Modal */}
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
-        onSuccess={async (user) => {
-          setCurrentUser(user);
-          await checkAndMigrateGuestKey(user);
-          fetchUserCollection(user);
-        }}
-      />
       {/* Toast thông báo tự động chuyển đổi Key */}
       {migrateToastMsg && (
         <div className="fixed bottom-12 right-6 z-50 p-4 rounded-2xl bg-slate-900/95 text-white border border-amber-500/40 shadow-2xl flex items-center gap-3 animate-in slide-in-from-bottom-5 duration-300 max-w-md backdrop-blur-md">

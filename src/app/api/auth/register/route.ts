@@ -8,39 +8,63 @@ export async function POST(req: NextRequest) {
   try {
     await initDb();
     const body = await req.json().catch(() => ({}));
-    const { email, password, name } = body;
+    const rawName = (body.full_name || body.name || '').trim();
+    const rawUsername = (body.username || '').trim().toLowerCase();
+    const rawEmail = (body.email || '').trim().toLowerCase();
+    const password = body.password || '';
 
-    if (!email || typeof email !== 'string' || !email.trim()) {
-      return NextResponse.json({ error: 'Vui lòng nhập địa chỉ email.' }, { status: 400 });
+    // 1. Kiểm tra họ và tên
+    if (!rawName || rawName.length < 2) {
+      return NextResponse.json({ error: 'Họ và tên phải có tối thiểu 2 ký tự.' }, { status: 400 });
     }
 
+    // 2. Kiểm tra tên đăng nhập
+    if (!rawUsername) {
+      return NextResponse.json({ error: 'Vui lòng nhập tên đăng nhập.' }, { status: 400 });
+    }
+    const usernameRegex = /^[a-z0-9_.-]{3,30}$/;
+    if (!usernameRegex.test(rawUsername)) {
+      return NextResponse.json(
+        { error: 'Tên đăng nhập từ 3 - 30 ký tự, chỉ gồm chữ thường, số, dấu gạch dưới hoặc gạch ngang, không dấu và không khoảng trắng.' },
+        { status: 400 }
+      );
+    }
+
+    // 3. Kiểm tra định dạng email
+    if (!rawEmail) {
+      return NextResponse.json({ error: 'Vui lòng nhập địa chỉ email.' }, { status: 400 });
+    }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
+    if (!emailRegex.test(rawEmail)) {
       return NextResponse.json({ error: 'Định dạng email không hợp lệ.' }, { status: 400 });
     }
 
+    // 4. Kiểm tra độ dài mật khẩu
     if (!password || typeof password !== 'string' || password.length < 6) {
       return NextResponse.json({ error: 'Mật khẩu phải có ít nhất 6 ký tự.' }, { status: 400 });
     }
 
-    const displayName = (name && typeof name === 'string' && name.trim()) ? name.trim() : email.split('@')[0];
-
     const sql = getDb();
 
-    // Check if email or username already exists
+    // 5. Kiểm tra trùng lặp email và username trong Neon Database
     const existing = await sql`
-      SELECT id FROM users 
-      WHERE LOWER(email) = LOWER(${email.trim()}) 
-         OR (username IS NOT NULL AND LOWER(username) = LOWER(${email.trim()}))
+      SELECT id, username, email FROM users 
+      WHERE LOWER(email) = ${rawEmail} 
+         OR (username IS NOT NULL AND LOWER(username) = ${rawUsername})
       LIMIT 1
     `;
 
     if (existing && existing.length > 0) {
-      return NextResponse.json({ error: 'Email này đã được đăng ký tài khoản.' }, { status: 409 });
+      const match = existing[0] as any;
+      if (match.email && match.email.toLowerCase() === rawEmail) {
+        return NextResponse.json({ error: 'Địa chỉ email này đã được đăng ký tài khoản.' }, { status: 409 });
+      }
+      return NextResponse.json({ error: 'Tên đăng nhập này đã được sử dụng. Vui lòng chọn tên khác.' }, { status: 409 });
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
 
+    // 6. Tạo tài khoản mới: Tự động cấp 10 lượt trial vào ví vĩnh viễn (lifetime_quota = 10)
     const result = await sql`
       INSERT INTO users (
         email, 
@@ -60,10 +84,10 @@ export async function POST(req: NextRequest) {
         vip_expires_at
       )
       VALUES (
-        ${email.trim().toLowerCase()}, 
-        ${email.trim().toLowerCase()}, 
+        ${rawEmail}, 
+        ${rawUsername}, 
         ${passwordHash}, 
-        ${displayName}, 
+        ${rawName}, 
         'user', 
         'active', 
         true,
@@ -95,6 +119,7 @@ export async function POST(req: NextRequest) {
       user: {
         id: user.id,
         email: user.email,
+        username: user.username,
         name: user.name,
         role: user.role || 'user',
         status: user.status || 'active',

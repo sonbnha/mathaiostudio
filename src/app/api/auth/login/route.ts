@@ -13,6 +13,8 @@ export async function POST(req: NextRequest) {
       identifier?: string;
       usernameOrEmail?: string;
       password?: string;
+      rememberMe?: boolean;
+      remember?: boolean;
     };
     try {
       body = await req.json();
@@ -22,6 +24,8 @@ export async function POST(req: NextRequest) {
 
     const identifier = (body.identifier || body.usernameOrEmail || body.username || body.email || '').trim();
     const password = body.password || '';
+    const rememberMe = Boolean(body.rememberMe ?? body.remember);
+    const cookieMaxAge = rememberMe ? 30 * 24 * 60 * 60 : 7 * 24 * 60 * 60;
 
     if (!identifier || !password) {
       return NextResponse.json(
@@ -81,7 +85,7 @@ export async function POST(req: NextRequest) {
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
             path: '/',
-            maxAge: 7 * 24 * 60 * 60,
+            maxAge: cookieMaxAge,
           });
 
           response.cookies.set({
@@ -91,7 +95,7 @@ export async function POST(req: NextRequest) {
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
             path: '/',
-            maxAge: 7 * 24 * 60 * 60,
+            maxAge: cookieMaxAge,
           });
 
           return response;
@@ -145,7 +149,7 @@ export async function POST(req: NextRequest) {
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
             path: '/',
-            maxAge: 7 * 24 * 60 * 60,
+            maxAge: cookieMaxAge,
           });
 
           response.cookies.set({
@@ -155,7 +159,7 @@ export async function POST(req: NextRequest) {
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
             path: '/',
-            maxAge: 7 * 24 * 60 * 60,
+            maxAge: cookieMaxAge,
           });
 
           return response;

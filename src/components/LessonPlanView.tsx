@@ -122,6 +122,12 @@ export default function LessonPlanView({ licenseKey: parentKey = '' }: LessonPla
       return;
     }
 
+    // Chuyển hướng sang đăng nhập nếu khách chưa có tài khoản và chưa có key
+    if (!currentUser && !effectiveKey) {
+      window.location.href = '/login?redirect=/canvas';
+      return;
+    }
+
     // Chặn và mở modal gia hạn nếu tài khoản đã hết hạn hoặc hết lượt
     if (licenseInfo.isFullyExpired || licenseInfo.turnsLeft <= 0 || licenseInfo.isExpiredOrDepleted) {
       openRenewModal({

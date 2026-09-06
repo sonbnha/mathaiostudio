@@ -140,6 +140,8 @@ interface UserAccountItem {
   maxCredits?: number;
   is_vip?: boolean;
   isVip?: boolean;
+  is_trial?: boolean;
+  isTrial?: boolean;
   vip_expires_at?: string | null;
   vipExpiresAt?: string | null;
   remaining_quota?: number | null;
@@ -2425,6 +2427,10 @@ export default function UnifiedAdminPage() {
                                 <span>👑</span>
                                 <span>VIP Account</span>
                               </button>
+                            ) : (u.lifetime_quota ?? u.lifetimeQuota ?? 0) > 0 || u.is_trial ? (
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-full font-bold text-[11px] border whitespace-nowrap bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/30">
+                                Dùng thử (Trial)
+                              </span>
                             ) : (
                               <span className="inline-flex items-center px-2.5 py-1 rounded-full font-bold text-[11px] border whitespace-nowrap bg-slate-500/15 text-slate-600 dark:text-slate-400 border-slate-500/30">
                                 Người dùng (Free)
@@ -2478,15 +2484,23 @@ export default function UnifiedAdminPage() {
                                   return null;
                                 })()}
 
-                                {/* Vĩnh viễn badge */}
+                                {/* Vĩnh viễn / Dùng thử badge */}
                                 {(() => {
                                   const ltQuota = u.lifetime_quota ?? u.lifetimeQuota ?? 0;
                                   if (ltQuota > 0) {
-                                    return (
-                                      <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 font-medium text-[11px] whitespace-nowrap">
-                                        Vĩnh viễn: {ltQuota} lượt
-                                      </span>
-                                    );
+                                    if (isUVip) {
+                                      return (
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 font-medium text-[11px] whitespace-nowrap">
+                                          👑 VIP Vĩnh viễn: {ltQuota} lượt
+                                        </span>
+                                      );
+                                    } else {
+                                      return (
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/20 font-medium text-[11px] whitespace-nowrap">
+                                          Dùng thử: {ltQuota} lượt
+                                        </span>
+                                      );
+                                    }
                                   }
                                   return null;
                                 })()}

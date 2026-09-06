@@ -122,17 +122,22 @@ export async function GET(req: NextRequest) {
                   ? remainingCredits
                   : (usageLimit === -1 ? null : 0))));
 
+    const finalIsVip = Boolean(isAdmin || isVipFlag || isSubActive);
+    const finalIsTrial = Boolean(!finalIsVip);
+
     return NextResponse.json({
       user: {
         ...user,
         apiKey: userApiKey,
         api_key: userApiKey,
-        is_vip: Boolean(isVip || rawLifetimeQuota > 0 || isSubActive),
-        isVip: Boolean(isVip || rawLifetimeQuota > 0 || isSubActive),
+        is_vip: finalIsVip,
+        isVip: finalIsVip,
+        is_trial: finalIsTrial,
+        isTrial: finalIsTrial,
         is_unlimited: isUnlimited,
         isUnlimited: isUnlimited,
-        vip_expires_at: rawLifetimeQuota > 0 ? null : (subExpiresAtIso || vipExpiresAtIso),
-        vipExpiresAt: rawLifetimeQuota > 0 ? null : (subExpiresAtIso || vipExpiresAtIso),
+        vip_expires_at: (finalIsVip && rawLifetimeQuota > 0 && !isSubActive) ? null : (subExpiresAtIso || vipExpiresAtIso),
+        vipExpiresAt: (finalIsVip && rawLifetimeQuota > 0 && !isSubActive) ? null : (subExpiresAtIso || vipExpiresAtIso),
         subscription_expires_at: subExpiresAtIso,
         subscriptionExpiresAt: subExpiresAtIso,
         subscription_quota: rawSubscriptionQuota,

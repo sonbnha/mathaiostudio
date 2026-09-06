@@ -50,9 +50,13 @@ export async function POST(req: NextRequest) {
         role, 
         status, 
         is_active,
+        lifetime_quota,
+        subscription_quota,
+        subscription_expires_at,
         remaining_quota,
         max_quota,
         is_vip,
+        is_trial,
         vip_expires_at
       )
       VALUES (
@@ -64,11 +68,15 @@ export async function POST(req: NextRequest) {
         'active', 
         true,
         10,
+        0,
+        NULL,
+        10,
         10,
         false,
+        true,
         NULL
       )
-      RETURNING id, email, username, name, role, status, is_vip, vip_expires_at, remaining_quota, max_quota, created_at
+      RETURNING id, email, username, name, role, status, is_vip, is_trial, vip_expires_at, remaining_quota, max_quota, lifetime_quota, subscription_quota, subscription_expires_at, created_at
     `;
 
     const user = result[0] as any;
@@ -92,8 +100,16 @@ export async function POST(req: NextRequest) {
         status: user.status || 'active',
         is_vip: false,
         isVip: false,
+        is_trial: true,
+        isTrial: true,
         vip_expires_at: null,
         vipExpiresAt: null,
+        lifetime_quota: 10,
+        lifetimeQuota: 10,
+        subscription_quota: 0,
+        subscriptionQuota: 0,
+        subscription_expires_at: null,
+        subscriptionExpiresAt: null,
         remaining_quota: 10,
         remainingQuota: 10,
         max_quota: 10,

@@ -78,6 +78,7 @@ export async function GET(req: NextRequest) {
           u.created_at,
           COALESCE(u.key_quota, 50) AS key_quota,
           COALESCE(u.is_vip, false) AS is_vip,
+          COALESCE(u.is_trial, NOT COALESCE(u.is_vip, false)) AS is_trial,
           u.vip_expires_at,
           u.remaining_quota,
           u.max_quota,
@@ -97,7 +98,7 @@ export async function GET(req: NextRequest) {
         LEFT JOIN saved_diagrams d ON d.user_id = u.id
         LEFT JOIN "LicenseKey" lk ON (lk."createdById" = u.id::text OR (u.cuid IS NOT NULL AND lk."createdById" = u.cuid))
         WHERE u.name ILIKE ${pattern} OR u.email ILIKE ${pattern} OR (u.username IS NOT NULL AND u.username ILIKE ${pattern})
-        GROUP BY u.id, u.name, u.email, u.username, u.role, u.status, u.is_active, u.api_key, u.cuid, u.created_at, u.key_quota, u.is_vip, u.vip_expires_at, u.remaining_quota, u.max_quota, u.lifetime_quota, u.subscription_quota, u.subscription_expires_at
+        GROUP BY u.id, u.name, u.email, u.username, u.role, u.status, u.is_active, u.api_key, u.cuid, u.created_at, u.key_quota, u.is_vip, u.is_trial, u.vip_expires_at, u.remaining_quota, u.max_quota, u.lifetime_quota, u.subscription_quota, u.subscription_expires_at
         ORDER BY u.created_at DESC
       `;
     } else {
@@ -115,6 +116,7 @@ export async function GET(req: NextRequest) {
           u.created_at,
           COALESCE(u.key_quota, 50) AS key_quota,
           COALESCE(u.is_vip, false) AS is_vip,
+          COALESCE(u.is_trial, NOT COALESCE(u.is_vip, false)) AS is_trial,
           u.vip_expires_at,
           u.remaining_quota,
           u.max_quota,
@@ -133,7 +135,7 @@ export async function GET(req: NextRequest) {
         FROM users u
         LEFT JOIN saved_diagrams d ON d.user_id = u.id
         LEFT JOIN "LicenseKey" lk ON (lk."createdById" = u.id::text OR (u.cuid IS NOT NULL AND lk."createdById" = u.cuid))
-        GROUP BY u.id, u.name, u.email, u.username, u.role, u.status, u.is_active, u.api_key, u.cuid, u.created_at, u.key_quota, u.is_vip, u.vip_expires_at, u.remaining_quota, u.max_quota, u.lifetime_quota, u.subscription_quota, u.subscription_expires_at
+        GROUP BY u.id, u.name, u.email, u.username, u.role, u.status, u.is_active, u.api_key, u.cuid, u.created_at, u.key_quota, u.is_vip, u.is_trial, u.vip_expires_at, u.remaining_quota, u.max_quota, u.lifetime_quota, u.subscription_quota, u.subscription_expires_at
         ORDER BY u.created_at DESC
       `;
     }
@@ -149,6 +151,8 @@ export async function GET(req: NextRequest) {
       isActive: r.status === 'active',
       is_vip: Boolean(r.is_vip),
       isVip: Boolean(r.is_vip),
+      is_trial: Boolean(r.is_trial),
+      isTrial: Boolean(r.is_trial),
       vip_expires_at: r.vip_expires_at,
       vipExpiresAt: r.vip_expires_at,
       remaining_quota: r.remaining_quota !== null && r.remaining_quota !== undefined ? Number(r.remaining_quota) : null,
@@ -229,9 +233,40 @@ export async function POST(req: NextRequest) {
         ? -1
         : (key_quota !== undefined ? Number(key_quota) : (maxCredits !== undefined ? Number(maxCredits) : 50));
 
+      const isUserRole = normalizedRole === 'user';
       const inserted = await sql`
-        INSERT INTO users (email, username, password_hash, name, role, is_active, key_quota)
-        VALUES (${cleanEmail}, ${cleanUsername}, ${passwordHash}, ${name.trim()}, ${normalizedRole}, true, ${effectiveKeyQuota})
+        INSERT INTO users (
+          email, 
+          username, 
+          password_hash, 
+          name, 
+          role, 
+          is_active, 
+          key_quota,
+          lifetime_quota,
+          subscription_quota,
+          subscription_expires_at,
+          remaining_quota,
+          max_quota,
+          is_vip,
+          is_trial
+        )
+        VALUES (
+          ${cleanEmail}, 
+          ${cleanUsername}, 
+          ${passwordHash}, 
+          ${name.trim()}, 
+          ${normalizedRole}, 
+          true, 
+          ${effectiveKeyQuota},
+          ${isUserRole ? 10 : 0},
+          0,
+          NULL,
+          ${isUserRole ? 10 : (effectiveKeyQuota === -1 ? 999999 : effectiveKeyQuota)},
+          ${isUserRole ? 10 : (effectiveKeyQuota === -1 ? 999999 : effectiveKeyQuota)},
+          ${normalizedRole === 'admin'},
+          ${isUserRole}
+        )
         RETURNING id, name, email, username, role, is_active, key_quota, created_at
       `;
 

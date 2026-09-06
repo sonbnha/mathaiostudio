@@ -50,12 +50,12 @@ export async function getCurrentUserFromRequest(req: NextRequest) {
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(payload.userId);
     const rows = isUuid
       ? await sql`
-          SELECT id, email, username, name, role, status, is_active, api_key, cuid, key_quota, is_vip, vip_expires_at, remaining_quota, max_quota, lifetime_quota, subscription_quota, subscription_expires_at, created_at
+          SELECT id, email, username, name, role, status, is_active, api_key, cuid, key_quota, is_vip, is_trial, vip_expires_at, remaining_quota, max_quota, lifetime_quota, subscription_quota, subscription_expires_at, created_at
           FROM users
           WHERE id = ${payload.userId}::uuid
         `
       : await sql`
-          SELECT id, email, username, name, role, status, is_active, api_key, cuid, key_quota, is_vip, vip_expires_at, remaining_quota, max_quota, lifetime_quota, subscription_quota, subscription_expires_at, created_at
+          SELECT id, email, username, name, role, status, is_active, api_key, cuid, key_quota, is_vip, is_trial, vip_expires_at, remaining_quota, max_quota, lifetime_quota, subscription_quota, subscription_expires_at, created_at
           FROM users
           WHERE cuid = ${payload.userId} OR username = ${payload.userId}
         `;
@@ -76,7 +76,11 @@ export async function getCurrentUserFromRequest(req: NextRequest) {
         cuid: u.cuid,
         keyQuota: u.key_quota,
         isVip: Boolean(u.is_vip),
+        is_vip: Boolean(u.is_vip),
+        isTrial: Boolean(u.is_trial ?? !u.is_vip),
+        is_trial: Boolean(u.is_trial ?? !u.is_vip),
         vipExpiresAt: u.vip_expires_at,
+        vip_expires_at: u.vip_expires_at,
         remaining_quota: typeof u.remaining_quota === 'number' ? u.remaining_quota : 0,
         remainingQuota: typeof u.remaining_quota === 'number' ? u.remaining_quota : 0,
         max_quota: typeof u.max_quota === 'number' ? u.max_quota : 0,

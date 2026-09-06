@@ -70,7 +70,7 @@ export function computeLicenseStatus({
 
   // 1. Trường hợp người dùng đã đăng nhập (currentUser)
   if (user) {
-    const isVip = Boolean(user.is_vip || user.isVip);
+    const isVipUser = Boolean(user.is_vip || user.isVip);
     const rawLifetimeQuota = typeof user.lifetime_quota === 'number'
       ? user.lifetime_quota
       : (typeof user.lifetimeQuota === 'number' ? user.lifetimeQuota : 0);
@@ -83,14 +83,7 @@ export function computeLicenseStatus({
 
     const dualWalletTurns = (isSubActive ? rawSubscriptionQuota : 0) + rawLifetimeQuota;
 
-    // daysLeft: số ngày còn lại (999 nếu có ví vĩnh viễn hoặc không có ngày hết hạn)
-    const hasLifetimeTurns = rawLifetimeQuota > 0;
-    const daysLeft = hasLifetimeTurns 
-      ? 999 
-      : (subExpireTime ? Math.ceil((subExpireTime - now) / (1000 * 60 * 60 * 24)) : 999);
-    const daysRemaining = hasLifetimeTurns 
-      ? null 
-      : (subExpireTime ? Math.max(0, daysLeft) : null);
+    const hasVipLifetimeTurns = isVipUser && rawLifetimeQuota > 0;
 
     // turnsLeft: số lượt còn lại (INT)
     const fallbackTurns = typeof user.remaining_quota === 'number'
@@ -107,6 +100,17 @@ export function computeLicenseStatus({
       ? dualWalletTurns
       : fallbackTurns;
 
+    const isTrial = Boolean(!isVipUser && !isSubActive && turnsLeft > 0);
+    const isVipActive = (isVipUser || isSubActive) && turnsLeft > 0;
+
+    // daysLeft: số ngày còn lại (999 nếu có ví vĩnh viễn hoặc dùng thử không thời hạn)
+    const daysLeft = (hasVipLifetimeTurns || isTrial)
+      ? 999 
+      : (subExpireTime ? Math.ceil((subExpireTime - now) / (1000 * 60 * 60 * 24)) : 999);
+    const daysRemaining = (hasVipLifetimeTurns || isTrial)
+      ? null 
+      : (subExpireTime ? Math.max(0, daysLeft) : null);
+
     const maxQuota = typeof user.max_quota === 'number'
       ? user.max_quota
       : typeof user.maxQuota === 'number'
@@ -121,14 +125,12 @@ export function computeLicenseStatus({
 
     // Chuẩn hóa theo công thức:
     const isNearExpiry = Boolean(
-      (isVip || isSubActive) && !hasLifetimeTurns && ((daysLeft <= 3 && daysLeft > 0) || (turnsLeft <= 5 && turnsLeft > 0))
+      (isVipUser || isSubActive) && !hasVipLifetimeTurns && ((daysLeft <= 3 && daysLeft > 0) || (turnsLeft <= 5 && turnsLeft > 0))
     );
 
     // isFullyExpired: chỉ hết hạn khi số lượt khả dụng turnsLeft <= 0
     const isFullyExpired = turnsLeft <= 0;
-    const isVipActive = (isVip || hasLifetimeTurns || isSubActive) && turnsLeft > 0;
     const isExpiredOrDepleted = turnsLeft <= 0;
-    const isTrial = Boolean(!isVip && !hasLifetimeTurns && !isSubActive && turnsLeft > 0);
 
     return {
       isVipActive,

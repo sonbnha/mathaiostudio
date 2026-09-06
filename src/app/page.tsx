@@ -1528,10 +1528,10 @@ function HomeContent() {
                         const ltQuota = Number((currentUser as any).lifetime_quota ?? (currentUser as any).lifetimeQuota ?? 0);
                         const hasDualWallet = (currentUser as any).subscription_quota !== undefined || (currentUser as any).lifetime_quota !== undefined;
 
-                        const isVipFlag = Boolean(currentUser.isVip || (currentUser as any).is_vip || ltQuota > 0 || isSubActive);
+                        const isVipFlag = Boolean(currentUser.isVip || (currentUser as any).is_vip);
                         const vipExp = currentUser.vipExpiresAt || (currentUser as any).vip_expires_at;
-                        const isVipExpired = Boolean(vipExp && new Date(vipExp) <= new Date() && ltQuota <= 0 && !isSubActive);
-                        const isVipActive = (isAdmin || isVipFlag || ltQuota > 0 || isSubActive) && !isVipExpired;
+                        const isVipExpired = Boolean(vipExp && new Date(vipExp) <= new Date() && !isSubActive);
+                        const isVipActive = (isAdmin || isVipFlag || isSubActive) && !isVipExpired;
 
                         const isUnlimited =
                           isAdmin ||
@@ -1640,10 +1640,10 @@ function HomeContent() {
                   const ltQuota = Number((currentUser as any).lifetime_quota ?? (currentUser as any).lifetimeQuota ?? 0);
                   const hasDualWallet = (currentUser as any).subscription_quota !== undefined || (currentUser as any).lifetime_quota !== undefined;
 
-                  const isVipFlag = Boolean(currentUser.isVip || (currentUser as any).is_vip || ltQuota > 0 || isSubActive);
+                  const isVipFlag = Boolean(currentUser.isVip || (currentUser as any).is_vip);
                   const vipExp = currentUser.vipExpiresAt || (currentUser as any).vip_expires_at;
-                  const isVipExpired = Boolean(vipExp && new Date(vipExp) <= new Date() && ltQuota <= 0 && !isSubActive);
-                  const isVipActive = (isAdmin || isVipFlag || ltQuota > 0 || isSubActive) && !isVipExpired;
+                  const isVipExpired = Boolean(vipExp && new Date(vipExp) <= new Date() && !isSubActive);
+                  const isVipActive = (isAdmin || isVipFlag || isSubActive) && !isVipExpired;
 
                   let subDaysRemaining: number | null = null;
                   if (subExp) {
@@ -1670,7 +1670,7 @@ function HomeContent() {
                     : 10;
 
                   const remainingCredits = isUnlimited ? -1 : rawRem;
-                  const isTrial = !isVipActive && !isVipExpired && !isUnlimited && remainingCredits > 0 && ltQuota === 0 && !subExp;
+                  const isTrial = !isVipActive && !isVipExpired && !isUnlimited && remainingCredits > 0;
 
                   return (
                     <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
@@ -1768,32 +1768,60 @@ function HomeContent() {
                           </div>
                         </div>
 
-                        {/* Thẻ 2: Ví Vĩnh Viễn */}
-                        <div className="p-2.5 rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-800/50 flex flex-col gap-1.5">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[11px] font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
-                              <Crown className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />
-                              Ví Vĩnh Viễn
-                            </span>
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
-                              Trọn đời (∞)
-                            </span>
-                          </div>
+                        {/* Thẻ 2: Ví Vĩnh Viễn VIP hoặc Ví Dùng Thử */}
+                        {isVipActive ? (
+                          <div className="p-2.5 rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-800/50 flex flex-col gap-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[11px] font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
+                                <Crown className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />
+                                Ví Vĩnh Viễn VIP
+                              </span>
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                                Trọn đời (∞)
+                              </span>
+                            </div>
 
-                          <div className="flex items-baseline justify-between text-xs">
-                            <span className="text-slate-500 dark:text-slate-400 text-[11px]">Lượt tích lũy:</span>
-                            <span className="font-bold text-amber-700 dark:text-amber-300">
-                              {ltQuota} lượt
-                            </span>
-                          </div>
+                            <div className="flex items-baseline justify-between text-xs">
+                              <span className="text-slate-500 dark:text-slate-400 text-[11px]">Lượt tích lũy:</span>
+                              <span className="font-bold text-amber-700 dark:text-amber-300">
+                                {ltQuota} lượt
+                              </span>
+                            </div>
 
-                          <div className="flex items-baseline justify-between text-[11px]">
-                            <span className="text-slate-500 dark:text-slate-400">Hạn dùng:</span>
-                            <span className="font-medium text-amber-600 dark:text-amber-400">
-                              Không bao giờ hết hạn
-                            </span>
+                            <div className="flex items-baseline justify-between text-[11px]">
+                              <span className="text-slate-500 dark:text-slate-400">Hạn dùng:</span>
+                              <span className="font-medium text-amber-600 dark:text-amber-400">
+                                Không bao giờ hết hạn
+                              </span>
+                            </div>
                           </div>
-                        </div>
+                        ) : (
+                          <div className="p-2.5 rounded-xl bg-sky-50/50 dark:bg-sky-950/20 border border-sky-200/70 dark:border-sky-800/50 flex flex-col gap-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[11px] font-bold text-sky-900 dark:text-sky-200 flex items-center gap-1.5">
+                                <Sparkles className="w-3.5 h-3.5 text-sky-500 shrink-0" />
+                                Ví Dùng Thử
+                              </span>
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/30">
+                                Trial
+                              </span>
+                            </div>
+
+                            <div className="flex items-baseline justify-between text-xs">
+                              <span className="text-slate-500 dark:text-slate-400 text-[11px]">Lượt được cấp:</span>
+                              <span className="font-bold text-sky-700 dark:text-sky-300">
+                                {ltQuota} lượt
+                              </span>
+                            </div>
+
+                            <div className="flex items-baseline justify-between text-[11px]">
+                              <span className="text-slate-500 dark:text-slate-400">Hạn dùng:</span>
+                              <span className="font-medium text-sky-600 dark:text-sky-400">
+                                Không thời hạn
+                              </span>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {/* Mục 1: Bộ sưu tập của tôi */}

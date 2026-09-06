@@ -171,8 +171,8 @@ export default function AccountDetailsModal({ isOpen, onClose, data }: AccountDe
                     <span>👑</span> VIP Account
                   </span>
                 ) : (
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 shrink-0">
-                    Free
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/30 shrink-0">
+                    Tài khoản dùng thử (Trial)
                   </span>
                 )}
               </div>
@@ -248,30 +248,56 @@ export default function AccountDetailsModal({ isOpen, onClose, data }: AccountDe
               </div>
             </div>
 
-            {/* Khối 2: [Kho Vĩnh Viễn] */}
-            <div className="p-3.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-900/40 flex flex-col gap-1.5">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] text-amber-700 dark:text-amber-300 flex items-center gap-1 font-bold">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                  Kho Vĩnh Viễn:
-                </span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
-                  Trọn đời (∞)
-                </span>
+            {/* Khối 2: [Kho Vĩnh Viễn VIP / Ví Dùng Thử] */}
+            {isVip || isAdmin ? (
+              <div className="p-3.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-900/40 flex flex-col gap-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] text-amber-700 dark:text-amber-300 flex items-center gap-1 font-bold">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                    Kho Vĩnh Viễn:
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                    Trọn đời (∞)
+                  </span>
+                </div>
+                <div className="flex items-baseline justify-between mt-0.5">
+                  <span className="text-xs text-slate-500 dark:text-slate-400">Tích lũy:</span>
+                  <span className="text-sm font-bold font-mono text-amber-700 dark:text-amber-400">
+                    {isAdmin ? '∞' : `${rawLifetimeQuota} lượt`}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-[11px] pt-1 border-t border-amber-200/50 dark:border-amber-900/30 text-slate-500 dark:text-slate-400">
+                  <span>Thời hạn:</span>
+                  <span className="font-medium text-emerald-600 dark:text-emerald-400 font-mono">
+                    Không bao giờ hết hạn
+                  </span>
+                </div>
               </div>
-              <div className="flex items-baseline justify-between mt-0.5">
-                <span className="text-xs text-slate-500 dark:text-slate-400">Tích lũy:</span>
-                <span className="text-sm font-bold font-mono text-amber-700 dark:text-amber-400">
-                  {isAdmin ? '∞' : `${rawLifetimeQuota} lượt`}
-                </span>
+            ) : (
+              <div className="p-3.5 rounded-xl bg-sky-50/70 dark:bg-sky-950/20 border border-sky-200/80 dark:border-sky-900/40 flex flex-col gap-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] text-sky-700 dark:text-sky-300 flex items-center gap-1 font-bold">
+                    <Sparkles className="w-3.5 h-3.5 text-sky-500" />
+                    Ví Dùng Thử:
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/30">
+                    Dùng thử (Trial)
+                  </span>
+                </div>
+                <div className="flex items-baseline justify-between mt-0.5">
+                  <span className="text-xs text-slate-500 dark:text-slate-400">Lượt dùng thử được cấp:</span>
+                  <span className="text-sm font-bold font-mono text-sky-700 dark:text-sky-400">
+                    {rawLifetimeQuota} lượt
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-[11px] pt-1 border-t border-sky-200/50 dark:border-sky-900/30 text-slate-500 dark:text-slate-400">
+                  <span>Thời hạn:</span>
+                  <span className="font-medium text-sky-600 dark:text-sky-400 font-mono">
+                    Không thời hạn
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center justify-between text-[11px] pt-1 border-t border-amber-200/50 dark:border-amber-900/30 text-slate-500 dark:text-slate-400">
-                <span>Thời hạn:</span>
-                <span className="font-medium text-emerald-600 dark:text-emerald-400 font-mono">
-                  Không bao giờ hết hạn
-                </span>
-              </div>
-            </div>
+            )}
           </div>
         </div>
 

@@ -210,6 +210,7 @@ export async function POST(req: NextRequest) {
       UPDATE users
       SET 
         is_vip = TRUE,
+        is_trial = FALSE,
         vip_expires_at = ${newVipExpiresAt},
         subscription_expires_at = ${newSubExpiresAt},
         subscription_quota = ${newSubQuota},
@@ -218,7 +219,7 @@ export async function POST(req: NextRequest) {
         max_quota = GREATEST(COALESCE(max_quota, 0), ${newRemainingQuota}),
         api_key = ${cleanKey}
       WHERE id = ${currentUser.id}::uuid
-      RETURNING id, name, email, username, role, is_vip, vip_expires_at, remaining_quota, max_quota, api_key, lifetime_quota, subscription_quota, subscription_expires_at
+      RETURNING id, name, email, username, role, is_vip, is_trial, vip_expires_at, remaining_quota, max_quota, api_key, lifetime_quota, subscription_quota, subscription_expires_at
     `;
 
     const updatedUser = updatedUsers && updatedUsers.length > 0 ? updatedUsers[0] : null;
@@ -241,9 +242,7 @@ export async function POST(req: NextRequest) {
           },
         });
       }
-    } catch (prismaSyncErr) {
-      console.warn('Prisma User VIP sync warning:', prismaSyncErr);
-    }
+    } catch {}
 
     // 4. Trả về thông tin cập nhật cho frontend
     const successMsg = isLifetimeKey
@@ -267,6 +266,8 @@ export async function POST(req: NextRequest) {
         role: updatedUser?.role || currentUser.role,
         isVip: true,
         is_vip: true,
+        isTrial: false,
+        is_trial: false,
         vipExpiresAt: newVipExpiresAt ? newVipExpiresAt.toISOString() : null,
         vip_expires_at: newVipExpiresAt ? newVipExpiresAt.toISOString() : null,
         subscription_expires_at: newSubExpiresAt ? newSubExpiresAt.toISOString() : null,

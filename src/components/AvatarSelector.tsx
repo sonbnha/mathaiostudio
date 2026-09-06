@@ -64,12 +64,12 @@ export const AvatarSelector: React.FC<AvatarSelectorProps> = ({
                   isSelected ? 'z-10' : 'hover:opacity-100'
                 }`}
               >
-                {/* Ảnh avatar bo tròn: Active w-14 h-14, Bình thường w-11 h-11 / w-12 h-12 */}
+                {/* Ảnh avatar bo tròn: Active ~56px (w-[56px] h-[56px]), Bình thường ~46px (w-[46px] h-[46px]) */}
                 <div
                   className={`${
                     isSelected
-                      ? 'w-14 h-14 ring-2 ring-blue-600 dark:ring-blue-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-900 scale-105 shadow-md shadow-blue-500/25'
-                      : 'w-11 h-11 sm:w-12 sm:h-12 opacity-75 hover:opacity-100 hover:scale-105 ring-1 ring-slate-200 dark:ring-slate-800'
+                      ? 'w-[56px] h-[56px] ring-2 ring-blue-600 dark:ring-blue-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-900 scale-105 shadow-md shadow-blue-500/25'
+                      : 'w-[46px] h-[46px] opacity-75 hover:opacity-100 hover:scale-105 ring-1 ring-slate-200 dark:ring-slate-800'
                   } rounded-full overflow-hidden flex items-center justify-center bg-slate-100 dark:bg-slate-800 p-0.5 transition-all duration-200`}
                 >
                   <img
@@ -81,7 +81,7 @@ export const AvatarSelector: React.FC<AvatarSelectorProps> = ({
 
                 {/* Dấu tick nằm gọn gàng, có viền trắng tách biệt */}
                 {isSelected && (
-                  <span className="absolute -bottom-0.5 -right-0.5 w-4.5 h-4.5 bg-blue-600 text-white rounded-full flex items-center justify-center ring-2 ring-white dark:ring-slate-900 shadow-sm text-[10px] font-bold z-20 pointer-events-none">
+                  <span className="absolute -bottom-0.5 -right-0.5 w-[18px] h-[18px] bg-blue-600 text-white rounded-full flex items-center justify-center ring-2 ring-white dark:ring-slate-900 shadow-sm text-[10px] font-bold z-20 pointer-events-none">
                     ✓
                   </span>
                 )}

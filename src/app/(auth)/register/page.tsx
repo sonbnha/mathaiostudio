@@ -92,15 +92,20 @@ function RegisterForm() {
 
       setSuccessMsg('🎉 Đăng ký tài khoản thành công! Tặng bạn 10 lượt Trial trọn đời. Đang chuyển hướng...');
 
-      // Bắn event đồng bộ realtime cho toàn ứng dụng
-      if (typeof window !== 'undefined') {
+      // 1. Cập nhật trực tiếp State Auth toàn cục ngay tại Client & lưu Cache
+      if (typeof window !== 'undefined' && data.user) {
+        try {
+          localStorage.setItem('mathaio_cached_user', JSON.stringify(data.user));
+        } catch {}
         window.dispatchEvent(new CustomEvent('auth-updated', { detail: data }));
         window.dispatchEvent(new CustomEvent('user-updated', { detail: data.user }));
       }
 
-      setTimeout(() => {
-        window.location.href = redirectTarget;
-      }, 700);
+      // 2. Làm mới Server Cache & Cookie
+      router.refresh();
+
+      // 3. Chuyển hướng ngay về trang đích (0ms delay)
+      router.replace(redirectTarget);
     } catch (err: any) {
       setError(err.message || 'Lỗi xử lý đăng ký tài khoản.');
       setLoading(false);

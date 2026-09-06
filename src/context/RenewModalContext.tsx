@@ -33,7 +33,15 @@ const RenewModalContext = createContext<RenewModalContextType>({
 export function RenewModalProvider({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [modalOptions, setModalOptions] = useState<OpenRenewModalOptions>({});
-  const [currentUser, setCurrentUser] = useState<any | null>(null);
+  const [currentUser, setCurrentUser] = useState<any | null>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('mathaio_cached_user');
+        if (cached) return JSON.parse(cached);
+      } catch {}
+    }
+    return null;
+  });
 
   const fetchCurrentUser = useCallback(async () => {
     try {
@@ -42,18 +50,39 @@ export function RenewModalProvider({ children }: { children: React.ReactNode }) 
         const data = await res.json();
         if (data.user) {
           setCurrentUser(data.user);
+          try {
+            localStorage.setItem('mathaio_cached_user', JSON.stringify(data.user));
+          } catch {}
         } else {
           setCurrentUser(null);
+          try {
+            localStorage.removeItem('mathaio_cached_user');
+          } catch {}
         }
-      } else {
+      } else if (res.status === 401) {
         setCurrentUser(null);
+        try {
+          localStorage.removeItem('mathaio_cached_user');
+        } catch {}
       }
     } catch {
-      setCurrentUser(null);
+      // Keep optimistic cached user on transient network errors
     }
   }, []);
 
   useEffect(() => {
+    // 1. Initial sync from cache if present
+    try {
+      const cached = localStorage.getItem('mathaio_cached_user');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && typeof parsed === 'object') {
+          setCurrentUser(parsed);
+        }
+      }
+    } catch {}
+
+    // 2. Validate with server
     fetchCurrentUser();
 
     const handleAuthUpdated = (e?: any) => {
@@ -61,6 +90,14 @@ export function RenewModalProvider({ children }: { children: React.ReactNode }) 
         const userObj = e.detail?.user || (e.detail?.id ? e.detail : null);
         if (userObj) {
           setCurrentUser((prev: any) => (prev ? { ...prev, ...userObj } : userObj));
+          try {
+            localStorage.setItem('mathaio_cached_user', JSON.stringify(userObj));
+          } catch {}
+        } else if (e.detail?.user === null) {
+          setCurrentUser(null);
+          try {
+            localStorage.removeItem('mathaio_cached_user');
+          } catch {}
         }
       }
       fetchCurrentUser();

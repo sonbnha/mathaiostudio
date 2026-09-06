@@ -165,7 +165,24 @@ function HomeContent() {
   const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
 
   // Feature 3: User Authentication & Neon DB Sync
-  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('mathaio_cached_user');
+        if (cached) return JSON.parse(cached);
+      } catch {}
+    }
+    return null;
+  });
+  const [isAuthLoading, setIsAuthLoading] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('mathaio_cached_user');
+        if (cached) return false;
+      } catch {}
+    }
+    return true;
+  });
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const userDropdownRef = useRef<HTMLDivElement>(null);
   const [isSyncingCollection, setIsSyncingCollection] = useState(false);
@@ -185,6 +202,16 @@ function HomeContent() {
       const userObj = data?.user || (data?.id ? data : null);
       if (userObj) {
         setCurrentUser((prev: any) => (prev ? { ...prev, ...userObj } : userObj));
+        try {
+          localStorage.setItem('mathaio_cached_user', JSON.stringify(userObj));
+        } catch {}
+        setIsAuthLoading(false);
+      } else if (data?.user === null) {
+        setCurrentUser(null);
+        try {
+          localStorage.removeItem('mathaio_cached_user');
+        } catch {}
+        setIsAuthLoading(false);
       } else if (data?.key) {
         setLicenseKey(data.key);
         checkLicenseKey(data.key);
@@ -196,6 +223,9 @@ function HomeContent() {
         .then((d) => {
           if (d?.user) {
             setCurrentUser(d.user);
+            try {
+              localStorage.setItem('mathaio_cached_user', JSON.stringify(d.user));
+            } catch {}
           }
         })
         .catch(() => {});
@@ -484,8 +514,21 @@ function HomeContent() {
     }
   }, []);
 
-  // Fetch logged in user on Mount
+  // Fetch logged in user on Mount (Stale-While-Revalidate pattern)
   useEffect(() => {
+    // 1. Đọc ngay từ cache local để hiển thị ngay lập tức (0ms delay)
+    try {
+      const cached = localStorage.getItem('mathaio_cached_user');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && typeof parsed === 'object') {
+          setCurrentUser(parsed);
+          setIsAuthLoading(false);
+        }
+      }
+    } catch {}
+
+    // 2. Ngầm validate với server ở background
     const fetchUserSession = async () => {
       try {
         const res = await fetch('/api/auth/me');
@@ -493,11 +536,26 @@ function HomeContent() {
           const data = await res.json();
           if (data.user) {
             setCurrentUser(data.user);
+            try {
+              localStorage.setItem('mathaio_cached_user', JSON.stringify(data.user));
+            } catch {}
             checkAndMigrateGuestKey(data.user);
+          } else {
+            setCurrentUser(null);
+            try {
+              localStorage.removeItem('mathaio_cached_user');
+            } catch {}
           }
+        } else if (res.status === 401) {
+          setCurrentUser(null);
+          try {
+            localStorage.removeItem('mathaio_cached_user');
+          } catch {}
         }
       } catch (err) {
         console.warn('Lỗi kiểm tra phiên đăng nhập:', err);
+      } finally {
+        setIsAuthLoading(false);
       }
     };
     fetchUserSession();
@@ -574,6 +632,11 @@ function HomeContent() {
       // 1. Xóa session/cookie xác thực và điều hướng về trạng thái khách
       setCurrentUser(null);
       setIsUserDropdownOpen(false);
+      try {
+        localStorage.removeItem('mathaio_cached_user');
+      } catch {}
+      window.dispatchEvent(new CustomEvent('auth-updated', { detail: { user: null } }));
+      window.dispatchEvent(new CustomEvent('user-updated', { detail: null }));
 
       // 2. Xóa sạch state danh sách bộ sưu tập
       setHistoryItems([]);
@@ -1353,7 +1416,7 @@ function HomeContent() {
         {/* Header Right: License Key + Library + Theme Toggle */}
         <div className="flex items-center gap-2.5">
           {/* License Key & Live Status Badge: CHỈ HIỂN THỊ CHO KHÁCH VÃNG LAI (!currentUser) */}
-          {!currentUser && (
+          {!currentUser && !isAuthLoading && (
             licenseStatus?.valid ? (
               (() => {
                 const isTrial =
@@ -1498,8 +1561,12 @@ function HomeContent() {
             ></span>
           </button>
 
-          {/* User Auth Section: Login Button for Guests or User Profile for Logged-in */}
-          {!currentUser ? (
+          {/* User Auth Section: Skeleton while loading, Login Buttons for Guests, or User Profile for Logged-in */}
+          {isAuthLoading && !currentUser ? (
+            <div className="flex items-center gap-2 shrink-0 animate-pulse">
+              <div className="h-10 w-9 sm:w-28 bg-slate-200/80 dark:bg-slate-800/80 rounded-2xl border border-slate-200/50 dark:border-slate-800/50" />
+            </div>
+          ) : !currentUser ? (
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
               <Link
                 href="/login"

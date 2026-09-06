@@ -39,7 +39,8 @@ export async function POST(req: NextRequest) {
       await initDb();
       const sql = getDb();
       const neonUsers = await sql`
-        SELECT id, email, username, password_hash, name, role, status, is_active, api_key, cuid
+        SELECT id, email, username, password_hash, name, role, status, is_active, api_key, cuid,
+               lifetime_quota, subscription_quota, subscription_expires_at, remaining_quota, max_quota, is_vip, is_trial, vip_expires_at
         FROM users
         WHERE LOWER(username) = LOWER(${identifier}) OR LOWER(email) = LOWER(${identifier})
         LIMIT 1
@@ -64,6 +65,23 @@ export async function POST(req: NextRequest) {
             role: user.role || 'user',
           });
 
+          const rawLifetimeQuota = typeof user.lifetime_quota === 'number' ? user.lifetime_quota : 0;
+          const rawSubscriptionQuota = typeof user.subscription_quota === 'number' ? user.subscription_quota : 0;
+          const rawSubExpiresAt = user.subscription_expires_at || null;
+          const subExpiresAtIso = rawSubExpiresAt ? new Date(rawSubExpiresAt).toISOString() : null;
+          const now = new Date();
+          const isSubActive = Boolean(rawSubExpiresAt && new Date(rawSubExpiresAt) > now);
+          const finalIsVip = Boolean((user.role || '').toLowerCase() === 'admin' || user.is_vip || isSubActive);
+          const finalIsTrial = Boolean(!finalIsVip);
+          const totalAvailable = (isSubActive ? rawSubscriptionQuota : 0) + rawLifetimeQuota;
+          const userDbRemainingQuota = typeof user.remaining_quota === 'number' ? user.remaining_quota : null;
+          const userDbMaxQuota = typeof user.max_quota === 'number' ? user.max_quota : null;
+
+          const remainingQuota = totalAvailable > 0
+            ? totalAvailable
+            : (userDbRemainingQuota !== null && userDbRemainingQuota >= 0 ? userDbRemainingQuota : 0);
+          const maxQuota = userDbMaxQuota !== null && userDbMaxQuota > 0 ? userDbMaxQuota : remainingQuota;
+
           const response = NextResponse.json({
             success: true,
             token,
@@ -75,6 +93,25 @@ export async function POST(req: NextRequest) {
               role: user.role || 'user',
               status: user.status || 'active',
               apiKey: user.api_key,
+              api_key: user.api_key,
+              is_vip: finalIsVip,
+              isVip: finalIsVip,
+              is_trial: finalIsTrial,
+              isTrial: finalIsTrial,
+              vip_expires_at: (finalIsVip && rawLifetimeQuota > 0 && !isSubActive) ? null : (subExpiresAtIso || (user.vip_expires_at ? new Date(user.vip_expires_at).toISOString() : null)),
+              vipExpiresAt: (finalIsVip && rawLifetimeQuota > 0 && !isSubActive) ? null : (subExpiresAtIso || (user.vip_expires_at ? new Date(user.vip_expires_at).toISOString() : null)),
+              subscription_expires_at: subExpiresAtIso,
+              subscriptionExpiresAt: subExpiresAtIso,
+              subscription_quota: rawSubscriptionQuota,
+              subscriptionQuota: rawSubscriptionQuota,
+              lifetime_quota: rawLifetimeQuota,
+              lifetimeQuota: rawLifetimeQuota,
+              remaining_quota: remainingQuota,
+              remainingQuota: remainingQuota,
+              max_quota: maxQuota,
+              maxQuota: maxQuota,
+              remaining_credits: remainingQuota,
+              remainingCredits: remainingQuota,
             },
           });
 

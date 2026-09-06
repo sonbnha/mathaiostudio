@@ -56,7 +56,13 @@ export function RenewModalProvider({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     fetchCurrentUser();
 
-    const handleAuthUpdated = () => {
+    const handleAuthUpdated = (e?: any) => {
+      if (e?.detail) {
+        const userObj = e.detail?.user || (e.detail?.id ? e.detail : null);
+        if (userObj) {
+          setCurrentUser((prev: any) => (prev ? { ...prev, ...userObj } : userObj));
+        }
+      }
       fetchCurrentUser();
     };
 
@@ -69,10 +75,14 @@ export function RenewModalProvider({ children }: { children: React.ReactNode }) 
     };
 
     window.addEventListener('auth-updated', handleAuthUpdated);
+    window.addEventListener('user-updated', handleAuthUpdated);
+    window.addEventListener('license-redeemed', handleAuthUpdated);
     window.addEventListener('open-renew-modal', handleOpenRenewModal);
 
     return () => {
       window.removeEventListener('auth-updated', handleAuthUpdated);
+      window.removeEventListener('user-updated', handleAuthUpdated);
+      window.removeEventListener('license-redeemed', handleAuthUpdated);
       window.removeEventListener('open-renew-modal', handleOpenRenewModal);
     };
   }, [fetchCurrentUser]);
@@ -90,8 +100,14 @@ export function RenewModalProvider({ children }: { children: React.ReactNode }) 
   }, []);
 
   const handleSuccess = useCallback(async (updatedUserOrKey: any) => {
-    await fetchCurrentUser();
+    const userObj = updatedUserOrKey?.user || (updatedUserOrKey?.id ? updatedUserOrKey : null);
+    if (userObj) {
+      setCurrentUser((prev: any) => (prev ? { ...prev, ...userObj } : userObj));
+    }
+    fetchCurrentUser();
     window.dispatchEvent(new CustomEvent('auth-updated', { detail: updatedUserOrKey }));
+    window.dispatchEvent(new CustomEvent('user-updated', { detail: userObj || updatedUserOrKey }));
+    window.dispatchEvent(new CustomEvent('license-redeemed', { detail: updatedUserOrKey }));
   }, [fetchCurrentUser]);
 
   // Compute status for current logged-in user

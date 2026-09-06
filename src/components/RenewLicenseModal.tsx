@@ -68,15 +68,21 @@ export default function RenewLicenseModal({
         }
 
         setSuccessMsg(data.message || '🎉 Gia hạn bản quyền VIP thành công!');
+
+        // Bắn event đồng bộ realtime cho toàn ứng dụng
+        window.dispatchEvent(new CustomEvent('auth-updated', { detail: data }));
+        window.dispatchEvent(new CustomEvent('user-updated', { detail: data.user }));
+        window.dispatchEvent(new CustomEvent('license-redeemed', { detail: data }));
+
         if (onSuccess) {
-          onSuccess(data.user);
+          onSuccess(data);
         }
 
         setTimeout(() => {
           setKeyCode('');
           setSuccessMsg(null);
           onClose();
-        }, 1200);
+        }, 500);
       } else {
         // Khách vãng lai: Kiểm tra key qua API check và lưu tạm vào localStorage
         const res = await fetch('/api/license/check', {
@@ -96,6 +102,11 @@ export default function RenewLicenseModal({
         }
 
         setSuccessMsg('🎉 Kích hoạt License Key thành công!');
+
+        // Bắn event đồng bộ realtime
+        window.dispatchEvent(new CustomEvent('auth-updated', { detail: { key: cleanKey, licenseStatus: data } }));
+        window.dispatchEvent(new CustomEvent('license-redeemed', { detail: { key: cleanKey, licenseStatus: data } }));
+
         if (onSuccess) {
           onSuccess({ key: cleanKey, licenseStatus: data });
         }
@@ -104,7 +115,7 @@ export default function RenewLicenseModal({
           setKeyCode('');
           setSuccessMsg(null);
           onClose();
-        }, 1200);
+        }, 500);
       }
     } catch (err: any) {
       setErrorMsg(err.message || 'Đã xảy ra lỗi khi kiểm tra mã key.');

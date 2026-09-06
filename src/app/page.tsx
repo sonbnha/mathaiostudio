@@ -182,17 +182,37 @@ function HomeContent() {
   useEffect(() => {
     const handleAuthUpdated = (e: any) => {
       const data = e.detail;
-      if (data?.user) {
-        setCurrentUser((prev: any) => (prev ? { ...prev, ...data.user } : data.user));
+      const userObj = data?.user || (data?.id ? data : null);
+      if (userObj) {
+        setCurrentUser((prev: any) => (prev ? { ...prev, ...userObj } : userObj));
       } else if (data?.key) {
         setLicenseKey(data.key);
         checkLicenseKey(data.key);
       }
+
+      // Tái xác thực ngầm để đảm bảo đồng bộ 100% dữ liệu ví từ Neon DB
+      fetch('/api/auth/me')
+        .then((res) => (res.ok ? res.json() : null))
+        .then((d) => {
+          if (d?.user) {
+            setCurrentUser(d.user);
+          }
+        })
+        .catch(() => {});
+
       setMigrateToastMsg('🎉 Gia hạn bản quyền License Key thành công!');
       setTimeout(() => setMigrateToastMsg(null), 6000);
     };
+
     window.addEventListener('auth-updated', handleAuthUpdated);
-    return () => window.removeEventListener('auth-updated', handleAuthUpdated);
+    window.addEventListener('user-updated', handleAuthUpdated);
+    window.addEventListener('license-redeemed', handleAuthUpdated);
+
+    return () => {
+      window.removeEventListener('auth-updated', handleAuthUpdated);
+      window.removeEventListener('user-updated', handleAuthUpdated);
+      window.removeEventListener('license-redeemed', handleAuthUpdated);
+    };
   }, []);
 
   // Tính toán trạng thái bản quyền & cảnh báo gia hạn thống nhất
@@ -821,8 +841,9 @@ function HomeContent() {
         }
 
         // Cập nhật thông tin currentUser
-        if (data.user) {
-          setCurrentUser((prev) => (prev ? { ...prev, ...data.user } : data.user));
+        const userObj = data.user || data;
+        if (userObj) {
+          setCurrentUser((prev) => (prev ? { ...prev, ...userObj } : userObj));
         }
 
         // Dọn sạch key trong localStorage theo yêu cầu khi đã liên kết vào tài khoản Neon
@@ -834,11 +855,16 @@ function HomeContent() {
 
         setRedeemSuccessMsg('🎉 Kích hoạt tài khoản VIP thành công! Toàn bộ tính năng cao cấp đã được mở khóa.');
 
+        // Bắn event đồng bộ realtime cho toàn ứng dụng
+        window.dispatchEvent(new CustomEvent('auth-updated', { detail: data }));
+        window.dispatchEvent(new CustomEvent('user-updated', { detail: userObj }));
+        window.dispatchEvent(new CustomEvent('license-redeemed', { detail: data }));
+
         setTimeout(() => {
           setIsRedeemModalOpen(false);
           setRedeemSuccessMsg(null);
           setRedeemKeyCode('');
-        }, 2200);
+        }, 500);
       } else {
         // TRƯỜNG HỢP 2: CHƯA ĐĂNG NHẬP (KHÁCH VÃNG LAI)
         // 1. Xác thực key qua API kiểm tra tính hợp lệ
@@ -868,11 +894,15 @@ function HomeContent() {
         // 3. Hiển thị thông báo thành công và nhắc liên kết
         setRedeemSuccessMsg('🎉 Đã kích hoạt License Key trên trình duyệt này! Hãy đăng nhập để liên kết key này vĩnh viễn vào tài khoản của bạn.');
 
+        // Bắn event đồng bộ realtime
+        window.dispatchEvent(new CustomEvent('auth-updated', { detail: { key: cleanKey, licenseStatus: checkData } }));
+        window.dispatchEvent(new CustomEvent('license-redeemed', { detail: { key: cleanKey, licenseStatus: checkData } }));
+
         setTimeout(() => {
           setIsRedeemModalOpen(false);
           setRedeemSuccessMsg(null);
           setRedeemKeyCode('');
-        }, 2500);
+        }, 500);
       }
     } catch (err: any) {
       setRedeemError(err.message || 'Đã có lỗi xảy ra khi kích hoạt.');

@@ -435,6 +435,30 @@ export default function UnifiedAdminPage() {
     }
   }, [currentUser?.id, currentUser?.role, fetchKeys, fetchUserAccounts, fetchAdminChangelogs]);
 
+  // Tự động làm mới bảng License Keys và Quản lý tài khoản khi có key được nạp realtime
+  useEffect(() => {
+    const handleSync = () => {
+      if (currentUser) {
+        fetchKeys(false);
+        const role = (currentUser.role || '').toLowerCase();
+        if (role === 'admin') {
+          fetchUserAccounts(false);
+        }
+        checkAuth(false);
+      }
+    };
+
+    window.addEventListener('auth-updated', handleSync);
+    window.addEventListener('user-updated', handleSync);
+    window.addEventListener('license-redeemed', handleSync);
+
+    return () => {
+      window.removeEventListener('auth-updated', handleSync);
+      window.removeEventListener('user-updated', handleSync);
+      window.removeEventListener('license-redeemed', handleSync);
+    };
+  }, [currentUser, fetchKeys, fetchUserAccounts, checkAuth]);
+
   // Handle Login Submit
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

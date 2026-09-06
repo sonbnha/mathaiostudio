@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { getDb } from '@/lib/db';
 import { initDb } from '@/lib/init-db';
 import { signToken } from '@/lib/auth';
+import { sanitizeAvatar } from '@/config/avatars';
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,6 +12,7 @@ export async function POST(req: NextRequest) {
     const rawName = (body.full_name || body.name || '').trim();
     const rawUsername = (body.username || '').trim().toLowerCase();
     const rawEmail = (body.email || '').trim().toLowerCase();
+    const rawAvatar = sanitizeAvatar(body.avatar);
     const password = body.password || '';
 
     // 1. Kiểm tra họ và tên
@@ -81,7 +83,8 @@ export async function POST(req: NextRequest) {
         max_quota,
         is_vip,
         is_trial,
-        vip_expires_at
+        vip_expires_at,
+        avatar
       )
       VALUES (
         ${rawEmail}, 
@@ -98,9 +101,10 @@ export async function POST(req: NextRequest) {
         10,
         false,
         true,
-        NULL
+        NULL,
+        ${rawAvatar}
       )
-      RETURNING id, email, username, name, role, status, is_vip, is_trial, vip_expires_at, remaining_quota, max_quota, lifetime_quota, subscription_quota, subscription_expires_at, created_at
+      RETURNING id, email, username, name, avatar, role, status, is_vip, is_trial, vip_expires_at, remaining_quota, max_quota, lifetime_quota, subscription_quota, subscription_expires_at, created_at
     `;
 
     const user = result[0] as any;
@@ -121,6 +125,7 @@ export async function POST(req: NextRequest) {
         email: user.email,
         username: user.username,
         name: user.name,
+        avatar: user.avatar || rawAvatar,
         role: user.role || 'user',
         status: user.status || 'active',
         is_vip: false,

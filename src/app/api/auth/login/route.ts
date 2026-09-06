@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
       const sql = getDb();
       const neonUsers = await sql`
         SELECT id, email, username, password_hash, name, role, status, is_active, api_key, cuid,
-               lifetime_quota, subscription_quota, subscription_expires_at, remaining_quota, max_quota, is_vip, is_trial, vip_expires_at
+               lifetime_quota, subscription_quota, subscription_expires_at, remaining_quota, max_quota, is_vip, is_trial, vip_expires_at, avatar
         FROM users
         WHERE LOWER(username) = LOWER(${identifier}) OR LOWER(email) = LOWER(${identifier})
         LIMIT 1
@@ -90,6 +90,7 @@ export async function POST(req: NextRequest) {
               email: user.email,
               username: user.username || user.email,
               name: user.name,
+              avatar: user.avatar || '/avatars/avatar-1.svg',
               role: user.role || 'user',
               status: user.status || 'active',
               apiKey: user.api_key,
@@ -184,6 +185,7 @@ export async function POST(req: NextRequest) {
               id: prismaUser.id,
               username: prismaUser.username,
               name: prismaUser.name,
+              avatar: (prismaUser as any).avatar || '/avatars/avatar-1.svg',
               role: prismaUser.role,
               maxCredits: prismaUser.maxCredits,
             },

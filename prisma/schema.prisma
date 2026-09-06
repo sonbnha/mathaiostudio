@@ -17,6 +17,7 @@ model User {
   maxCredits   Int          @default(100)     // Hạn mức key CTV được phép tạo
   isVip        Boolean      @default(false)
   vipExpiresAt DateTime?
+  avatar       String?      @default("/avatars/avatar-1.svg")
   isActive     Boolean      @default(true)
   createdAt    DateTime     @default(now())
   keys         LicenseKey[]

@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { UserPlus, User, AtSign, Mail, Lock, Eye, EyeOff, Loader2, Sparkles, CheckCircle2, AlertCircle } from 'lucide-react';
 import { setClientAuthTokens } from '@/lib/authClient';
+import { AvatarSelector } from '@/components/AvatarSelector';
+import { DEFAULT_AVATAR } from '@/config/avatars';
 
 function RegisterForm() {
   const router = useRouter();
@@ -12,6 +14,7 @@ function RegisterForm() {
   const rawRedirect = searchParams.get('redirect') || searchParams.get('callbackUrl') || '/';
   const redirectTarget = rawRedirect.startsWith('/') && !rawRedirect.startsWith('//') ? rawRedirect : '/';
 
+  const [avatar, setAvatar] = useState(DEFAULT_AVATAR);
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -82,6 +85,7 @@ function RegisterForm() {
           username: cleanUsername,
           email: cleanEmail,
           password,
+          avatar,
         }),
       });
 
@@ -144,6 +148,9 @@ function RegisterForm() {
 
       {/* Form Fields */}
       <form onSubmit={handleSubmit} className="space-y-3.5">
+        {/* Bộ chọn Avatar Preset */}
+        <AvatarSelector selectedAvatar={avatar} onSelect={setAvatar} />
+
         {/* Trường 1: Họ và tên */}
         <div>
           <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">

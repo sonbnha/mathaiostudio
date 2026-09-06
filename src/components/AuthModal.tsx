@@ -29,6 +29,7 @@ export interface AuthUser {
   subscriptionQuota?: number | null;
   subscription_expires_at?: string | null;
   subscriptionExpiresAt?: string | null;
+  avatar?: string | null;
 }
 
 interface AuthModalProps {

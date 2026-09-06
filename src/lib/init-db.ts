@@ -43,6 +43,7 @@ export async function initDb(): Promise<void> {
       await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_quota INT NOT NULL DEFAULT 0;`;
       await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_expires_at TIMESTAMP WITH TIME ZONE;`;
       await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_trial BOOLEAN DEFAULT TRUE;`;
+      await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar VARCHAR(255) DEFAULT '/avatars/avatar-1.svg';`;
       await sql`ALTER TABLE users ALTER COLUMN lifetime_quota SET DEFAULT 10;`;
       await sql`ALTER TABLE users ALTER COLUMN remaining_quota SET DEFAULT 10;`;
       await sql`ALTER TABLE users ALTER COLUMN max_quota SET DEFAULT 10;`;

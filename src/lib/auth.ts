@@ -50,12 +50,12 @@ export async function getCurrentUserFromRequest(req: NextRequest) {
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(payload.userId);
     const rows = isUuid
       ? await sql`
-          SELECT id, email, username, name, role, status, is_active, api_key, cuid, key_quota, is_vip, is_trial, vip_expires_at, remaining_quota, max_quota, lifetime_quota, subscription_quota, subscription_expires_at, created_at
+          SELECT id, email, username, name, role, status, is_active, api_key, cuid, key_quota, is_vip, is_trial, vip_expires_at, remaining_quota, max_quota, lifetime_quota, subscription_quota, subscription_expires_at, created_at, avatar
           FROM users
           WHERE id = ${payload.userId}::uuid
         `
       : await sql`
-          SELECT id, email, username, name, role, status, is_active, api_key, cuid, key_quota, is_vip, is_trial, vip_expires_at, remaining_quota, max_quota, lifetime_quota, subscription_quota, subscription_expires_at, created_at
+          SELECT id, email, username, name, role, status, is_active, api_key, cuid, key_quota, is_vip, is_trial, vip_expires_at, remaining_quota, max_quota, lifetime_quota, subscription_quota, subscription_expires_at, created_at, avatar
           FROM users
           WHERE cuid = ${payload.userId} OR username = ${payload.userId}
         `;
@@ -70,6 +70,7 @@ export async function getCurrentUserFromRequest(req: NextRequest) {
         email: u.email,
         username: u.username,
         name: u.name,
+        avatar: u.avatar || '/avatars/avatar-1.svg',
         role: (u.role || 'user').toLowerCase(),
         status: u.status || 'active',
         apiKey: u.api_key,
@@ -106,6 +107,7 @@ export async function getCurrentUserFromRequest(req: NextRequest) {
         id: true,
         username: true,
         name: true,
+        avatar: true,
         role: true,
         maxCredits: true,
         isVip: true,
@@ -116,7 +118,10 @@ export async function getCurrentUserFromRequest(req: NextRequest) {
     });
 
     if (user && user.isActive) {
-      return user;
+      return {
+        ...user,
+        avatar: user.avatar || '/avatars/avatar-1.svg',
+      };
     }
   } catch {}
 

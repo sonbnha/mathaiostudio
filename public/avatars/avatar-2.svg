@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <defs>
+    <linearGradient id="bg2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4f46e5" />
+      <stop offset="100%" stop-color="#3730a3" />
+    </linearGradient>
+    <linearGradient id="cubeTop" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a5b4fc" />
+      <stop offset="100%" stop-color="#818cf8" />
+    </linearGradient>
+    <linearGradient id="cubeLeft" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366f1" />
+      <stop offset="100%" stop-color="#4f46e5" />
+    </linearGradient>
+    <linearGradient id="cubeRight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4338ca" />
+      <stop offset="100%" stop-color="#312e81" />
+    </linearGradient>
+    <filter id="shadow2" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-opacity="0.35" />
+    </filter>
+  </defs>
+
+  <!-- Background Circle -->
+  <circle cx="50" cy="50" r="48" fill="url(#bg2)" />
+  <circle cx="50" cy="50" r="47" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1.5" />
+
+  <!-- Geometric Coordinate Grid -->
+  <circle cx="50" cy="50" r="34" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1.2" stroke-dasharray="2,3" />
+  <line x1="18" y1="50" x2="82" y2="50" stroke="rgba(255,255,255,0.12)" stroke-width="1" />
+  <line x1="50" y1="18" x2="50" y2="82" stroke="rgba(255,255,255,0.12)" stroke-width="1" />
+
+  <!-- 3D Cube -->
+  <g filter="url(#shadow2)">
+    <!-- Top Face -->
+    <polygon points="50,22 76,37 50,52 24,37" fill="url(#cubeTop)" stroke="rgba(255,255,255,0.6)" stroke-width="1.2" stroke-linejoin="round" />
+    
+    <!-- Left Face -->
+    <polygon points="24,37 50,52 50,78 24,63" fill="url(#cubeLeft)" stroke="rgba(255,255,255,0.4)" stroke-width="1.2" stroke-linejoin="round" />
+    
+    <!-- Right Face -->
+    <polygon points="50,52 76,37 76,63 50,78" fill="url(#cubeRight)" stroke="rgba(255,255,255,0.3)" stroke-width="1.2" stroke-linejoin="round" />
+
+    <!-- Mathematical Axes Vertices & Highlights -->
+    <circle cx="50" cy="22" r="2.5" fill="#f8fafc" />
+    <circle cx="76" cy="37" r="2" fill="#f8fafc" opacity="0.8" />
+    <circle cx="24" cy="37" r="2" fill="#f8fafc" opacity="0.8" />
+    <circle cx="50" cy="52" r="3" fill="#ffffff" />
+    <circle cx="50" cy="78" r="2" fill="#c7d2fe" />
+    <circle cx="24" cy="63" r="2" fill="#c7d2fe" />
+    <circle cx="76" cy="63" r="2" fill="#c7d2fe" />
+
+    <!-- Dimension Axis Lines -->
+    <path d="M 50 52 L 50 78" stroke="#ffffff" stroke-width="1.5" opacity="0.6" />
+    <path d="M 50 52 L 24 37" stroke="#ffffff" stroke-width="1.5" opacity="0.6" />
+    <path d="M 50 52 L 76 37" stroke="#ffffff" stroke-width="1.5" opacity="0.6" />
+  </g>
+</svg>

@@ -32,6 +32,7 @@ import {
   Bookmark,
   Crown,
   UserPlus,
+  Settings,
 } from 'lucide-react';
 import Link from 'next/link';
 import { APP_VERSION, formatDateVN } from '@/config/version';
@@ -1610,19 +1611,37 @@ function HomeContent() {
                   onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
                   className="h-10 flex items-center gap-2 bg-slate-100/90 hover:bg-slate-200/80 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-700/80 rounded-2xl pl-1.5 pr-2.5 py-1 shadow-xs transition-all cursor-pointer"
                 >
-                  {/* Avatar (Khung viền vàng nổi bật nếu VIP) */}
+                  {/* Avatar (Hiển thị preset SVG hoặc chữ cái đầu, viền nổi bật nếu VIP) */}
                   <div
-                    className={`w-7 h-7 rounded-xl ${
-                      (currentUser.role || '').toLowerCase() === 'admin'
-                        ? 'bg-gradient-to-tr from-rose-500 to-red-600'
-                        : (currentUser.role || '').toLowerCase() === 'ctv'
-                        ? 'bg-gradient-to-tr from-blue-500 to-cyan-600'
-                        : (currentUser.isVip || (currentUser as any).is_vip)
-                        ? 'bg-gradient-to-tr from-amber-400 via-amber-500 to-yellow-500 text-slate-950 font-black shadow-amber-500/25 shadow-sm ring-2 ring-amber-400/60'
-                        : 'bg-gradient-to-tr from-slate-600 to-slate-800'
-                    } text-white font-bold text-xs flex items-center justify-center shadow-xs shrink-0`}
+                    className={`w-7 h-7 rounded-xl overflow-hidden flex items-center justify-center shrink-0 ${
+                      (currentUser.isVip || (currentUser as any).is_vip)
+                        ? 'ring-2 ring-amber-400 shadow-amber-500/25 shadow-sm'
+                        : (currentUser.role || '').toLowerCase() === 'admin'
+                        ? 'ring-1 ring-rose-500/60'
+                        : 'ring-1 ring-slate-200 dark:ring-slate-700'
+                    }`}
                   >
-                    {(currentUser.name || currentUser.email || 'U').charAt(0).toUpperCase()}
+                    {currentUser.avatar ? (
+                      <img
+                        src={currentUser.avatar}
+                        alt={currentUser.name || 'Avatar'}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div
+                        className={`w-full h-full ${
+                          (currentUser.role || '').toLowerCase() === 'admin'
+                            ? 'bg-gradient-to-tr from-rose-500 to-red-600'
+                            : (currentUser.role || '').toLowerCase() === 'ctv'
+                            ? 'bg-gradient-to-tr from-blue-500 to-cyan-600'
+                            : (currentUser.isVip || (currentUser as any).is_vip)
+                            ? 'bg-gradient-to-tr from-amber-400 via-amber-500 to-yellow-500 text-slate-950 font-black'
+                            : 'bg-gradient-to-tr from-slate-600 to-slate-800'
+                        } text-white font-bold text-xs flex items-center justify-center`}
+                      >
+                        {(currentUser.name || currentUser.email || 'U').charAt(0).toUpperCase()}
+                      </div>
+                    )}
                   </div>
 
                   {/* Name + VIP / Role Badge */}
@@ -1791,41 +1810,52 @@ function HomeContent() {
                     <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
                       {/* User Header */}
                       <div className="px-3.5 pb-2.5 border-b border-slate-100 dark:border-slate-800/80">
-                        <div className="flex items-center justify-between">
-                          <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
-                            {currentUser.name || currentUser.email.split('@')[0]}
-                          </p>
-                          <span
-                            className={`text-[9px] font-bold px-1.5 py-0.2 rounded uppercase ${
-                              isAdmin
-                                ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
-                                : r === 'ctv'
-                                ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30'
-                                : isVipActive
-                                ? 'bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 font-extrabold border border-amber-400/40 shadow-xs'
-                                : isTrial
-                                ? 'bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30'
-                                : isVipExpired
-                                ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
-                                : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-600'
-                            }`}
-                          >
-                            {isAdmin
-                              ? 'ADMIN'
-                              : r === 'ctv'
-                              ? 'CTV'
-                              : isVipActive
-                              ? '⭐ VIP'
-                              : isTrial
-                              ? 'DÙNG THỬ'
-                              : isVipExpired
-                              ? 'HẾT HẠN'
-                              : 'FREE'}
-                          </span>
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 p-0.5 border border-slate-200 dark:border-slate-700 flex-shrink-0 overflow-hidden shadow-xs">
+                            <img
+                              src={(currentUser as any).avatar || '/avatars/avatar-1.svg'}
+                              alt="Avatar"
+                              className="w-full h-full object-cover rounded-full"
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-1">
+                              <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
+                                {currentUser.name || currentUser.email.split('@')[0]}
+                              </p>
+                              <span
+                                className={`text-[9px] font-bold px-1.5 py-0.2 rounded uppercase flex-shrink-0 ${
+                                  isAdmin
+                                    ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
+                                    : r === 'ctv'
+                                    ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30'
+                                    : isVipActive
+                                    ? 'bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 font-extrabold border border-amber-400/40 shadow-xs'
+                                    : isTrial
+                                    ? 'bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30'
+                                    : isVipExpired
+                                    ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
+                                    : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-600'
+                                }`}
+                              >
+                                {isAdmin
+                                  ? 'ADMIN'
+                                  : r === 'ctv'
+                                  ? 'CTV'
+                                  : isVipActive
+                                  ? '⭐ VIP'
+                                  : isTrial
+                                  ? 'DÙNG THỬ'
+                                  : isVipExpired
+                                  ? 'HẾT HẠN'
+                                  : 'FREE'}
+                              </span>
+                            </div>
+                            <p className="text-[10px] text-slate-400 font-mono truncate mt-0.5">
+                              {currentUser.email}
+                            </p>
+                          </div>
                         </div>
-                        <p className="text-[10px] text-slate-400 font-mono truncate mt-0.5">
-                          {currentUser.email}
-                        </p>
                       </div>
 
                       {/* Tổng hạn mức khả dụng banner */}
@@ -2004,6 +2034,16 @@ function HomeContent() {
                           <span>⚙️ Quản trị hệ thống (Admin Panel)</span>
                         </Link>
                       )}
+
+                      {/* Mục 3.5: Cài đặt tài khoản */}
+                      <Link
+                        href="/settings"
+                        onClick={() => setIsUserDropdownOpen(false)}
+                        className="w-full px-3.5 py-2 text-xs text-left text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2.5 transition font-medium cursor-pointer border-t border-slate-100 dark:border-slate-800/60"
+                      >
+                        <Settings className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                        <span>Cài đặt tài khoản</span>
+                      </Link>
 
                       <div className="my-1 border-t border-slate-100 dark:border-slate-800/80"></div>
 

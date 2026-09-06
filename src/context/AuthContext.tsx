@@ -6,6 +6,7 @@ import {
   getInitialAuthState,
   setClientAuthTokens,
   clearClientAuthTokens,
+  performClientLogout,
   InitialAuthState,
 } from '@/lib/authClient';
 
@@ -55,13 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
-    try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-    } catch {}
-    clearClientAuthTokens();
-    setAuthState({ user: null, hasToken: false, isLoading: false });
-    window.dispatchEvent(new CustomEvent('auth-updated', { detail: { user: null } }));
-    window.dispatchEvent(new CustomEvent('user-updated', { detail: null }));
+    await performClientLogout('/login');
   }, []);
 
   useEffect(() => {

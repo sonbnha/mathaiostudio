@@ -28,6 +28,7 @@ import {
   exportToWordDocument,
   exportToDocx,
 } from '@/lib/lessonPlanUtils';
+import { checkHasAuthToken } from '@/lib/authClient';
 import { LessonPlanWordPreview } from './LessonPlanWordPreview';
 import { useApiKey } from '@/context/ApiKeyContext';
 import { useRenewModal } from '@/context/RenewModalContext';
@@ -72,10 +73,18 @@ export default function LessonPlanView({ licenseKey: parentKey = '' }: LessonPla
 
   React.useEffect(() => {
     const loadUser = () => {
+      if (!checkHasAuthToken()) {
+        setCurrentUser(null);
+        return;
+      }
       fetch('/api/auth/me')
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
-          if (data?.user) setCurrentUser(data.user);
+          if (data?.user && checkHasAuthToken()) {
+            setCurrentUser(data.user);
+          } else {
+            setCurrentUser(null);
+          }
         })
         .catch(() => {});
     };
@@ -86,7 +95,9 @@ export default function LessonPlanView({ licenseKey: parentKey = '' }: LessonPla
         setCurrentUser(e.detail.user);
       } else if (e.detail?.key) {
         setCustomKey(e.detail.key);
-      } else {
+      } else if (e.detail?.user === null || e.detail === null) {
+        setCurrentUser(null);
+      } else if (checkHasAuthToken()) {
         loadUser();
       }
     };

@@ -45,11 +45,15 @@ export function RenewModalProvider({ children }: { children: React.ReactNode }) 
   });
 
   const fetchCurrentUser = useCallback(async () => {
+    if (!checkHasAuthToken()) {
+      setCurrentUser(null);
+      return;
+    }
     try {
       const res = await fetch('/api/auth/me');
       if (res.ok) {
         const data = await res.json();
-        if (data.user) {
+        if (data.user && checkHasAuthToken()) {
           setCurrentUser(data.user);
           try {
             localStorage.setItem('mathaio_cached_user', JSON.stringify(data.user));
@@ -108,7 +112,9 @@ export function RenewModalProvider({ children }: { children: React.ReactNode }) 
         } catch {}
         return;
       }
-      fetchCurrentUser();
+      if (checkHasAuthToken()) {
+        fetchCurrentUser();
+      }
     };
 
     const handleOpenRenewModal = (e: Event) => {

@@ -92,12 +92,16 @@ export default function SettingsPage() {
   // Check auth & fetch latest profile
   useEffect(() => {
     const hasToken = checkHasAuthToken();
-    if (!hasToken && !currentUser) {
+    if (!hasToken) {
       router.replace('/login?redirect=/settings');
       return;
     }
 
     const fetchLatestProfile = async () => {
+      if (!checkHasAuthToken()) {
+        router.replace('/login?redirect=/settings');
+        return;
+      }
       try {
         const res = await fetch('/api/auth/me');
         if (res.ok) {

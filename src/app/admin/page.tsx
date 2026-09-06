@@ -52,6 +52,7 @@ import {
 import { APP_VERSION, formatDateVN, formatDateTimeVN } from '@/config/version';
 import { CHANGELOG } from '@/config/changelog';
 import AccountDetailsModal, { AccountDetailsData } from '@/components/admin/AccountDetailsModal';
+import { performClientLogout, checkHasAuthToken } from '@/lib/authClient';
 
 export interface ChangelogItem {
   id: string;
@@ -333,6 +334,13 @@ export default function UnifiedAdminPage() {
 
   // Check Auth Session (Allow admin or ctv role)
   const checkAuth = useCallback(async (showLoading = true) => {
+    if (!checkHasAuthToken()) {
+      setCurrentUser(null);
+      if (showLoading) {
+        setAuthLoading(false);
+      }
+      return;
+    }
     if (showLoading) {
       setAuthLoading(true);
     }
@@ -497,20 +505,10 @@ export default function UnifiedAdminPage() {
 
   // Handle Logout
   const handleLogout = async () => {
-    try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-    } catch (e) {
-      console.error('Logout error:', e);
-    }
-    try {
-      localStorage.removeItem('user_collection');
-      localStorage.removeItem('saved_math_models');
-      localStorage.removeItem('mathviz_history_items');
-    } catch {}
     setCurrentUser(null);
     setKeys([]);
     setUserAccounts([]);
-    router.replace('/');
+    await performClientLogout('/login');
   };
 
   // Handle Create License Key

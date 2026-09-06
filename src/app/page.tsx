@@ -57,6 +57,7 @@ import {
   getInitialAuthState,
   setClientAuthTokens,
   clearClientAuthTokens,
+  performClientLogout,
 } from '@/lib/authClient';
 
 const PRESETS = REAL_WORLD_MATH_SAMPLES;
@@ -217,17 +218,19 @@ function HomeContent() {
         setTimeout(() => setMigrateToastMsg(null), 6000);
       }
 
-      // Tái xác thực ngầm để đảm bảo đồng bộ 100% dữ liệu ví từ Neon DB
-      fetch('/api/auth/me')
-        .then((res) => (res.ok ? res.json() : null))
-        .then((d) => {
-          if (d?.user) {
-            setCurrentUser(d.user);
-            setHasToken(true);
-            setClientAuthTokens(undefined, d.user);
-          }
-        })
-        .catch(() => {});
+      // Tái xác thực ngầm để đảm bảo đồng bộ 100% dữ liệu ví từ Neon DB (chỉ khi có token)
+      if (checkHasAuthToken()) {
+        fetch('/api/auth/me')
+          .then((res) => (res.ok ? res.json() : null))
+          .then((d) => {
+            if (d?.user && checkHasAuthToken()) {
+              setCurrentUser(d.user);
+              setHasToken(true);
+              setClientAuthTokens(undefined, d.user);
+            }
+          })
+          .catch(() => {});
+      }
     };
 
     window.addEventListener('auth-updated', handleAuthUpdated);
@@ -628,49 +631,30 @@ function HomeContent() {
   }, [currentUser, fetchUserCollection]);
 
   // Xử lý hàm Đăng xuất (Logout Handler):
-  // Xóa sạch state collection, dọn cache localStorage, reset màn hình SVG về mặc định, xóa session
+  // Xóa sạch state collection, dọn cache localStorage, reset màn hình SVG về mặc định, xóa session và hard-refresh sang /login
   const handleLogout = async () => {
-    try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-    } catch (e) {
-      console.warn('Lỗi đăng xuất:', e);
-    } finally {
-      // 0. Xóa ngay lập tức mọi toast thông báo nâng cấp / gia hạn
-      setMigrateToastMsg(null);
+    // 0. Xóa ngay lập tức mọi toast thông báo nâng cấp / gia hạn
+    setMigrateToastMsg(null);
 
-      // 1. Xóa session/cookie xác thực và điều hướng về trạng thái khách
-      setCurrentUser(null);
-      setHasToken(false);
-      setIsAuthLoading(false);
-      setIsUserDropdownOpen(false);
-      setLicenseKey('');
-      setLicenseStatus(null);
-      setCustomerName(null);
-      clearClientAuthTokens();
-      try {
-        localStorage.removeItem('mathviz_license_key');
-        localStorage.removeItem('mathviz_customer_name');
-      } catch {}
-      window.dispatchEvent(new CustomEvent('auth-updated', { detail: { user: null } }));
-      window.dispatchEvent(new CustomEvent('user-updated', { detail: null }));
+    // 1. Xóa session/cookie xác thực và điều hướng về trạng thái khách
+    setCurrentUser(null);
+    setHasToken(false);
+    setIsAuthLoading(false);
+    setIsUserDropdownOpen(false);
+    setLicenseKey('');
+    setLicenseStatus(null);
+    setCustomerName(null);
 
-      // 2. Xóa sạch state danh sách bộ sưu tập
-      setHistoryItems([]);
+    // 2. Xóa sạch state danh sách bộ sưu tập & canvas
+    setHistoryItems([]);
+    setSvgOutput('');
+    setPrompt('');
+    setErrorMsg(null);
+    setImagePreview(null);
+    setIsEditMode(false);
 
-      // 3. Dọn dẹp cache lưu trữ trình duyệt liên quan đến bộ sưu tập
-      try {
-        localStorage.removeItem('user_collection');
-        localStorage.removeItem('saved_math_models');
-        localStorage.removeItem('mathviz_history_items');
-      } catch {}
-
-      // 4. Reset màn hình Canvas SVG về trạng thái mặc định (trống)
-      setSvgOutput('');
-      setPrompt('');
-      setErrorMsg(null);
-      setImagePreview(null);
-      setIsEditMode(false);
-    }
+    // 3. Thực hiện quy trình đăng xuất toàn diện và chuyển hướng dứt khoát sang /login
+    await performClientLogout('/login');
   };
 
   // Đọc trạng thái đóng/mở danh sách bài toán thực tế mẫu từ localStorage

@@ -1782,25 +1782,12 @@ export default function UnifiedAdminPage() {
                       ) : (
                         keys.slice(0, 5).map((k) => (
                           <tr key={k.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-950/50 transition">
-                            <td className="py-2.5 px-4 font-mono text-xs whitespace-nowrap min-w-[240px]">
-                              <div className="flex items-center gap-2">
-                                {k.key.startsWith('AIO-LT-') || k.durationDays === 0 ? (
-                                  <span className="inline-flex items-center justify-center px-2 py-0.5 rounded text-[11px] font-semibold tracking-wide min-w-[56px] text-center bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300 shrink-0">
-                                    Lifetime
-                                  </span>
-                                ) : k.key.startsWith('AIO-TR-') || k.key.startsWith('MV-TR-') || k.key.includes('TRIAL') ? (
-                                  <span className="inline-flex items-center justify-center px-2 py-0.5 rounded text-[11px] font-semibold tracking-wide min-w-[56px] text-center bg-sky-500/15 border border-sky-500/30 text-sky-700 dark:text-sky-300 shrink-0">
-                                    Trial
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center justify-center px-2 py-0.5 rounded text-[11px] font-semibold tracking-wide min-w-[56px] text-center bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 shrink-0">
-                                    VIP
-                                  </span>
-                                )}
+                            <td className="py-2.5 px-4 font-mono text-xs whitespace-nowrap min-w-[200px]">
+                              <div className="inline-flex items-center gap-1.5">
                                 <span
                                   onClick={() => toggleRevealKey(k.id)}
                                   title={revealedKeyIds.has(k.id) ? "Bấm để ẩn mã key" : `Mã Key: ${k.key} (Bấm để xem đầy đủ)`}
-                                  className="font-mono text-sm font-medium text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 cursor-pointer select-all hover:bg-slate-200 dark:hover:bg-slate-700/80 transition"
+                                  className="font-mono text-sm font-semibold text-slate-700 dark:text-slate-200 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 cursor-pointer select-all hover:bg-slate-200 dark:hover:bg-slate-700/80 transition"
                                 >
                                   {revealedKeyIds.has(k.id) ? k.key : getMaskedKey(k.key)}
                                 </span>
@@ -2082,21 +2069,21 @@ export default function UnifiedAdminPage() {
 
                 {/* Table Scrollable Body (Independent scroll) */}
                 <div className="flex-1 min-h-0 overflow-y-auto overflow-x-auto w-full">
-                  <table className="w-full min-w-[860px] border-collapse text-left text-xs">
+                  <table className="w-full min-w-[880px] border-collapse text-left text-xs">
                     <colgroup>
-                      <col className="w-[30%] min-w-[240px]" />
-                      <col className="w-[18%] min-w-[140px]" />
-                      <col className="w-[22%] min-w-[160px]" />
-                      <col className="w-[18%] min-w-[150px]" />
-                      <col className="w-[12%] min-w-[100px]" />
+                      <col className="w-[24%] min-w-[200px]" />
+                      <col className="w-[23%] min-w-[180px]" />
+                      <col className="w-[22%] min-w-[170px]" />
+                      <col className="w-[19%] min-w-[170px]" />
+                      <col className="w-[12%] min-w-[105px]" />
                     </colgroup>
                     <thead className="sticky top-0 z-20 bg-slate-50/95 dark:bg-[#151c2c]/95 backdrop-blur-xs border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 uppercase tracking-wider text-xs font-bold shadow-xs">
                       <tr>
-                        <th className="py-3 px-4 min-w-[240px]">Mã Key</th>
-                        <th className="py-3 px-4 min-w-[140px]">Người Tạo</th>
-                        <th className="py-3 px-4 min-w-[160px]">Người Kích Hoạt</th>
-                        <th className="py-3 px-4 min-w-[150px]">Lượt Dùng & Hạn</th>
-                        <th className="py-3 px-4 text-center sticky right-0 z-30 bg-slate-100 dark:bg-[#182030] shadow-[-4px_0_8px_-2px_rgba(0,0,0,0.08)] w-[100px] min-w-[100px]">
+                        <th className="py-3 px-4 min-w-[200px]">Mã Key</th>
+                        <th className="py-3 px-4 min-w-[180px]">Người Tạo</th>
+                        <th className="py-3 px-4 min-w-[170px]">Người Kích Hoạt</th>
+                        <th className="py-3 px-5 min-w-[170px]">Lượt Dùng & Hạn</th>
+                        <th className="py-3 px-3 text-center sticky right-0 z-30 bg-slate-100 dark:bg-[#182030] shadow-[-4px_0_8px_-2px_rgba(0,0,0,0.08)] w-[105px] min-w-[105px]">
                           Thao Tác
                         </th>
                       </tr>
@@ -2113,33 +2100,19 @@ export default function UnifiedAdminPage() {
                       ) : (
                         filteredKeys.map((k) => (
                           <tr key={k.id} className="group hover:bg-slate-50 dark:hover:bg-slate-800/30 transition">
-                            {/* 1. Mã Key (Masked Display & Toggle Reveal) */}
-                            <td className="px-4 py-3 align-middle whitespace-nowrap min-w-[240px]">
-                              <div className="flex items-center gap-2">
-                                {/* Badge loại key với chiều rộng tối thiểu cố định để text không bị xô */}
-                                {k.key.startsWith('AIO-LT-') || k.durationDays === 0 ? (
-                                  <span className="inline-flex items-center justify-center px-2 py-0.5 rounded text-[11px] font-semibold tracking-wide min-w-[56px] text-center bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300 shrink-0">
-                                    Lifetime
-                                  </span>
-                                ) : k.key.startsWith('AIO-TR-') || k.key.startsWith('MV-TR-') || k.key.includes('TRIAL') ? (
-                                  <span className="inline-flex items-center justify-center px-2 py-0.5 rounded text-[11px] font-semibold tracking-wide min-w-[56px] text-center bg-sky-500/15 border border-sky-500/30 text-sky-700 dark:text-sky-300 shrink-0">
-                                    Trial
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center justify-center px-2 py-0.5 rounded text-[11px] font-semibold tracking-wide min-w-[56px] text-center bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 shrink-0">
-                                    VIP
-                                  </span>
-                                )}
-
-                                {/* Mã key rút gọn kèm nút copy */}
+                            {/* 1. Mã Key (Masked Display & Toggle Reveal - Clean Monospace without Badge) */}
+                            <td className="px-4 py-3 align-middle whitespace-nowrap min-w-[200px]">
+                              <div className="inline-flex items-center gap-1.5">
+                                {/* Chuỗi mã key dạng monospace thẳng hàng */}
                                 <span
                                   onClick={() => toggleRevealKey(k.id)}
                                   title={revealedKeyIds.has(k.id) ? "Bấm để ẩn mã key" : `Mã Key: ${k.key} (Bấm để xem đầy đủ)`}
-                                  className="font-mono text-sm font-medium text-slate-700 dark:text-slate-200 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 cursor-pointer select-all hover:bg-slate-200 dark:hover:bg-slate-700/80 transition"
+                                  className="font-mono text-sm font-semibold text-slate-700 dark:text-slate-200 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 cursor-pointer select-all hover:bg-slate-200 dark:hover:bg-slate-700/80 transition"
                                 >
                                   {revealedKeyIds.has(k.id) ? k.key : getMaskedKey(k.key)}
                                 </span>
 
+                                {/* Icon mắt & icon copy ngay bên cạnh */}
                                 <div className="flex items-center gap-0.5 shrink-0">
                                   <button
                                     type="button"
@@ -2170,7 +2143,7 @@ export default function UnifiedAdminPage() {
                             </td>
 
                             {/* 2. Người Tạo */}
-                            <td className="px-4 py-3 text-slate-600 dark:text-slate-400 align-middle whitespace-nowrap min-w-[140px]">
+                            <td className="px-4 py-3 text-slate-600 dark:text-slate-400 align-middle whitespace-nowrap min-w-[180px]">
                               {k.createdBy ? (
                                 <span
                                   className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium whitespace-nowrap border ${
@@ -2188,7 +2161,7 @@ export default function UnifiedAdminPage() {
                             </td>
 
                             {/* 3. Người Kích Hoạt (Used By) */}
-                            <td className="px-4 py-3 align-middle whitespace-nowrap min-w-[160px]">
+                            <td className="px-4 py-3 align-middle whitespace-nowrap min-w-[170px]">
                               {k.usedBy ? (
                                 <button
                                   type="button"
@@ -2228,7 +2201,7 @@ export default function UnifiedAdminPage() {
                             </td>
 
                             {/* 4. Lượt Dùng & Hạn */}
-                            <td className="px-4 py-3 align-middle whitespace-nowrap min-w-[150px]">
+                            <td className="px-5 py-3 pr-6 align-middle whitespace-nowrap min-w-[170px]">
                               <div className="flex flex-col justify-center">
                                 <div className="text-xs font-semibold text-slate-800 dark:text-slate-200 font-mono">
                                   {k.totalCredits === -1 ? '∞ Lượt' : `${k.usedCredits || 0} / ${k.totalCredits} lượt`}
@@ -2240,7 +2213,7 @@ export default function UnifiedAdminPage() {
                             </td>
 
                             {/* 5. Thao Tác (Ghim cố định bên phải - Sticky Right) */}
-                            <td className="px-4 py-3 text-center align-middle whitespace-nowrap sticky right-0 z-10 bg-white group-hover:bg-slate-50 dark:bg-[#111622] dark:group-hover:bg-[#182030] shadow-[-4px_0_8px_-2px_rgba(0,0,0,0.08)] w-[100px] min-w-[100px] transition-colors">
+                            <td className="px-3 py-3 text-center align-middle whitespace-nowrap sticky right-0 z-10 bg-white group-hover:bg-slate-50 dark:bg-[#111622] dark:group-hover:bg-[#182030] shadow-[-4px_0_8px_-2px_rgba(0,0,0,0.08)] w-[105px] min-w-[105px] transition-colors">
                               <div className="flex items-center justify-center gap-1.5">
                                 {/* Copy Customer Handover Message Button */}
                                 <button

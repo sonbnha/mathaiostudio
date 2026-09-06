@@ -1782,41 +1782,27 @@ export default function UnifiedAdminPage() {
                       ) : (
                         keys.slice(0, 5).map((k) => (
                           <tr key={k.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-950/50 transition">
-                            <td className="py-2.5 px-4 font-mono text-xs whitespace-nowrap min-w-[200px]">
-                              <div className="inline-flex items-center gap-1.5">
+                            <td className="py-2.5 px-4 font-mono text-xs whitespace-nowrap w-[200px] min-w-[190px] max-w-[210px]">
+                              <div className="flex items-center justify-between gap-2 w-full max-w-[190px]">
                                 <span
                                   onClick={() => toggleRevealKey(k.id)}
-                                  title={revealedKeyIds.has(k.id) ? "Bấm để ẩn mã key" : `Mã Key: ${k.key} (Bấm để xem đầy đủ)`}
-                                  className="font-mono text-sm font-semibold text-slate-700 dark:text-slate-200 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 cursor-pointer select-all hover:bg-slate-200 dark:hover:bg-slate-700/80 transition"
+                                  title={revealedKeyIds.has(k.id) ? "Click để ẩn mã key" : `Click để xem đầy đủ (Mã: ${k.key})`}
+                                  className="font-mono text-xs md:text-sm font-medium text-slate-700 dark:text-slate-200 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors truncate select-all"
                                 >
                                   {revealedKeyIds.has(k.id) ? k.key : getMaskedKey(k.key)}
                                 </span>
-                                <div className="flex items-center gap-0.5 shrink-0">
-                                  <button
-                                    type="button"
-                                    onClick={() => toggleRevealKey(k.id)}
-                                    title={revealedKeyIds.has(k.id) ? "Ẩn mã key" : "Xem toàn bộ mã key"}
-                                    className="p-1 rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-                                  >
-                                    {revealedKeyIds.has(k.id) ? (
-                                      <EyeOff className="w-3.5 h-3.5" />
-                                    ) : (
-                                      <Eye className="w-3.5 h-3.5" />
-                                    )}
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleCopyKey(k.key, k.id)}
-                                    className="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition"
-                                    title="Sao chép toàn bộ mã Key"
-                                  >
-                                    {copiedKeyId === k.id ? (
-                                      <Check className="w-3.5 h-3.5 text-emerald-500" />
-                                    ) : (
-                                      <Copy className="w-3.5 h-3.5" />
-                                    )}
-                                  </button>
-                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopyKey(k.key, k.id)}
+                                  className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors shrink-0"
+                                  title="Sao chép mã key"
+                                >
+                                  {copiedKeyId === k.id ? (
+                                    <Check className="w-3.5 h-3.5 text-emerald-500" />
+                                  ) : (
+                                    <Copy className="w-3.5 h-3.5" />
+                                  )}
+                                </button>
                               </div>
                             </td>
                             <td className="py-2.5 px-4 font-mono">
@@ -2069,20 +2055,20 @@ export default function UnifiedAdminPage() {
 
                 {/* Table Scrollable Body (Independent scroll) */}
                 <div className="flex-1 min-h-0 overflow-y-auto overflow-x-auto w-full">
-                  <table className="w-full min-w-[880px] border-collapse text-left text-xs">
+                  <table className="w-full min-w-[860px] border-collapse text-left text-xs">
                     <colgroup>
-                      <col className="w-[24%] min-w-[200px]" />
-                      <col className="w-[23%] min-w-[180px]" />
-                      <col className="w-[22%] min-w-[170px]" />
-                      <col className="w-[19%] min-w-[170px]" />
-                      <col className="w-[12%] min-w-[105px]" />
+                      <col className="w-[200px] min-w-[190px] max-w-[210px]" />
+                      <col className="w-[26%] min-w-[180px]" />
+                      <col className="w-[24%] min-w-[170px]" />
+                      <col className="w-[24%] min-w-[180px]" />
+                      <col className="w-[105px] min-w-[105px]" />
                     </colgroup>
                     <thead className="sticky top-0 z-20 bg-slate-50/95 dark:bg-[#151c2c]/95 backdrop-blur-xs border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 uppercase tracking-wider text-xs font-bold shadow-xs">
                       <tr>
-                        <th className="py-3 px-4 min-w-[200px]">Mã Key</th>
+                        <th className="py-3 px-4 w-[200px] min-w-[190px] max-w-[210px]">Mã Key</th>
                         <th className="py-3 px-4 min-w-[180px]">Người Tạo</th>
                         <th className="py-3 px-4 min-w-[170px]">Người Kích Hoạt</th>
-                        <th className="py-3 px-5 min-w-[170px]">Lượt Dùng & Hạn</th>
+                        <th className="py-3 px-5 min-w-[180px]">Lượt Dùng & Hạn</th>
                         <th className="py-3 px-3 text-center sticky right-0 z-30 bg-slate-100 dark:bg-[#182030] shadow-[-4px_0_8px_-2px_rgba(0,0,0,0.08)] w-[105px] min-w-[105px]">
                           Thao Tác
                         </th>
@@ -2100,45 +2086,31 @@ export default function UnifiedAdminPage() {
                       ) : (
                         filteredKeys.map((k) => (
                           <tr key={k.id} className="group hover:bg-slate-50 dark:hover:bg-slate-800/30 transition">
-                            {/* 1. Mã Key (Masked Display & Toggle Reveal - Clean Monospace without Badge) */}
-                            <td className="px-4 py-3 align-middle whitespace-nowrap min-w-[200px]">
-                              <div className="inline-flex items-center gap-1.5">
-                                {/* Chuỗi mã key dạng monospace thẳng hàng */}
+                            {/* 1. Mã Key (Masked Display & Click Reveal - Fixed width with right-aligned Copy button) */}
+                            <td className="px-4 py-3 align-middle whitespace-nowrap w-[200px] min-w-[190px] max-w-[210px]">
+                              <div className="flex items-center justify-between gap-2 w-full max-w-[190px]">
+                                {/* Chuỗi mã key dạng monospace */}
                                 <span
                                   onClick={() => toggleRevealKey(k.id)}
-                                  title={revealedKeyIds.has(k.id) ? "Bấm để ẩn mã key" : `Mã Key: ${k.key} (Bấm để xem đầy đủ)`}
-                                  className="font-mono text-sm font-semibold text-slate-700 dark:text-slate-200 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 cursor-pointer select-all hover:bg-slate-200 dark:hover:bg-slate-700/80 transition"
+                                  title={revealedKeyIds.has(k.id) ? "Click để ẩn mã key" : `Click để xem đầy đủ (Mã: ${k.key})`}
+                                  className="font-mono text-xs md:text-sm font-medium text-slate-700 dark:text-slate-200 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors truncate select-all"
                                 >
                                   {revealedKeyIds.has(k.id) ? k.key : getMaskedKey(k.key)}
                                 </span>
 
-                                {/* Icon mắt & icon copy ngay bên cạnh */}
-                                <div className="flex items-center gap-0.5 shrink-0">
-                                  <button
-                                    type="button"
-                                    onClick={() => toggleRevealKey(k.id)}
-                                    title={revealedKeyIds.has(k.id) ? "Ẩn mã key" : "Xem toàn bộ mã key"}
-                                    className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition"
-                                  >
-                                    {revealedKeyIds.has(k.id) ? (
-                                      <EyeOff className="w-3.5 h-3.5" />
-                                    ) : (
-                                      <Eye className="w-3.5 h-3.5" />
-                                    )}
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleCopyKey(k.key, k.id)}
-                                    title="Sao chép toàn bộ mã Key"
-                                    className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-400 transition"
-                                  >
-                                    {copiedKeyId === k.id ? (
-                                      <Check className="w-3.5 h-3.5 text-emerald-500" />
-                                    ) : (
-                                      <Copy className="w-3.5 h-3.5" />
-                                    )}
-                                  </button>
-                                </div>
+                                {/* Nút copy luôn neo cố định ở bên phải */}
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopyKey(k.key, k.id)}
+                                  className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors shrink-0"
+                                  title="Sao chép mã key"
+                                >
+                                  {copiedKeyId === k.id ? (
+                                    <Check className="w-3.5 h-3.5 text-emerald-500" />
+                                  ) : (
+                                    <Copy className="w-3.5 h-3.5" />
+                                  )}
+                                </button>
                               </div>
                             </td>
 

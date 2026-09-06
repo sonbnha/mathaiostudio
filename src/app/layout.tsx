@@ -3,6 +3,7 @@ import "./globals.css";
 import { ApiKeyProvider } from "@/context/ApiKeyContext";
 import { ApiKeyModal } from "@/components/ApiKeyModal";
 import { RenewModalProvider } from "@/context/RenewModalContext";
+import { AuthProvider } from "@/context/AuthContext";
 
 export const metadata: Metadata = {
   title: "MathAIO - Nền tảng Toán học All-in-One",
@@ -42,12 +43,14 @@ export default function RootLayout({
         />
       </head>
       <body className="h-full overflow-hidden flex flex-col font-sans bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors">
-        <ApiKeyProvider>
-          <RenewModalProvider>
-            {children}
-            <ApiKeyModal />
-          </RenewModalProvider>
-        </ApiKeyProvider>
+        <AuthProvider>
+          <ApiKeyProvider>
+            <RenewModalProvider>
+              {children}
+              <ApiKeyModal />
+            </RenewModalProvider>
+          </ApiKeyProvider>
+        </AuthProvider>
       </body>
     </html>
   );

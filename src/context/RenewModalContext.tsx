@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import RenewLicenseModal from '@/components/RenewLicenseModal';
 import { computeLicenseStatus, LicenseStatusResult } from '@/lib/licenseStatus';
+import { checkHasAuthToken, clearClientAuthTokens } from '@/lib/authClient';
 
 interface OpenRenewModalOptions {
   isNearExpiry?: boolean;
@@ -61,9 +62,7 @@ export function RenewModalProvider({ children }: { children: React.ReactNode }) 
         }
       } else if (res.status === 401) {
         setCurrentUser(null);
-        try {
-          localStorage.removeItem('mathaio_cached_user');
-        } catch {}
+        clearClientAuthTokens();
       }
     } catch {
       // Keep optimistic cached user on transient network errors
@@ -82,8 +81,10 @@ export function RenewModalProvider({ children }: { children: React.ReactNode }) 
       }
     } catch {}
 
-    // 2. Validate with server
-    fetchCurrentUser();
+    // 2. Validate with server ONLY if token exists
+    if (checkHasAuthToken()) {
+      fetchCurrentUser();
+    }
 
     const handleAuthUpdated = (e?: any) => {
       if (e?.detail) {

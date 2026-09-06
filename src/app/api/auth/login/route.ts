@@ -135,6 +135,16 @@ export async function POST(req: NextRequest) {
             maxAge: cookieMaxAge,
           });
 
+          response.cookies.set({
+            name: 'has_token',
+            value: '1',
+            httpOnly: false,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            path: '/',
+            maxAge: cookieMaxAge,
+          });
+
           return response;
         }
       }
@@ -193,6 +203,16 @@ export async function POST(req: NextRequest) {
             name: 'auth_token',
             value: token,
             httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            path: '/',
+            maxAge: cookieMaxAge,
+          });
+
+          response.cookies.set({
+            name: 'has_token',
+            value: '1',
+            httpOnly: false,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
             path: '/',

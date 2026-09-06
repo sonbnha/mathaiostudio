@@ -162,6 +162,16 @@ export async function POST(req: NextRequest) {
       maxAge: 7 * 24 * 60 * 60,
     });
 
+    response.cookies.set({
+      name: 'has_token',
+      value: '1',
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60,
+    });
+
     return response;
   } catch (error: any) {
     console.error('Lỗi đăng ký tài khoản:', error);

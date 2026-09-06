@@ -51,6 +51,12 @@ import type { AuthUser } from '@/components/AuthModal';
 import { useRenewModal } from '@/context/RenewModalContext';
 import { computeLicenseStatus } from '@/lib/licenseStatus';
 import { REAL_WORLD_MATH_SAMPLES } from '@/data/samplePrompts';
+import {
+  checkHasAuthToken,
+  getInitialAuthState,
+  setClientAuthTokens,
+  clearClientAuthTokens,
+} from '@/lib/authClient';
 
 const PRESETS = REAL_WORLD_MATH_SAMPLES;
 
@@ -164,25 +170,11 @@ function HomeContent() {
   // Feature 2: Personal History & Saved Collection
   const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
 
-  // Feature 3: User Authentication & Neon DB Sync
-  const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const cached = localStorage.getItem('mathaio_cached_user');
-        if (cached) return JSON.parse(cached);
-      } catch {}
-    }
-    return null;
-  });
-  const [isAuthLoading, setIsAuthLoading] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const cached = localStorage.getItem('mathaio_cached_user');
-        if (cached) return false;
-      } catch {}
-    }
-    return true;
-  });
+  // Feature 3: User Authentication & Neon DB Sync (Sync Pre-check: 0ms delay cho Guest)
+  const [initialAuthState] = useState(() => getInitialAuthState<AuthUser>());
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(initialAuthState.user);
+  const [hasToken, setHasToken] = useState<boolean>(initialAuthState.hasToken);
+  const [isAuthLoading, setIsAuthLoading] = useState<boolean>(initialAuthState.isLoading);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const userDropdownRef = useRef<HTMLDivElement>(null);
   const [isSyncingCollection, setIsSyncingCollection] = useState(false);
@@ -202,16 +194,14 @@ function HomeContent() {
       const userObj = data?.user || (data?.id ? data : null);
       if (userObj) {
         setCurrentUser((prev: any) => (prev ? { ...prev, ...userObj } : userObj));
-        try {
-          localStorage.setItem('mathaio_cached_user', JSON.stringify(userObj));
-        } catch {}
+        setHasToken(true);
+        setClientAuthTokens(undefined, userObj);
         setIsAuthLoading(false);
       } else if (data?.user === null || data === null) {
         setCurrentUser(null);
+        setHasToken(false);
         setMigrateToastMsg(null);
-        try {
-          localStorage.removeItem('mathaio_cached_user');
-        } catch {}
+        clearClientAuthTokens();
         setIsAuthLoading(false);
         return; // Đăng xuất: dừng ngay, không gọi /api/auth/me và tuyệt đối không bắn toast nâng cấp VIP
       } else if (data?.key) {
@@ -232,9 +222,8 @@ function HomeContent() {
         .then((d) => {
           if (d?.user) {
             setCurrentUser(d.user);
-            try {
-              localStorage.setItem('mathaio_cached_user', JSON.stringify(d.user));
-            } catch {}
+            setHasToken(true);
+            setClientAuthTokens(undefined, d.user);
           }
         })
         .catch(() => {});
@@ -523,6 +512,17 @@ function HomeContent() {
   // Fetch logged in user on Mount (Stale-While-Revalidate pattern)
   useEffect(() => {
     // 1. Đọc ngay từ cache local để hiển thị ngay lập tức (0ms delay)
+    // 1. Kiểm tra nhanh sự tồn tại của auth token / session cookie
+    const tokenExists = checkHasAuthToken();
+    setHasToken(tokenExists);
+
+    // Nếu không có token -> Chắc chắn là Guest -> Tắt loading ngay lập tức và bỏ qua fetch /api/auth/me
+    if (!tokenExists) {
+      setIsAuthLoading(false);
+      return;
+    }
+
+    // 2. Thử đọc nhanh từ cache local nếu có
     try {
       const cached = localStorage.getItem('mathaio_cached_user');
       if (cached) {
@@ -534,7 +534,7 @@ function HomeContent() {
       }
     } catch {}
 
-    // 2. Ngầm validate với server ở background
+    // 3. Nếu có token: Ngầm validate với server ở background
     const fetchUserSession = async () => {
       try {
         const res = await fetch('/api/auth/me');
@@ -542,21 +542,20 @@ function HomeContent() {
           const data = await res.json();
           if (data.user) {
             setCurrentUser(data.user);
-            try {
-              localStorage.setItem('mathaio_cached_user', JSON.stringify(data.user));
-            } catch {}
+            setHasToken(true);
+            setClientAuthTokens(undefined, data.user);
             checkAndMigrateGuestKey(data.user);
           } else {
+            // Không hợp lệ -> Xóa token và hiển thị nút Đăng nhập
             setCurrentUser(null);
-            try {
-              localStorage.removeItem('mathaio_cached_user');
-            } catch {}
+            setHasToken(false);
+            clearClientAuthTokens();
           }
         } else if (res.status === 401) {
+          // Token hết hạn -> Xóa token và hiển thị nút Đăng nhập
           setCurrentUser(null);
-          try {
-            localStorage.removeItem('mathaio_cached_user');
-          } catch {}
+          setHasToken(false);
+          clearClientAuthTokens();
         }
       } catch (err) {
         console.warn('Lỗi kiểm tra phiên đăng nhập:', err);
@@ -640,12 +639,14 @@ function HomeContent() {
 
       // 1. Xóa session/cookie xác thực và điều hướng về trạng thái khách
       setCurrentUser(null);
+      setHasToken(false);
+      setIsAuthLoading(false);
       setIsUserDropdownOpen(false);
       setLicenseKey('');
       setLicenseStatus(null);
       setCustomerName(null);
+      clearClientAuthTokens();
       try {
-        localStorage.removeItem('mathaio_cached_user');
         localStorage.removeItem('mathviz_license_key');
         localStorage.removeItem('mathviz_customer_name');
       } catch {}
@@ -1430,7 +1431,7 @@ function HomeContent() {
         {/* Header Right: License Key + Library + Theme Toggle */}
         <div className="flex items-center gap-2.5">
           {/* License Key & Live Status Badge: CHỈ HIỂN THỊ CHO KHÁCH VÃNG LAI (!currentUser) */}
-          {!currentUser && !isAuthLoading && (
+          {!currentUser && (!hasToken || !isAuthLoading) && (
             licenseStatus?.valid ? (
               (() => {
                 const isTrial =
@@ -1575,8 +1576,8 @@ function HomeContent() {
             ></span>
           </button>
 
-          {/* User Auth Section: Skeleton while loading, Login Buttons for Guests, or User Profile for Logged-in */}
-          {isAuthLoading && !currentUser ? (
+          {/* User Auth Section: Skeleton while loading (chỉ khi có token cần verify), Login Buttons for Guests, or User Profile for Logged-in */}
+          {hasToken && isAuthLoading && !currentUser ? (
             <div className="flex items-center gap-2 shrink-0 animate-pulse">
               <div className="h-10 w-9 sm:w-28 bg-slate-200/80 dark:bg-slate-800/80 rounded-2xl border border-slate-200/50 dark:border-slate-800/50" />
             </div>

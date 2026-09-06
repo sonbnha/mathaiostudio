@@ -4,6 +4,7 @@ import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { UserPlus, User, AtSign, Mail, Lock, Eye, EyeOff, Loader2, Sparkles, CheckCircle2, AlertCircle } from 'lucide-react';
+import { setClientAuthTokens } from '@/lib/authClient';
 
 function RegisterForm() {
   const router = useRouter();
@@ -92,11 +93,9 @@ function RegisterForm() {
 
       setSuccessMsg('🎉 Đăng ký tài khoản thành công! Tặng bạn 10 lượt Trial trọn đời. Đang chuyển hướng...');
 
-      // 1. Cập nhật trực tiếp State Auth toàn cục ngay tại Client & lưu Cache
+      // 1. Cập nhật trực tiếp State Auth toàn cục ngay tại Client & lưu Cache và Token
       if (typeof window !== 'undefined' && data.user) {
-        try {
-          localStorage.setItem('mathaio_cached_user', JSON.stringify(data.user));
-        } catch {}
+        setClientAuthTokens(data.token, data.user);
         window.dispatchEvent(new CustomEvent('auth-updated', { detail: data }));
         window.dispatchEvent(new CustomEvent('user-updated', { detail: data.user }));
       }

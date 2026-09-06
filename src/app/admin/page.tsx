@@ -52,6 +52,8 @@ import {
 import { APP_VERSION, formatDateVN, formatDateTimeVN } from '@/config/version';
 import { CHANGELOG } from '@/config/changelog';
 import UserKeyDetailModal, { UserKeyDetailData } from '@/components/UserKeyDetailModal';
+import UserProfileModal, { UserProfileData } from '@/components/UserProfileModal';
+import VipSubscriptionModal, { VipSubscriptionData } from '@/components/VipSubscriptionModal';
 
 export interface ChangelogItem {
   id: string;
@@ -136,6 +138,19 @@ interface UserAccountItem {
   isVip?: boolean;
   vip_expires_at?: string | null;
   vipExpiresAt?: string | null;
+  remaining_quota?: number | null;
+  remainingQuota?: number | null;
+  max_quota?: number | null;
+  maxQuota?: number | null;
+  last_activated_key?: {
+    key: string;
+    used_at?: string | null;
+  } | null;
+  lastActivatedKey?: {
+    key: string;
+    used_at?: string | null;
+    usedAt?: string | null;
+  } | null;
   isActive: boolean;
   is_active?: boolean;
   api_key?: string | null;
@@ -216,6 +231,12 @@ export default function UnifiedAdminPage() {
 
   // User Key Detail Modal State
   const [selectedUserKey, setSelectedUserKey] = useState<UserKeyDetailData | null>(null);
+
+  // User Profile Modal State
+  const [selectedUserProfile, setSelectedUserProfile] = useState<UserProfileData | null>(null);
+
+  // VIP Subscription Modal State
+  const [selectedVipInfo, setSelectedVipInfo] = useState<VipSubscriptionData | null>(null);
 
   // User Accounts Management State (Admin Only)
   const [userAccounts, setUserAccounts] = useState<UserAccountItem[]>([]);
@@ -2280,21 +2301,24 @@ export default function UnifiedAdminPage() {
                             </div>
                           </td>
 
-                          {/* 2. Tên Đăng Nhập / Email (Chỉ hiển thị thuần túy username & email, gỡ bỏ license key lộ diện) */}
+                          {/* 2. Tên Đăng Nhập / Email (Click mở Modal xem hồ sơ tài khoản) */}
                           <td className="py-3 px-3 align-middle">
                             <div className="flex flex-col justify-center">
-                              <span className="font-mono font-medium text-slate-800 dark:text-slate-200 text-xs">
+                              <button
+                                type="button"
+                                onClick={() => setSelectedUserProfile(u)}
+                                className="text-left font-medium text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 hover:underline transition-colors block cursor-pointer"
+                                title="Bấm để xem hồ sơ tài khoản"
+                              >
                                 {u.username || u.email}
+                              </button>
+                              <span className="text-[11px] text-slate-400 dark:text-slate-500 block truncate max-w-[180px]">
+                                {u.email || u.username}
                               </span>
-                              {u.email && u.username && u.email.toLowerCase() !== u.username.toLowerCase() && (
-                                <span className="text-[11px] text-slate-400 dark:text-slate-500 font-normal truncate max-w-[200px]">
-                                  {u.email}
-                                </span>
-                              )}
                             </div>
                           </td>
 
-                          {/* 3. Vai Trò / Gói */}
+                          {/* 3. Vai Trò / Gói (Chỉ để duy nhất badge VIP Account, bỏ sạch chữ hạn bên dưới) */}
                           <td className="py-3 px-3 align-middle">
                             {isUAdmin ? (
                               <span className="inline-flex items-center px-2.5 py-1 rounded-full font-bold text-[11px] border whitespace-nowrap bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30">
@@ -2305,16 +2329,21 @@ export default function UnifiedAdminPage() {
                                 Cộng tác viên (CTV)
                               </span>
                             ) : isUVip ? (
-                              <div className="flex flex-col gap-0.5">
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-extrabold text-[11px] border whitespace-nowrap bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30">
-                                  👑 VIP Account
-                                </span>
-                                {(u.vip_expires_at || u.vipExpiresAt) && (
-                                  <span className="text-[10px] text-amber-600/80 dark:text-amber-400/80 font-mono">
-                                    Hạn: {formatDateVN(u.vip_expires_at || u.vipExpiresAt)}
-                                  </span>
-                                )}
-                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const matchedKey = keys.find((k) => k.usedBy?.id === u.id);
+                                  setSelectedVipInfo({
+                                    user: u,
+                                    lastActivatedKey: u.lastActivatedKey || u.last_activated_key || (matchedKey ? { key: matchedKey.key, used_at: matchedKey.usedAt } : null),
+                                  });
+                                }}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-600/50 hover:bg-amber-100 dark:hover:bg-amber-900/50 hover:shadow-sm transition-all cursor-pointer whitespace-nowrap"
+                                title="Bấm để xem chi tiết gói VIP"
+                              >
+                                <span>👑</span>
+                                <span>VIP Account</span>
+                              </button>
                             ) : (
                               <span className="inline-flex items-center px-2.5 py-1 rounded-full font-bold text-[11px] border whitespace-nowrap bg-slate-500/15 text-slate-600 dark:text-slate-400 border-slate-500/30">
                                 Người dùng (Free)
@@ -3561,6 +3590,20 @@ export default function UnifiedAdminPage() {
         isOpen={selectedUserKey !== null}
         onClose={() => setSelectedUserKey(null)}
         data={selectedUserKey}
+      />
+
+      {/* MODAL XEM HỒ SƠ TÀI KHOẢN (USER PROFILE) */}
+      <UserProfileModal
+        isOpen={selectedUserProfile !== null}
+        onClose={() => setSelectedUserProfile(null)}
+        user={selectedUserProfile}
+      />
+
+      {/* MODAL CHI TIẾT GÓI VIP (VIP SUBSCRIPTION) */}
+      <VipSubscriptionModal
+        isOpen={selectedVipInfo !== null}
+        onClose={() => setSelectedVipInfo(null)}
+        data={selectedVipInfo}
       />
     </div>
   );

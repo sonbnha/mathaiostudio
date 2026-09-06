@@ -1,9 +1,7 @@
 'use client';
 
 import React from 'react';
-import Image from 'next/image';
-import { PRESET_AVATARS, DEFAULT_AVATAR, PresetAvatar } from '@/config/avatars';
-import { Check } from 'lucide-react';
+import { PRESET_AVATARS, DEFAULT_AVATAR } from '@/config/avatars';
 
 interface AvatarSelectorProps {
   selectedAvatar: string;
@@ -23,34 +21,36 @@ export const AvatarSelector: React.FC<AvatarSelectorProps> = ({
       <div className="flex items-center justify-between">
         <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
           <span>Chọn Avatar đại diện</span>
-          <span className="text-[10px] font-normal text-slate-400 dark:text-slate-500">(Hình học & Toán học)</span>
+          <span className="text-[10px] font-normal text-slate-400 dark:text-slate-500">(Toán học & Hình học)</span>
         </label>
-        <span className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400">
+        <span className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded-full border border-blue-200 dark:border-blue-900/50">
           {current.name}
         </span>
       </div>
 
-      <div className="flex items-center gap-3.5">
-        {/* Large Highlighted Current Avatar */}
+      <div className="flex items-center gap-3 sm:gap-4 p-1">
+        {/* Large Highlighted Current Avatar (Desktop Preview) */}
         {showLargePreview && (
-          <div className="relative shrink-0 group">
-            <div className="w-14 h-14 rounded-2xl p-0.5 bg-gradient-to-tr from-indigo-500 via-cyan-500 to-purple-500 shadow-md shadow-indigo-500/20 ring-2 ring-indigo-500/40">
-              <div className="w-full h-full rounded-[14px] bg-white dark:bg-slate-900 overflow-hidden flex items-center justify-center">
-                <img
-                  src={current.path}
-                  alt={current.name}
-                  className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                />
+          <div className="relative shrink-0 hidden sm:flex flex-col items-center pr-3 border-r border-slate-200 dark:border-slate-800">
+            <div className="relative">
+              <div className="w-16 h-16 rounded-full p-1 bg-gradient-to-tr from-blue-600 via-indigo-500 to-cyan-400 shadow-md shadow-blue-500/20 ring-2 ring-blue-500/30">
+                <div className="w-full h-full rounded-full bg-white dark:bg-slate-900 overflow-hidden flex items-center justify-center">
+                  <img
+                    src={current.path}
+                    alt={current.name}
+                    className="w-full h-full object-cover rounded-full"
+                  />
+                </div>
               </div>
-            </div>
-            <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-sm text-[10px]">
-              <Check className="w-3 h-3 stroke-[3]" />
+              <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-blue-600 text-white rounded-full flex items-center justify-center ring-2 ring-white dark:ring-slate-900 shadow-sm text-[11px] font-bold z-10 pointer-events-none">
+                ✓
+              </span>
             </div>
           </div>
         )}
 
         {/* Preset Avatars List */}
-        <div className="flex-1 flex flex-wrap sm:flex-nowrap items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+        <div className="flex-1 flex flex-wrap items-center gap-2.5 sm:gap-3.5 py-2 px-1">
           {PRESET_AVATARS.map((avatar) => {
             const isSelected = selectedAvatar === avatar.path;
 
@@ -60,23 +60,29 @@ export const AvatarSelector: React.FC<AvatarSelectorProps> = ({
                 type="button"
                 onClick={() => onSelect(avatar.path)}
                 title={`${avatar.name} - ${avatar.description}`}
-                className={`relative w-11 h-11 rounded-xl p-0.5 transition-all duration-200 cursor-pointer shrink-0 group ${
-                  isSelected
-                    ? 'ring-2 ring-indigo-600 dark:ring-indigo-400 ring-offset-2 ring-offset-white dark:ring-offset-slate-900 scale-105 shadow-md shadow-indigo-500/25'
-                    : 'opacity-75 hover:opacity-100 hover:scale-105 hover:ring-1 hover:ring-slate-300 dark:hover:ring-slate-700'
+                className={`relative rounded-full transition-transform shrink-0 focus:outline-none cursor-pointer ${
+                  isSelected ? 'z-10' : 'hover:opacity-100'
                 }`}
               >
-                <div className="w-full h-full rounded-[10px] bg-slate-100 dark:bg-slate-800 overflow-hidden flex items-center justify-center">
+                {/* Ảnh avatar bo tròn: Active w-14 h-14, Bình thường w-11 h-11 / w-12 h-12 */}
+                <div
+                  className={`${
+                    isSelected
+                      ? 'w-14 h-14 ring-2 ring-blue-600 dark:ring-blue-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-900 scale-105 shadow-md shadow-blue-500/25'
+                      : 'w-11 h-11 sm:w-12 sm:h-12 opacity-75 hover:opacity-100 hover:scale-105 ring-1 ring-slate-200 dark:ring-slate-800'
+                  } rounded-full overflow-hidden flex items-center justify-center bg-slate-100 dark:bg-slate-800 p-0.5 transition-all duration-200`}
+                >
                   <img
                     src={avatar.path}
                     alt={avatar.name}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover rounded-full"
                   />
                 </div>
 
+                {/* Dấu tick nằm gọn gàng, có viền trắng tách biệt */}
                 {isSelected && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-xs">
-                    <Check className="w-2.5 h-2.5 stroke-[3]" />
+                  <span className="absolute -bottom-0.5 -right-0.5 w-4.5 h-4.5 bg-blue-600 text-white rounded-full flex items-center justify-center ring-2 ring-white dark:ring-slate-900 shadow-sm text-[10px] font-bold z-20 pointer-events-none">
+                    ✓
                   </span>
                 )}
               </button>

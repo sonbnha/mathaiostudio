@@ -21,6 +21,14 @@ export interface AuthUser {
   usageCount?: number;
   remainingCredits?: number | string;
   remaining_credits?: number | string;
+  remaining_quota?: number | null;
+  remainingQuota?: number | null;
+  lifetime_quota?: number | null;
+  lifetimeQuota?: number | null;
+  subscription_quota?: number | null;
+  subscriptionQuota?: number | null;
+  subscription_expires_at?: string | null;
+  subscriptionExpiresAt?: string | null;
 }
 
 interface AuthModalProps {

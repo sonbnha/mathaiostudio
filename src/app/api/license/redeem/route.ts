@@ -109,16 +109,20 @@ export async function POST(req: NextRequest) {
 
     // 5. Xác định giá trị thời hạn (duration_days) và số lượt (max_usage) của Key mới
     let durationDays = 30;
-    if (typeof keyRecord.durationDays === 'number' && keyRecord.durationDays > 0) {
+    if (typeof keyRecord.durationDays === 'number') {
       durationDays = keyRecord.durationDays;
-    } else if (typeof (keyRecord as any).duration_days === 'number' && (keyRecord as any).duration_days > 0) {
+    } else if (typeof (keyRecord as any).duration_days === 'number') {
       durationDays = (keyRecord as any).duration_days;
     } else if (keyRecord.expiresAt) {
       const createdTime = new Date(keyRecord.created_at || Date.now()).getTime();
       const expTime = new Date(keyRecord.expiresAt).getTime();
       const diffDays = Math.round((expTime - createdTime) / (1000 * 60 * 60 * 24));
       if (diffDays > 0) durationDays = diffDays;
+    } else {
+      durationDays = 0;
     }
+
+    const isLifetimeKey = durationDays === 0 || cleanKey.startsWith('AIO-LT-') || keyRecord.expiresAt === null;
 
     let keyQuotaGranted = 100;
     if (typeof keyRecord.maxUsage === 'number') {
@@ -131,9 +135,9 @@ export async function POST(req: NextRequest) {
       keyQuotaGranted = (keyRecord as any).total_credits;
     }
 
-    // 6. Lấy dữ liệu mới nhất của tài khoản từ bảng users trên Neon DB
+    // 6. Lấy dữ liệu ví hiện tại của tài khoản từ bảng users trên Neon DB
     const userRows = await sql`
-      SELECT id, email, username, name, role, is_vip, vip_expires_at, remaining_quota, max_quota, api_key
+      SELECT id, email, username, name, role, is_vip, vip_expires_at, remaining_quota, max_quota, api_key, lifetime_quota, subscription_quota, subscription_expires_at
       FROM users
       WHERE id = ${currentUser.id}::uuid
       LIMIT 1
@@ -142,48 +146,42 @@ export async function POST(req: NextRequest) {
     const dbUser = (userRows && userRows.length > 0 ? userRows[0] : userObj) as any;
 
     const now = new Date();
-    const currentExp = dbUser?.vip_expires_at || userObj.vip_expires_at || userObj.vipExpiresAt;
-    const currentExpDate = currentExp ? new Date(currentExp) : null;
+    const currentLifetimeQuota = Number(dbUser?.lifetime_quota ?? 0);
+    const currentSubQuota = Number(dbUser?.subscription_quota ?? 0);
+    const currentSubExpiresAt = dbUser?.subscription_expires_at 
+      ? new Date(dbUser.subscription_expires_at) 
+      : (dbUser?.vip_expires_at ? new Date(dbUser.vip_expires_at) : null);
 
-    // 1. Logic cộng dồn thời hạn (vip_expires_at):
-    // - Nếu tài khoản hiện tại ĐANG CÒN HẠN (vip_expires_at > NOW()):
-    //   Thời hạn mới = vip_expires_at hiện tại + duration_days của key mới.
-    // - Nếu tài khoản ĐÃ HẾT HẠN hoặc chưa từng có hạn (vip_expires_at <= NOW() hoặc null):
-    //   Thời hạn mới = Thời điểm hiện tại (NOW()) + duration_days của key mới.
-    let newVipExpiresAt: Date;
-    if (currentExpDate && currentExpDate > now) {
-      newVipExpiresAt = new Date(currentExpDate.getTime() + durationDays * 24 * 60 * 60 * 1000);
+    let newLifetimeQuota = currentLifetimeQuota;
+    let newSubQuota = currentSubQuota;
+    let newSubExpiresAt: Date | null = currentSubExpiresAt;
+
+    if (isLifetimeKey) {
+      // 1. Trường hợp nạp Key VĨNH VIỄN:
+      // user.lifetime_quota += key.quota
+      // Giữ nguyên trạng thái và hạn của subscription_expires_at (nếu đang có).
+      newLifetimeQuota = currentLifetimeQuota + (keyQuotaGranted === -1 ? 999999 : keyQuotaGranted);
     } else {
-      newVipExpiresAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
+      // 2. Trường hợp nạp Key CÓ THỜI HẠN:
+      // Nếu gói thuê bao hiện tại đã hết hạn hoặc chưa từng có:
+      //   user.subscription_quota = key.quota
+      //   user.subscription_expires_at = NOW() + key.duration_days
+      // Nếu gói thuê bao hiện tại vẫn còn hạn:
+      //   user.subscription_quota += key.quota
+      //   user.subscription_expires_at = user.subscription_expires_at + key.duration_days
+      // Tuyệt đối KHÔNG cộng vào lifetime_quota.
+      if (!currentSubExpiresAt || currentSubExpiresAt <= now) {
+        newSubQuota = keyQuotaGranted;
+        newSubExpiresAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
+      } else {
+        newSubQuota = currentSubQuota + keyQuotaGranted;
+        newSubExpiresAt = new Date(currentSubExpiresAt.getTime() + durationDays * 24 * 60 * 60 * 1000);
+      }
     }
 
-    // 2. Logic cộng dồn lượt sử dụng (remaining_quota):
-    // - Lượt sử dụng mới = (Số lượt còn lại hiện tại của user) + (Số lượt được cấp từ key mới max_usage).
-    let currentRemaining = typeof dbUser?.remaining_quota === 'number'
-      ? Math.max(0, dbUser.remaining_quota)
-      : (typeof userObj.remaining_quota === 'number' ? Math.max(0, userObj.remaining_quota) : 0);
-
-    if (currentRemaining <= 0 && typeof userObj.remaining_credits === 'number' && userObj.remaining_credits > 0) {
-      currentRemaining = userObj.remaining_credits;
-    }
-
-    let currentMax = typeof dbUser?.max_quota === 'number'
-      ? Math.max(0, dbUser.max_quota)
-      : (typeof userObj.max_quota === 'number' ? Math.max(0, userObj.max_quota) : 0);
-
-    const isAlreadyUnlimited =
-      (currentUser.role || '').toLowerCase() === 'admin' ||
-      dbUser?.remaining_quota === null ||
-      dbUser?.max_quota === -1 ||
-      (dbUser as any)?.is_unlimited === true;
-
-    const newRemainingQuota = (keyQuotaGranted === -1 || isAlreadyUnlimited)
-      ? null
-      : (currentRemaining + keyQuotaGranted);
-
-    const newMaxQuota = (keyQuotaGranted === -1 || isAlreadyUnlimited)
-      ? null
-      : (Math.max(currentMax, currentRemaining) + keyQuotaGranted);
+    const isSubStillActive = Boolean(newSubExpiresAt && newSubExpiresAt > now);
+    const newRemainingQuota = (isSubStillActive ? newSubQuota : 0) + newLifetimeQuota;
+    const newVipExpiresAt = newLifetimeQuota > 0 ? null : (newSubExpiresAt || null);
 
     // 3. Đảm bảo tính toàn vẹn dữ liệu (Atomic Transaction):
     // 3.1 Đánh dấu key đó trong bảng license_keys: status = 'used', used_by = user.id, used_at = NOW()
@@ -213,11 +211,14 @@ export async function POST(req: NextRequest) {
       SET 
         is_vip = TRUE,
         vip_expires_at = ${newVipExpiresAt},
+        subscription_expires_at = ${newSubExpiresAt},
+        subscription_quota = ${newSubQuota},
+        lifetime_quota = ${newLifetimeQuota},
         remaining_quota = ${newRemainingQuota},
-        max_quota = ${newMaxQuota},
+        max_quota = GREATEST(COALESCE(max_quota, 0), ${newRemainingQuota}),
         api_key = ${cleanKey}
       WHERE id = ${currentUser.id}::uuid
-      RETURNING id, name, email, username, role, is_vip, vip_expires_at, remaining_quota, max_quota, api_key
+      RETURNING id, name, email, username, role, is_vip, vip_expires_at, remaining_quota, max_quota, api_key, lifetime_quota, subscription_quota, subscription_expires_at
     `;
 
     const updatedUser = updatedUsers && updatedUsers.length > 0 ? updatedUsers[0] : null;
@@ -244,12 +245,19 @@ export async function POST(req: NextRequest) {
       console.warn('Prisma User VIP sync warning:', prismaSyncErr);
     }
 
-    // 4. Trả về thông tin cập nhật cho frontend: { success: true, newExpiresAt, newRemainingQuota, user }
+    // 4. Trả về thông tin cập nhật cho frontend
+    const successMsg = isLifetimeKey
+      ? `Kích hoạt thành công gói Vĩnh viễn (+${keyQuotaGranted === -1 ? '∞' : keyQuotaGranted} lượt trọn đời)!`
+      : `Kích hoạt thành công gói Thuê bao (+${keyQuotaGranted === -1 ? '∞' : keyQuotaGranted} lượt, +${durationDays} ngày)!`;
+
     return NextResponse.json({
       success: true,
-      message: 'Gia hạn và cộng dồn thời hạn VIP & lượt sử dụng thành công!',
-      newExpiresAt: newVipExpiresAt.toISOString(),
+      message: successMsg,
+      newExpiresAt: newSubExpiresAt ? newSubExpiresAt.toISOString() : null,
       newRemainingQuota,
+      lifetimeQuota: newLifetimeQuota,
+      subscriptionQuota: newSubQuota,
+      subscriptionExpiresAt: newSubExpiresAt ? newSubExpiresAt.toISOString() : null,
       user: {
         ...currentUser,
         id: updatedUser?.id || currentUser.id,
@@ -259,16 +267,22 @@ export async function POST(req: NextRequest) {
         role: updatedUser?.role || currentUser.role,
         isVip: true,
         is_vip: true,
-        vipExpiresAt: newVipExpiresAt.toISOString(),
-        vip_expires_at: newVipExpiresAt.toISOString(),
+        vipExpiresAt: newVipExpiresAt ? newVipExpiresAt.toISOString() : null,
+        vip_expires_at: newVipExpiresAt ? newVipExpiresAt.toISOString() : null,
+        subscription_expires_at: newSubExpiresAt ? newSubExpiresAt.toISOString() : null,
+        subscriptionExpiresAt: newSubExpiresAt ? newSubExpiresAt.toISOString() : null,
+        subscription_quota: newSubQuota,
+        subscriptionQuota: newSubQuota,
+        lifetime_quota: newLifetimeQuota,
+        lifetimeQuota: newLifetimeQuota,
         remaining_quota: newRemainingQuota,
         remainingQuota: newRemainingQuota,
-        max_quota: newMaxQuota,
-        maxQuota: newMaxQuota,
+        max_quota: updatedUser?.max_quota || newRemainingQuota,
+        maxQuota: updatedUser?.max_quota || newRemainingQuota,
         remaining_credits: newRemainingQuota,
         remainingCredits: newRemainingQuota,
-        usage_limit: newMaxQuota,
-        usageLimit: newMaxQuota,
+        usage_limit: updatedUser?.max_quota || newRemainingQuota,
+        usageLimit: updatedUser?.max_quota || newRemainingQuota,
         apiKey: cleanKey,
         api_key: cleanKey,
       },

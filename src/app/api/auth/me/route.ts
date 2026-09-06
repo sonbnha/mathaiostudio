@@ -85,6 +85,19 @@ export async function GET(req: NextRequest) {
       ? (user as any).max_quota
       : (typeof (user as any).maxQuota === 'number' ? (user as any).maxQuota : null);
 
+    const rawLifetimeQuota = typeof (user as any).lifetime_quota === 'number'
+      ? (user as any).lifetime_quota
+      : (typeof (user as any).lifetimeQuota === 'number' ? (user as any).lifetimeQuota : 0);
+    const rawSubscriptionQuota = typeof (user as any).subscription_quota === 'number'
+      ? (user as any).subscription_quota
+      : (typeof (user as any).subscriptionQuota === 'number' ? (user as any).subscriptionQuota : 0);
+    const rawSubExpiresAt = (user as any).subscription_expires_at || (user as any).subscriptionExpiresAt || null;
+    const subExpiresAtIso = rawSubExpiresAt ? new Date(rawSubExpiresAt).toISOString() : null;
+
+    const now = new Date();
+    const isSubActive = Boolean(rawSubExpiresAt && new Date(rawSubExpiresAt) > now);
+    const totalAvailableFromWallets = (isSubActive ? rawSubscriptionQuota : 0) + rawLifetimeQuota;
+
     const isUnlimited =
       isAdmin ||
       Boolean((user as any).is_unlimited) ||
@@ -101,23 +114,31 @@ export async function GET(req: NextRequest) {
 
     const remainingQuota = isUnlimited
       ? null
-      : (userDbRemainingQuota !== null && userDbRemainingQuota >= 0
-          ? userDbRemainingQuota
-          : (typeof remainingCredits === 'number' && remainingCredits >= 0
-              ? remainingCredits
-              : (usageLimit === -1 ? null : 0)));
+      : (totalAvailableFromWallets > 0
+          ? totalAvailableFromWallets
+          : (userDbRemainingQuota !== null && userDbRemainingQuota >= 0
+              ? userDbRemainingQuota
+              : (typeof remainingCredits === 'number' && remainingCredits >= 0
+                  ? remainingCredits
+                  : (usageLimit === -1 ? null : 0))));
 
     return NextResponse.json({
       user: {
         ...user,
         apiKey: userApiKey,
         api_key: userApiKey,
-        is_vip: Boolean(isVip),
-        isVip: Boolean(isVip),
+        is_vip: Boolean(isVip || rawLifetimeQuota > 0 || isSubActive),
+        isVip: Boolean(isVip || rawLifetimeQuota > 0 || isSubActive),
         is_unlimited: isUnlimited,
         isUnlimited: isUnlimited,
-        vip_expires_at: vipExpiresAtIso,
-        vipExpiresAt: vipExpiresAtIso,
+        vip_expires_at: rawLifetimeQuota > 0 ? null : (subExpiresAtIso || vipExpiresAtIso),
+        vipExpiresAt: rawLifetimeQuota > 0 ? null : (subExpiresAtIso || vipExpiresAtIso),
+        subscription_expires_at: subExpiresAtIso,
+        subscriptionExpiresAt: subExpiresAtIso,
+        subscription_quota: rawSubscriptionQuota,
+        subscriptionQuota: rawSubscriptionQuota,
+        lifetime_quota: rawLifetimeQuota,
+        lifetimeQuota: rawLifetimeQuota,
         remaining_quota: remainingQuota,
         remainingQuota: remainingQuota,
         max_quota: maxQuota,

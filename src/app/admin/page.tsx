@@ -111,6 +111,12 @@ interface LicenseKeyItem {
     remainingQuota?: number | null;
     max_quota?: number | null;
     maxQuota?: number | null;
+    lifetime_quota?: number | null;
+    lifetimeQuota?: number | null;
+    subscription_quota?: number | null;
+    subscriptionQuota?: number | null;
+    subscription_expires_at?: string | null;
+    subscriptionExpiresAt?: string | null;
   } | null;
   createdAt: string;
   createdById?: string | null;
@@ -140,6 +146,12 @@ interface UserAccountItem {
   remainingQuota?: number | null;
   max_quota?: number | null;
   maxQuota?: number | null;
+  lifetime_quota?: number | null;
+  lifetimeQuota?: number | null;
+  subscription_quota?: number | null;
+  subscriptionQuota?: number | null;
+  subscription_expires_at?: string | null;
+  subscriptionExpiresAt?: string | null;
   last_activated_key?: {
     key: string;
     used_at?: string | null;
@@ -207,6 +219,9 @@ export default function UnifiedAdminPage() {
   const getMaskedKey = (key: string): string => {
     if (!key) return '';
     if (key.length <= 8) return key;
+    if (key.startsWith('AIO-LT-')) {
+      return `AIO-LT-••••-${key.slice(-4)}`;
+    }
     if (key.startsWith('AIO-VIP-')) {
       return `AIO-••••-${key.slice(-4)}`;
     }
@@ -492,7 +507,7 @@ export default function UnifiedAdminPage() {
           totalCredits: maxUsageValue,
           maxUsage: maxUsageValue,
           durationDays: Number(durationDays),
-          prefix: 'AIO-VIP',
+          prefix: Number(durationDays) === 0 ? 'AIO-LT' : 'AIO-VIP',
         }),
       });
 
@@ -1745,7 +1760,11 @@ export default function UnifiedAdminPage() {
                           <tr key={k.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-950/50 transition">
                             <td className="py-2.5 px-4 font-mono text-xs whitespace-nowrap">
                               <div className="inline-flex items-center gap-1.5 font-mono text-xs">
-                                {k.key.startsWith('AIO-TR-') || k.key.startsWith('MV-TR-') || k.key.includes('TRIAL') ? (
+                                {k.key.startsWith('AIO-LT-') || k.durationDays === 0 ? (
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300 font-bold">
+                                    Lifetime
+                                  </span>
+                                ) : k.key.startsWith('AIO-TR-') || k.key.startsWith('MV-TR-') || k.key.includes('TRIAL') ? (
                                   <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-sky-500/15 border border-sky-500/30 text-sky-700 dark:text-sky-300 font-bold">
                                     Trial
                                   </span>
@@ -1952,8 +1971,8 @@ export default function UnifiedAdminPage() {
                   {/* Preview mã key mới */}
                   <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-dashed border-slate-300 dark:border-slate-800 text-xs flex items-center justify-between">
                     <span className="text-slate-500 dark:text-slate-400">Định dạng key sinh ra:</span>
-                    <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
-                      AIO-VIP-••••-••••
+                    <span className={`font-mono font-bold ${Number(durationDays) === 0 ? 'text-amber-600 dark:text-amber-400' : 'text-indigo-600 dark:text-indigo-400'}`}>
+                      {Number(durationDays) === 0 ? 'AIO-LT-••••-••••' : 'AIO-VIP-••••-••••'}
                     </span>
                   </div>
 
@@ -2071,7 +2090,11 @@ export default function UnifiedAdminPage() {
                             {/* 1. Mã Key (Masked Display & Toggle Reveal) */}
                             <td className="px-4 py-3 align-middle whitespace-nowrap">
                               <div className="inline-flex items-center gap-1.5 font-mono text-xs whitespace-nowrap">
-                                {k.key.startsWith('AIO-TR-') || k.key.startsWith('MV-TR-') || k.key.includes('TRIAL') ? (
+                                {k.key.startsWith('AIO-LT-') || k.durationDays === 0 ? (
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300 font-bold shrink-0">
+                                    Lifetime
+                                  </span>
+                                ) : k.key.startsWith('AIO-TR-') || k.key.startsWith('MV-TR-') || k.key.includes('TRIAL') ? (
                                   <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-sky-500/15 border border-sky-500/30 text-sky-700 dark:text-sky-300 font-bold shrink-0">
                                     Trial
                                   </span>
@@ -2433,9 +2456,46 @@ export default function UnifiedAdminPage() {
                                 </div>
                               )
                             ) : (
-                              <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20 font-medium text-[11px] whitespace-nowrap">
-                                🖼️ {u.saved_diagrams_count ?? u.savedDiagramsCount ?? 0} hình đã lưu
-                              </span>
+                              <div className="flex flex-col gap-1 items-start py-0.5">
+                                {/* Thuê bao badge */}
+                                {(() => {
+                                  const subQuota = u.subscription_quota ?? u.subscriptionQuota ?? 0;
+                                  const subExp = u.subscription_expires_at ?? u.subscriptionExpiresAt;
+                                  const isSubActive = !!subExp && new Date(subExp) > new Date();
+                                  if (isSubActive) {
+                                    return (
+                                      <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20 font-medium text-[11px] whitespace-nowrap">
+                                        Thuê bao: {subQuota} lượt (Hạn: {formatDateVN(subExp)})
+                                      </span>
+                                    );
+                                  } else if (subExp) {
+                                    return (
+                                      <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 font-medium text-[11px] whitespace-nowrap">
+                                        Thuê bao: Hết hạn (0 lượt)
+                                      </span>
+                                    );
+                                  }
+                                  return null;
+                                })()}
+
+                                {/* Vĩnh viễn badge */}
+                                {(() => {
+                                  const ltQuota = u.lifetime_quota ?? u.lifetimeQuota ?? 0;
+                                  if (ltQuota > 0) {
+                                    return (
+                                      <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 font-medium text-[11px] whitespace-nowrap">
+                                        Vĩnh viễn: {ltQuota} lượt
+                                      </span>
+                                    );
+                                  }
+                                  return null;
+                                })()}
+
+                                {/* Bộ sưu tập badge */}
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20 font-medium text-[11px] whitespace-nowrap">
+                                  📁 {u.saved_diagrams_count ?? u.savedDiagramsCount ?? 0} hình
+                                </span>
+                              </div>
                             )}
                           </td>
 

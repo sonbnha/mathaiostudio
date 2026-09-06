@@ -71,15 +71,29 @@ export function computeLicenseStatus({
   // 1. Trường hợp người dùng đã đăng nhập (currentUser)
   if (user) {
     const isVip = Boolean(user.is_vip || user.isVip);
-    const expireIso = user.vip_expires_at || user.vipExpiresAt || null;
-    const expireTime = expireIso ? new Date(expireIso).getTime() : null;
+    const rawLifetimeQuota = typeof user.lifetime_quota === 'number'
+      ? user.lifetime_quota
+      : (typeof user.lifetimeQuota === 'number' ? user.lifetimeQuota : 0);
+    const rawSubscriptionQuota = typeof user.subscription_quota === 'number'
+      ? user.subscription_quota
+      : (typeof user.subscriptionQuota === 'number' ? user.subscriptionQuota : 0);
+    const rawSubExpiresAt = user.subscription_expires_at || user.subscriptionExpiresAt || user.vip_expires_at || user.vipExpiresAt || null;
+    const subExpireTime = rawSubExpiresAt ? new Date(rawSubExpiresAt).getTime() : null;
+    const isSubActive = Boolean(subExpireTime && subExpireTime > now);
 
-    // daysLeft: số ngày còn lại (999 nếu không có ngày hết hạn)
-    const daysLeft = expireTime ? Math.ceil((expireTime - now) / (1000 * 60 * 60 * 24)) : 999;
-    const daysRemaining = expireTime ? Math.max(0, daysLeft) : null;
+    const dualWalletTurns = (isSubActive ? rawSubscriptionQuota : 0) + rawLifetimeQuota;
+
+    // daysLeft: số ngày còn lại (999 nếu có ví vĩnh viễn hoặc không có ngày hết hạn)
+    const hasLifetimeTurns = rawLifetimeQuota > 0;
+    const daysLeft = hasLifetimeTurns 
+      ? 999 
+      : (subExpireTime ? Math.ceil((subExpireTime - now) / (1000 * 60 * 60 * 24)) : 999);
+    const daysRemaining = hasLifetimeTurns 
+      ? null 
+      : (subExpireTime ? Math.max(0, daysLeft) : null);
 
     // turnsLeft: số lượt còn lại (INT)
-    const turnsLeft = typeof user.remaining_quota === 'number'
+    const fallbackTurns = typeof user.remaining_quota === 'number'
       ? user.remaining_quota
       : typeof user.remainingQuota === 'number'
       ? user.remainingQuota
@@ -88,6 +102,10 @@ export function computeLicenseStatus({
       : typeof user.remainingCredits === 'number'
       ? (user.remainingCredits === -1 ? 999 : user.remainingCredits)
       : (user.usage_limit === -1 || user.usageLimit === -1 ? 999 : 0);
+
+    const turnsLeft = (rawLifetimeQuota > 0 || rawSubscriptionQuota > 0)
+      ? dualWalletTurns
+      : fallbackTurns;
 
     const maxQuota = typeof user.max_quota === 'number'
       ? user.max_quota
@@ -102,20 +120,15 @@ export function computeLicenseStatus({
       : (typeof user.used_credits === 'number' ? user.used_credits : 0);
 
     // Chuẩn hóa theo công thức:
-    // isNearExpiry = user?.is_vip && ((daysLeft <= 3 && daysLeft > 0) || (turnsLeft <= 5 && turnsLeft > 0))
     const isNearExpiry = Boolean(
-      isVip && ((daysLeft <= 3 && daysLeft > 0) || (turnsLeft <= 5 && turnsLeft > 0))
+      (isVip || isSubActive) && !hasLifetimeTurns && ((daysLeft <= 3 && daysLeft > 0) || (turnsLeft <= 5 && turnsLeft > 0))
     );
 
-    // isFullyExpired: nếu là VIP thì kiểm tra daysLeft <= 0 hoặc turnsLeft <= 0.
-    // Nếu chưa là VIP (Free user): chỉ hết hạn khi số lượt dùng thử turnsLeft <= 0!
-    const isFullyExpired = isVip
-      ? Boolean(daysLeft <= 0 || turnsLeft <= 0)
-      : Boolean(turnsLeft <= 0);
-
-    const isVipActive = isVip && !isFullyExpired;
-    const isExpiredOrDepleted = isFullyExpired || turnsLeft <= 0;
-    const isTrial = Boolean(!isVip && turnsLeft > 0);
+    // isFullyExpired: chỉ hết hạn khi số lượt khả dụng turnsLeft <= 0
+    const isFullyExpired = turnsLeft <= 0;
+    const isVipActive = (isVip || hasLifetimeTurns || isSubActive) && turnsLeft > 0;
+    const isExpiredOrDepleted = turnsLeft <= 0;
+    const isTrial = Boolean(!isVip && !hasLifetimeTurns && !isSubActive && turnsLeft > 0);
 
     return {
       isVipActive,
@@ -133,8 +146,8 @@ export function computeLicenseStatus({
       max_quota: maxQuota,
       maxQuota: maxQuota,
       usedCredits: usedCount,
-      vipExpiresAt: expireIso ? new Date(expireIso).toISOString() : null,
-      vip_expires_at: expireIso ? new Date(expireIso).toISOString() : null,
+      vipExpiresAt: rawSubExpiresAt ? new Date(rawSubExpiresAt).toISOString() : null,
+      vip_expires_at: rawSubExpiresAt ? new Date(rawSubExpiresAt).toISOString() : null,
       isAdmin: false,
     };
   }

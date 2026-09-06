@@ -39,6 +39,9 @@ export async function initDb(): Promise<void> {
       await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_vip BOOLEAN DEFAULT FALSE;`;
       await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS remaining_quota INT DEFAULT 10;`;
       await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS max_quota INT DEFAULT 10;`;
+      await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS lifetime_quota INT NOT NULL DEFAULT 0;`;
+      await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_quota INT NOT NULL DEFAULT 0;`;
+      await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_expires_at TIMESTAMP WITH TIME ZONE;`;
       await sql`ALTER TABLE users ALTER COLUMN remaining_quota SET DEFAULT 10;`;
       await sql`ALTER TABLE users ALTER COLUMN max_quota SET DEFAULT 10;`;
       await sql`UPDATE users SET status = 'active' WHERE status IS NULL;`;

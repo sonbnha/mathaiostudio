@@ -33,7 +33,7 @@ import {
   Crown,
 } from 'lucide-react';
 import Link from 'next/link';
-import { APP_VERSION } from '@/config/version';
+import { APP_VERSION, formatDateVN } from '@/config/version';
 import { CHANGELOG, mergeAndSortChangelogs } from '@/config/changelog';
 import LessonPlanView from '@/components/LessonPlanView';
 import { useApiKey } from '@/context/ApiKeyContext';
@@ -1521,31 +1521,29 @@ function HomeContent() {
                       {(() => {
                         const r = (currentUser.role || 'user').toLowerCase();
                         const isAdmin = r === 'admin' || r === 'superadmin' || Boolean((currentUser as any)?.is_admin);
-                        const isVipFlag = Boolean(currentUser.isVip || (currentUser as any).is_vip);
+
+                        const subQuota = Number((currentUser as any).subscription_quota ?? (currentUser as any).subscriptionQuota ?? 0);
+                        const subExp = (currentUser as any).subscription_expires_at || (currentUser as any).subscriptionExpiresAt;
+                        const isSubActive = Boolean(subExp && new Date(subExp) > new Date());
+                        const ltQuota = Number((currentUser as any).lifetime_quota ?? (currentUser as any).lifetimeQuota ?? 0);
+                        const hasDualWallet = (currentUser as any).subscription_quota !== undefined || (currentUser as any).lifetime_quota !== undefined;
+
+                        const isVipFlag = Boolean(currentUser.isVip || (currentUser as any).is_vip || ltQuota > 0 || isSubActive);
                         const vipExp = currentUser.vipExpiresAt || (currentUser as any).vip_expires_at;
-                        const isVipExpired = Boolean(vipExp && new Date(vipExp) <= new Date());
-                        const isVipActive = (isAdmin || isVipFlag) && !isVipExpired;
+                        const isVipExpired = Boolean(vipExp && new Date(vipExp) <= new Date() && ltQuota <= 0 && !isSubActive);
+                        const isVipActive = (isAdmin || isVipFlag || ltQuota > 0 || isSubActive) && !isVipExpired;
 
                         const isUnlimited =
                           isAdmin ||
                           Boolean((currentUser as any).is_unlimited) ||
                           Boolean((currentUser as any).isUnlimited) ||
-                          (currentUser as any).remaining_quota === null ||
-                          (currentUser as any).remaining_quota === undefined ||
+                          ((currentUser as any).remaining_quota === null && !hasDualWallet) ||
                           (currentUser as any).remaining_quota === -1 ||
-                          (currentUser as any).remainingQuota === null ||
-                          (currentUser as any).remainingQuota === undefined ||
-                          (currentUser as any).remainingQuota === -1 ||
-                          (currentUser as any).remainingCredits === -1 ||
-                          (currentUser as any).remaining_credits === -1 ||
-                          (currentUser as any).max_quota === -1 ||
-                          (currentUser as any).usage_limit === -1 ||
-                          (currentUser as any).usageLimit === -1 ||
-                          Number((currentUser as any).remaining_quota) >= 999 ||
-                          Number((currentUser as any).remainingQuota) >= 999 ||
-                          Number((currentUser as any).remainingCredits) >= 999;
+                          Number((currentUser as any).remaining_quota) >= 999;
 
-                        const rawRem = typeof (currentUser as any).remaining_quota === 'number'
+                        const rawRem = hasDualWallet
+                          ? ((isSubActive ? subQuota : 0) + ltQuota)
+                          : typeof (currentUser as any).remaining_quota === 'number'
                           ? (currentUser as any).remaining_quota
                           : typeof (currentUser as any).remainingQuota === 'number'
                           ? (currentUser as any).remainingQuota
@@ -1635,51 +1633,35 @@ function HomeContent() {
                 {isUserDropdownOpen && (() => {
                   const r = (currentUser.role || 'user').toLowerCase();
                   const isAdmin = r === 'admin' || r === 'superadmin' || Boolean((currentUser as any)?.is_admin);
-                  const isVipFlag = Boolean(currentUser.isVip || (currentUser as any).is_vip);
+
+                  const subQuota = Number((currentUser as any).subscription_quota ?? (currentUser as any).subscriptionQuota ?? 0);
+                  const subExp = (currentUser as any).subscription_expires_at || (currentUser as any).subscriptionExpiresAt;
+                  const isSubActive = Boolean(subExp && new Date(subExp) > new Date());
+                  const ltQuota = Number((currentUser as any).lifetime_quota ?? (currentUser as any).lifetimeQuota ?? 0);
+                  const hasDualWallet = (currentUser as any).subscription_quota !== undefined || (currentUser as any).lifetime_quota !== undefined;
+
+                  const isVipFlag = Boolean(currentUser.isVip || (currentUser as any).is_vip || ltQuota > 0 || isSubActive);
                   const vipExp = currentUser.vipExpiresAt || (currentUser as any).vip_expires_at;
-                  const isVipExpired = Boolean(vipExp && new Date(vipExp) <= new Date());
-                  const isVipActive = (isAdmin || isVipFlag) && !isVipExpired;
+                  const isVipExpired = Boolean(vipExp && new Date(vipExp) <= new Date() && ltQuota <= 0 && !isSubActive);
+                  const isVipActive = (isAdmin || isVipFlag || ltQuota > 0 || isSubActive) && !isVipExpired;
 
-                  let daysRemaining: number | null = null;
-                  if (vipExp) {
-                    const diffTime = new Date(vipExp).getTime() - new Date().getTime();
-                    daysRemaining = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+                  let subDaysRemaining: number | null = null;
+                  if (subExp) {
+                    const diffTime = new Date(subExp).getTime() - new Date().getTime();
+                    subDaysRemaining = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
                   }
-                  const isExpiringSoon = isVipActive && daysRemaining !== null && daysRemaining <= 3;
 
-                  // 1. Kiểm tra điều kiện tài khoản vô hạn lượt:
-                  // - Là Admin (user.role === 'admin')
-                  // - HOẶC user.remaining_quota === null / user.remaining_quota === undefined
-                  // - HOẶC user.is_unlimited === true
-                  // - HOẶC quota === -1 / >= 999
                   const isUnlimited =
                     isAdmin ||
                     Boolean((currentUser as any).is_unlimited) ||
                     Boolean((currentUser as any).isUnlimited) ||
-                    (currentUser as any).remaining_quota === null ||
-                    (currentUser as any).remaining_quota === undefined ||
+                    ((currentUser as any).remaining_quota === null && !hasDualWallet) ||
                     (currentUser as any).remaining_quota === -1 ||
-                    (currentUser as any).remainingQuota === null ||
-                    (currentUser as any).remainingQuota === undefined ||
-                    (currentUser as any).remainingQuota === -1 ||
-                    (currentUser as any).remainingCredits === -1 ||
-                    (currentUser as any).remaining_credits === -1 ||
-                    (currentUser as any).max_quota === -1 ||
-                    (currentUser as any).usage_limit === -1 ||
-                    (currentUser as any).usageLimit === -1 ||
-                    Number((currentUser as any).remaining_quota) >= 999 ||
-                    Number((currentUser as any).remainingQuota) >= 999 ||
-                    Number((currentUser as any).remainingCredits) >= 999;
+                    Number((currentUser as any).remaining_quota) >= 999;
 
-                  const rawUsageLimit = typeof (currentUser as any).remaining_quota === 'number' && typeof (currentUser as any).max_quota === 'number'
-                    ? ((currentUser as any).max_quota || 10)
-                    : typeof (currentUser as any).usage_limit === 'number'
-                    ? (currentUser as any).usage_limit
-                    : typeof currentUser.usageLimit === 'number'
-                    ? currentUser.usageLimit
-                    : 10;
-
-                  const rawRem = typeof (currentUser as any).remaining_quota === 'number'
+                  const rawRem = hasDualWallet
+                    ? ((isSubActive ? subQuota : 0) + ltQuota)
+                    : typeof (currentUser as any).remaining_quota === 'number'
                     ? (currentUser as any).remaining_quota
                     : typeof (currentUser as any).remainingQuota === 'number'
                     ? (currentUser as any).remainingQuota
@@ -1688,15 +1670,10 @@ function HomeContent() {
                     : 10;
 
                   const remainingCredits = isUnlimited ? -1 : rawRem;
-                  const usageLimit = isUnlimited ? -1 : rawUsageLimit;
-
-                  const isTrial = !isVipActive && !isVipExpired && !isUnlimited && remainingCredits > 0;
-                  const percentUsed = !isUnlimited && usageLimit > 0
-                    ? Math.min(100, Math.max(0, Math.round((Math.max(0, usageLimit - remainingCredits) / usageLimit) * 100)))
-                    : 0;
+                  const isTrial = !isVipActive && !isVipExpired && !isUnlimited && remainingCredits > 0 && ltQuota === 0 && !subExp;
 
                   return (
-                    <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                    <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
                       {/* User Header */}
                       <div className="px-3.5 pb-2.5 border-b border-slate-100 dark:border-slate-800/80">
                         <div className="flex items-center justify-between">
@@ -1736,89 +1713,86 @@ function HomeContent() {
                         </p>
                       </div>
 
-                      {/* Khối thông tin chi tiết VIP & Hạn mức quota */}
-                      <div className="mx-2.5 my-2 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex flex-col gap-2 text-xs">
-                        {/* Dòng 1: Gói dịch vụ */}
-                        <div className="flex items-center justify-between">
-                          <span className="text-slate-500 dark:text-slate-400 text-[11px]">Gói dịch vụ:</span>
-                          {isAdmin ? (
-                            <span className="font-extrabold text-rose-600 dark:text-rose-400 flex items-center gap-1 text-[11px]">
-                              <Crown className="w-3 h-3 text-rose-500 fill-rose-500" />
-                              Quản trị viên (Admin ⭐)
-                            </span>
-                          ) : isVipActive ? (
-                            <span className="font-extrabold text-amber-700 dark:text-amber-400 flex items-center gap-1 text-[11px]">
-                              <Crown className="w-3 h-3 text-amber-500 fill-amber-500" />
-                              Thành viên VIP ⭐
-                            </span>
-                          ) : isVipExpired ? (
-                            <span className="font-semibold text-rose-600 dark:text-rose-400 text-[11px]">
-                              VIP đã hết hạn ⚠️
-                            </span>
-                          ) : isTrial ? (
-                            <span className="font-semibold text-cyan-600 dark:text-cyan-400 text-[11px]">
-                              Gói Dùng Thử ({remainingCredits} lượt)
-                            </span>
-                          ) : (
-                            <span className="font-medium text-slate-600 dark:text-slate-300 text-[11px]">
-                              Thành viên Tiêu chuẩn (Free)
-                            </span>
-                          )}
-                        </div>
+                      {/* Tổng hạn mức khả dụng banner */}
+                      <div className="mx-2.5 my-2 px-3 py-2 rounded-xl bg-gradient-to-r from-indigo-500/10 via-cyan-500/10 to-emerald-500/10 border border-indigo-500/20 flex items-center justify-between">
+                        <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                          Tổng hạn mức khả dụng:
+                        </span>
+                        <span className="font-bold text-xs text-indigo-600 dark:text-indigo-400">
+                          {isUnlimited ? '∞ Không giới hạn' : `${remainingCredits} lượt`}
+                        </span>
+                      </div>
 
-                        {/* Dòng 2: Hạn sử dụng */}
-                        <div className="flex items-center justify-between">
-                          <span className="text-slate-500 dark:text-slate-400 text-[11px]">Hạn dùng:</span>
-                          <span className="text-[11px] text-right">
-                            {isAdmin || (!vipExp && isVipActive) ? (
-                              <strong className="text-amber-600 dark:text-amber-400 font-bold text-base leading-none">∞</strong>
-                            ) : isVipActive ? (
-                              vipExp ? (
-                                <span>
-                                  <strong className={isExpiringSoon ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}>
-                                    Còn {daysRemaining} ngày
-                                  </strong>{' '}
-                                  <span className="text-[10px] text-slate-400">
-                                    ({new Date(vipExp).toLocaleDateString('vi-VN')})
-                                  </span>
-                                </span>
-                              ) : (
-                                <strong className="text-amber-600 dark:text-amber-400 font-bold text-base leading-none">∞</strong>
-                              )
-                            ) : isVipExpired ? (
-                              <span className="text-rose-500 text-[10px]">
-                                Đã hết hạn ({vipExp ? new Date(vipExp).toLocaleDateString('vi-VN') : ''})
-                              </span>
-                            ) : (
-                              <span className="text-slate-400">Không áp dụng</span>
-                            )}
-                          </span>
-                        </div>
-
-                        {/* Dòng 3: Lượt dùng + Progress bar */}
-                        <div className="flex flex-col gap-1 pt-1.5 border-t border-slate-200/60 dark:border-slate-700/50">
-                          <div className="flex items-center justify-between text-[11px]">
-                            <span className="text-slate-500 dark:text-slate-400">Lượt dùng:</span>
-                            {isUnlimited ? (
-                              <span className="text-lg font-bold text-sky-400 leading-none">∞</span>
-                            ) : remainingCredits > 0 ? (
-                              <span className="font-semibold text-slate-700 dark:text-slate-200">
-                                <strong className="text-cyan-600 dark:text-cyan-400 font-bold">{remainingCredits}</strong> / {usageLimit} lượt {!isVipActive ? '(Dùng thử)' : ''}
-                              </span>
-                            ) : (
-                              <span className="text-rose-500 font-medium">Hết lượt dùng</span>
-                            )}
+                      {/* 2 Khối Thẻ Hạn Mức Riêng Biệt */}
+                      <div className="mx-2.5 mb-2 flex flex-col gap-2">
+                        {/* Thẻ 1: Gói Thuê Bao */}
+                        <div className="p-2.5 rounded-xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-200/70 dark:border-indigo-800/50 flex flex-col gap-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-bold text-indigo-900 dark:text-indigo-200 flex items-center gap-1.5">
+                              <span className={`w-2 h-2 rounded-full ${isSubActive ? 'bg-emerald-500' : 'bg-slate-400'}`}></span>
+                              Gói Thuê Bao
+                            </span>
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
+                              isSubActive
+                                ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
+                                : subExp
+                                ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
+                                : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
+                            }`}>
+                              {isSubActive ? 'Đang hoạt động' : subExp ? 'Đã hết hạn' : 'Chưa kích hoạt'}
+                            </span>
                           </div>
 
-                          {!isUnlimited && usageLimit > 0 && (
-                            <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden mt-0.5">
-                              <div
-                                className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full transition-all duration-300"
-                                style={{ width: `${percentUsed}%` }}
-                                title={`Đã dùng ${Math.max(0, usageLimit - remainingCredits)}/${usageLimit} lượt (${percentUsed}%)`}
-                              />
-                            </div>
-                          )}
+                          <div className="flex items-baseline justify-between text-xs">
+                            <span className="text-slate-500 dark:text-slate-400 text-[11px]">Số lượt còn lại:</span>
+                            <span className="font-bold text-indigo-700 dark:text-indigo-300">
+                              {subQuota} lượt
+                            </span>
+                          </div>
+
+                          <div className="flex items-baseline justify-between text-[11px]">
+                            <span className="text-slate-500 dark:text-slate-400">Hạn dùng:</span>
+                            <span className="text-right">
+                              {isSubActive && subExp ? (
+                                <span className="font-medium text-slate-700 dark:text-slate-300">
+                                  Còn {subDaysRemaining} ngày • {formatDateVN(subExp)}
+                                </span>
+                              ) : subExp ? (
+                                <span className="text-rose-500 font-medium">
+                                  Hết hạn ({formatDateVN(subExp)})
+                                </span>
+                              ) : (
+                                <span className="text-slate-400 italic">Chưa đăng ký</span>
+                              )}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Thẻ 2: Ví Vĩnh Viễn */}
+                        <div className="p-2.5 rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-800/50 flex flex-col gap-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
+                              <Crown className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />
+                              Ví Vĩnh Viễn
+                            </span>
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                              Trọn đời (∞)
+                            </span>
+                          </div>
+
+                          <div className="flex items-baseline justify-between text-xs">
+                            <span className="text-slate-500 dark:text-slate-400 text-[11px]">Lượt tích lũy:</span>
+                            <span className="font-bold text-amber-700 dark:text-amber-300">
+                              {ltQuota} lượt
+                            </span>
+                          </div>
+
+                          <div className="flex items-baseline justify-between text-[11px]">
+                            <span className="text-slate-500 dark:text-slate-400">Hạn dùng:</span>
+                            <span className="font-medium text-amber-600 dark:text-amber-400">
+                              Không bao giờ hết hạn
+                            </span>
+                          </div>
                         </div>
                       </div>
 

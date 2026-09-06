@@ -31,6 +31,12 @@ export interface AccountDetailsData {
     remainingQuota?: number | null;
     max_quota?: number | null;
     maxQuota?: number | null;
+    lifetime_quota?: number | null;
+    lifetimeQuota?: number | null;
+    subscription_quota?: number | null;
+    subscriptionQuota?: number | null;
+    subscription_expires_at?: string | Date | null;
+    subscriptionExpiresAt?: string | Date | null;
     status?: string;
     is_active?: boolean;
     isActive?: boolean;
@@ -102,16 +108,19 @@ export default function AccountDetailsModal({ isOpen, onClose, data }: AccountDe
   const isStaff = roleLower === 'staff' || roleLower === 'ctv';
   const isVip = Boolean(user.is_vip ?? user.isVip) || roleLower === 'vip';
 
-  // Lượt dùng AI
+  // Dual-wallet quota values
+  const rawLifetimeQuota = user.lifetime_quota ?? user.lifetimeQuota ?? 0;
+  const rawSubQuota = user.subscription_quota ?? user.subscriptionQuota ?? 0;
+  const rawSubExpiresAt = user.subscription_expires_at || user.subscriptionExpiresAt || user.vip_expires_at || user.vipExpiresAt || null;
+  const now = new Date();
+  const isSubActive = Boolean(rawSubExpiresAt && new Date(rawSubExpiresAt) > now);
+
+  // Remaining total
   const remainingQuota = user.remaining_quota ?? user.remainingQuota;
   const isUnlimitedQuota = isAdmin || remainingQuota === null || remainingQuota === -1;
-  const quotaDisplay = isUnlimitedQuota ? '∞ Vô hạn' : `${remainingQuota ?? 0} lượt`;
-
-  // Hạn sử dụng VIP
-  const vipExpiresAt = user.vip_expires_at || user.vipExpiresAt;
-  const expiresDisplay = vipExpiresAt 
-    ? formatDateVN(vipExpiresAt) 
-    : (isAdmin || isVip ? 'Vĩnh viễn (∞)' : 'Chưa kích hoạt');
+  const totalAvailable = isUnlimitedQuota
+    ? '∞'
+    : `${(isSubActive ? rawSubQuota : 0) + rawLifetimeQuota} lượt`;
 
   // License Key Details
   const duration = licenseKey?.durationDays ?? licenseKey?.duration_days ?? 30;
@@ -193,28 +202,76 @@ export default function AccountDetailsModal({ isOpen, onClose, data }: AccountDe
           </button>
         </div>
 
-        {/* PHẦN 2: Trạng Thái Dịch Vụ & Hạn Mức (Lưới 2 ô) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-          {/* Ô 1: Hạn sử dụng VIP */}
-          <div className="p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-900/40 border border-slate-200/80 dark:border-slate-800 flex flex-col gap-1">
-            <span className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 font-medium">
-              <Calendar className="w-3.5 h-3.5 text-amber-500" />
-              Hạn sử dụng VIP:
+        {/* PHẦN 2: Trạng Thái Dịch Vụ & 2 Ví Hạn Mức (Gói Thuê Bao & Kho Vĩnh Viễn) */}
+        <div className="flex flex-col gap-2.5">
+          {/* Thanh tổng quan khả dụng */}
+          <div className="px-3.5 py-2 rounded-xl bg-slate-100/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between text-xs">
+            <span className="text-slate-600 dark:text-slate-400 font-medium flex items-center gap-1.5">
+              <Zap className="w-3.5 h-3.5 text-cyan-500" />
+              Tổng lượt khả dụng:
             </span>
-            <span className="text-sm font-bold font-mono text-slate-900 dark:text-slate-100 truncate" title={expiresDisplay}>
-              {expiresDisplay}
+            <span className="font-mono font-bold text-sm text-cyan-600 dark:text-cyan-400">
+              {totalAvailable}
             </span>
           </div>
 
-          {/* Ô 2: Lượt dùng AI */}
-          <div className="p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-900/40 border border-slate-200/80 dark:border-slate-800 flex flex-col gap-1">
-            <span className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 font-medium">
-              <Zap className="w-3.5 h-3.5 text-cyan-500" />
-              Lượt dùng AI:
-            </span>
-            <span className="text-sm font-bold font-mono text-cyan-600 dark:text-cyan-400">
-              {quotaDisplay}
-            </span>
+          {/* Lưới 2 Khối Ví */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            {/* Khối 1: [Gói Thuê Bao] */}
+            <div className="p-3.5 rounded-xl bg-blue-50/70 dark:bg-blue-950/20 border border-blue-200/80 dark:border-blue-900/40 flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-blue-700 dark:text-blue-300 flex items-center gap-1 font-bold">
+                  <Calendar className="w-3.5 h-3.5 text-blue-500" />
+                  Gói Thuê Bao:
+                </span>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                  isAdmin
+                    ? 'bg-blue-500/20 text-blue-700 dark:text-blue-300'
+                    : isSubActive
+                    ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
+                    : 'bg-slate-200/80 dark:bg-slate-800 text-slate-500'
+                }`}>
+                  {isAdmin ? 'Vô hạn' : isSubActive ? 'Còn hạn' : (rawSubExpiresAt ? 'Hết hạn' : 'Chưa có')}
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between mt-0.5">
+                <span className="text-xs text-slate-500 dark:text-slate-400">Số lượt:</span>
+                <span className="text-sm font-bold font-mono text-blue-700 dark:text-blue-400">
+                  {isAdmin ? '∞' : `${rawSubQuota} lượt`}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-[11px] pt-1 border-t border-blue-200/50 dark:border-blue-900/30 text-slate-500 dark:text-slate-400">
+                <span>Hạn dùng:</span>
+                <span className="font-mono font-medium text-slate-700 dark:text-slate-300">
+                  {isAdmin ? '∞' : (rawSubExpiresAt ? formatDateVN(rawSubExpiresAt) : 'Chưa kích hoạt')}
+                </span>
+              </div>
+            </div>
+
+            {/* Khối 2: [Kho Vĩnh Viễn] */}
+            <div className="p-3.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-900/40 flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-amber-700 dark:text-amber-300 flex items-center gap-1 font-bold">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  Kho Vĩnh Viễn:
+                </span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                  Trọn đời (∞)
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between mt-0.5">
+                <span className="text-xs text-slate-500 dark:text-slate-400">Tích lũy:</span>
+                <span className="text-sm font-bold font-mono text-amber-700 dark:text-amber-400">
+                  {isAdmin ? '∞' : `${rawLifetimeQuota} lượt`}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-[11px] pt-1 border-t border-amber-200/50 dark:border-amber-900/30 text-slate-500 dark:text-slate-400">
+                <span>Thời hạn:</span>
+                <span className="font-medium text-emerald-600 dark:text-emerald-400 font-mono">
+                  Không bao giờ hết hạn
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 

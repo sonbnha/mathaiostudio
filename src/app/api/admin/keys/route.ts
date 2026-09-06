@@ -60,7 +60,10 @@ export async function GET(req: NextRequest) {
           used_user.is_vip AS used_user_is_vip,
           used_user.vip_expires_at AS used_user_vip_expires_at,
           used_user.remaining_quota AS used_user_remaining_quota,
-          used_user.max_quota AS used_user_max_quota
+          used_user.max_quota AS used_user_max_quota,
+          COALESCE(used_user.lifetime_quota, 0) AS used_user_lifetime_quota,
+          COALESCE(used_user.subscription_quota, 0) AS used_user_subscription_quota,
+          used_user.subscription_expires_at AS used_user_subscription_expires_at
         FROM license_keys lk
         LEFT JOIN users creator ON creator.id = lk.created_by
         LEFT JOIN users used_user ON used_user.id = lk.used_by
@@ -97,7 +100,10 @@ export async function GET(req: NextRequest) {
           used_user.is_vip AS used_user_is_vip,
           used_user.vip_expires_at AS used_user_vip_expires_at,
           used_user.remaining_quota AS used_user_remaining_quota,
-          used_user.max_quota AS used_user_max_quota
+          used_user.max_quota AS used_user_max_quota,
+          COALESCE(used_user.lifetime_quota, 0) AS used_user_lifetime_quota,
+          COALESCE(used_user.subscription_quota, 0) AS used_user_subscription_quota,
+          used_user.subscription_expires_at AS used_user_subscription_expires_at
         FROM license_keys lk
         LEFT JOIN users creator ON creator.id = lk.created_by
         LEFT JOIN users used_user ON used_user.id = lk.used_by
@@ -149,6 +155,12 @@ export async function GET(req: NextRequest) {
         remainingQuota: k.used_user_remaining_quota,
         max_quota: k.used_user_max_quota,
         maxQuota: k.used_user_max_quota,
+        lifetime_quota: Number(k.used_user_lifetime_quota ?? 0),
+        lifetimeQuota: Number(k.used_user_lifetime_quota ?? 0),
+        subscription_quota: Number(k.used_user_subscription_quota ?? 0),
+        subscriptionQuota: Number(k.used_user_subscription_quota ?? 0),
+        subscription_expires_at: k.used_user_subscription_expires_at || null,
+        subscriptionExpiresAt: k.used_user_subscription_expires_at || null,
       } : null,
       used_by: k.used_by,
       usedAt: k.used_at,
@@ -255,15 +267,16 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 3. Chuẩn hóa tham số tạo key (Chỉ tạo key VIP bản quyền chính thức)
-    const effectivePrefix = prefix || 'AIO-VIP';
-
     // Số ngày có hiệu lực (30, 90, 365, hoặc 0: vĩnh viễn)
     const days = durationDays !== undefined
       ? Number(durationDays)
       : duration_days !== undefined
       ? Number(duration_days)
       : 30;
+
+    // 3. Chuẩn hóa tham số tạo key (AIO-LT cho Vĩnh viễn, AIO-VIP cho Thuê bao có thời hạn)
+    const defaultPrefix = days === 0 ? 'AIO-LT' : 'AIO-VIP';
+    const effectivePrefix = prefix || defaultPrefix;
 
     // Hạn mức lượt tạo hình
     const usage = maxUsage !== undefined

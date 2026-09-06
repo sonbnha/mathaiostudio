@@ -50,12 +50,12 @@ export async function getCurrentUserFromRequest(req: NextRequest) {
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(payload.userId);
     const rows = isUuid
       ? await sql`
-          SELECT id, email, username, name, role, status, is_active, api_key, cuid, key_quota, is_vip, vip_expires_at, remaining_quota, max_quota, created_at
+          SELECT id, email, username, name, role, status, is_active, api_key, cuid, key_quota, is_vip, vip_expires_at, remaining_quota, max_quota, lifetime_quota, subscription_quota, subscription_expires_at, created_at
           FROM users
           WHERE id = ${payload.userId}::uuid
         `
       : await sql`
-          SELECT id, email, username, name, role, status, is_active, api_key, cuid, key_quota, is_vip, vip_expires_at, remaining_quota, max_quota, created_at
+          SELECT id, email, username, name, role, status, is_active, api_key, cuid, key_quota, is_vip, vip_expires_at, remaining_quota, max_quota, lifetime_quota, subscription_quota, subscription_expires_at, created_at
           FROM users
           WHERE cuid = ${payload.userId} OR username = ${payload.userId}
         `;
@@ -81,6 +81,12 @@ export async function getCurrentUserFromRequest(req: NextRequest) {
         remainingQuota: typeof u.remaining_quota === 'number' ? u.remaining_quota : 0,
         max_quota: typeof u.max_quota === 'number' ? u.max_quota : 0,
         maxQuota: typeof u.max_quota === 'number' ? u.max_quota : 0,
+        lifetime_quota: typeof u.lifetime_quota === 'number' ? u.lifetime_quota : 0,
+        lifetimeQuota: typeof u.lifetime_quota === 'number' ? u.lifetime_quota : 0,
+        subscription_quota: typeof u.subscription_quota === 'number' ? u.subscription_quota : 0,
+        subscriptionQuota: typeof u.subscription_quota === 'number' ? u.subscription_quota : 0,
+        subscription_expires_at: u.subscription_expires_at || null,
+        subscriptionExpiresAt: u.subscription_expires_at || null,
         createdAt: u.created_at,
       };
     }

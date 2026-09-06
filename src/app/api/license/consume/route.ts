@@ -4,31 +4,95 @@ import { getDb } from '@/lib/db';
 
 export async function POST(req: NextRequest) {
   try {
-    // 0. Nếu người dùng đang đăng nhập, trừ trực tiếp remaining_quota trên bảng users của tài khoản
+    // 0. Nếu người dùng đang đăng nhập, áp dụng quy tắc khấu trừ 2 ví: Ưu tiên 1 Ví Gói Thuê Bao -> Ưu tiên 2 Ví Vĩnh Viễn
     try {
       const { getCurrentUserFromRequest } = await import('@/lib/auth');
       const currentUser = await getCurrentUserFromRequest(req);
       if (currentUser) {
-        const sql = getDb();
-        const updatedUsers = await sql`
-          UPDATE users
-          SET remaining_quota = GREATEST(0, remaining_quota - 1)
-          WHERE id = ${currentUser.id}::uuid
-          RETURNING remaining_quota, max_quota;
-        `;
-        if (updatedUsers && updatedUsers.length > 0) {
-          const userRem = updatedUsers[0].remaining_quota;
-          const userMax = updatedUsers[0].max_quota ?? 10;
+        if ((currentUser.role || '').toLowerCase() === 'admin') {
           return NextResponse.json({
             success: true,
-            remainingCredits: userRem,
-            remaining_quota: userRem,
-            totalCredits: userMax,
-            usedCredits: Math.max(0, userMax - userRem),
+            remainingCredits: -1,
+            remaining_quota: -1,
+            isUnlimited: true,
           });
         }
+
+        const sql = getDb();
+        const userRows = await sql`
+          SELECT id, role, subscription_quota, subscription_expires_at, lifetime_quota, remaining_quota, max_quota
+          FROM users
+          WHERE id = ${currentUser.id}::uuid
+          LIMIT 1
+        `;
+
+        if (userRows && userRows.length > 0) {
+          const u = userRows[0];
+          const now = new Date();
+          const subActive = Boolean(u.subscription_expires_at && new Date(u.subscription_expires_at) > now);
+          const subQuota = Number(u.subscription_quota || 0);
+          const lifeQuota = Number(u.lifetime_quota || 0);
+
+          // Ưu tiên 1: Ví có hạn (Subscription)
+          if (subActive && subQuota > 0) {
+            const newSub = subQuota - 1;
+            const newTotal = newSub + lifeQuota;
+            await sql`
+              UPDATE users
+              SET 
+                subscription_quota = ${newSub},
+                remaining_quota = ${newTotal}
+              WHERE id = ${u.id}::uuid
+            `;
+            return NextResponse.json({
+              success: true,
+              walletDeducted: 'subscription',
+              remainingCredits: newTotal,
+              remaining_quota: newTotal,
+              subscriptionQuota: newSub,
+              subscription_quota: newSub,
+              lifetimeQuota: lifeQuota,
+              lifetime_quota: lifeQuota,
+            });
+          }
+
+          // Ưu tiên 2: Ví vĩnh viễn (Lifetime)
+          if (lifeQuota > 0) {
+            const newLife = lifeQuota - 1;
+            const newTotal = (subActive ? subQuota : 0) + newLife;
+            await sql`
+              UPDATE users
+              SET 
+                lifetime_quota = ${newLife},
+                remaining_quota = ${newTotal}
+              WHERE id = ${u.id}::uuid
+            `;
+            return NextResponse.json({
+              success: true,
+              walletDeducted: 'lifetime',
+              remainingCredits: newTotal,
+              remaining_quota: newTotal,
+              subscriptionQuota: subQuota,
+              subscription_quota: subQuota,
+              lifetimeQuota: newLife,
+              lifetime_quota: newLife,
+            });
+          }
+
+          // Cả 2 ví đều không đủ điều kiện
+          return NextResponse.json(
+            {
+              success: false,
+              error: 'Bạn đã hết lượt sử dụng. Vui lòng nạp thêm License Key để tiếp tục.',
+              message: 'Bạn đã hết lượt sử dụng. Vui lòng nạp thêm License Key để tiếp tục.',
+            },
+            { status: 403 }
+          );
+        }
       }
-    } catch {}
+    } catch (userDeductErr) {
+      console.warn('Lỗi khấu trừ ví user:', userDeductErr);
+    }
 
     const rawKey =
       req.headers.get('x-license-key') ||

@@ -17,6 +17,7 @@ import {
   Shield,
 } from 'lucide-react';
 import { useAdminContext } from '@/app/admin/AdminContext';
+import ChangelogContentRenderer from '@/components/ChangelogContentRenderer';
 
 export interface ChangelogEditorFormProps {
   initialId?: string;
@@ -572,41 +573,7 @@ export default function ChangelogEditorForm({
                   </p>
                 </div>
               ) : (
-                <ul className="flex flex-col gap-2 text-xs">
-                  {parsedChanges.map((change, idx) => (
-                    <li
-                      key={idx}
-                      className="flex items-start gap-2.5 leading-relaxed text-slate-300 bg-slate-950/40 p-2.5 rounded-xl border border-slate-800/60"
-                    >
-                      {/* Badge Tag */}
-                      {change.type === 'feat' && (
-                        <span className="bg-emerald-950 text-emerald-400 border border-emerald-800 text-[9px] font-mono font-bold px-1.5 py-0.5 rounded shrink-0 uppercase tracking-wide">
-                          FEAT
-                        </span>
-                      )}
-                      {change.type === 'fix' && (
-                        <span className="bg-rose-950 text-rose-400 border border-rose-800 text-[9px] font-mono font-bold px-1.5 py-0.5 rounded shrink-0 uppercase tracking-wide">
-                          FIX
-                        </span>
-                      )}
-                      {change.type === 'improve' && (
-                        <span className="bg-sky-950 text-sky-400 border border-sky-800 text-[9px] font-mono font-bold px-1.5 py-0.5 rounded shrink-0 uppercase tracking-wide">
-                          IMPROVE
-                        </span>
-                      )}
-                      {(change.type === 'note' || change.type === 'update') && (
-                        <span className="bg-slate-800/80 text-slate-300 border border-slate-700/80 text-[9px] font-mono font-bold px-1.5 py-0.5 rounded shrink-0 uppercase tracking-wide">
-                          NOTE
-                        </span>
-                      )}
-
-                      {/* Content */}
-                      <span className="flex-1 break-words">
-                        {change.description}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+                <ChangelogContentRenderer changes={parsedChanges} />
               )}
             </div>
           </div>

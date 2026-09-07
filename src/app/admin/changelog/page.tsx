@@ -16,6 +16,8 @@ import {
   X,
   AlertCircle,
   Shield,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { useAdminContext, ChangelogItem } from '../AdminContext';
 
@@ -30,6 +32,8 @@ export default function AdminChangelogPage() {
   } = useAdminContext();
 
   const [changelogSearch, setChangelogSearch] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 8;
 
   // Changelog Create/Edit Modal State
   const [isChangelogEditModalOpen, setIsChangelogEditModalOpen] = useState(false);
@@ -55,6 +59,14 @@ export default function AdminChangelogPage() {
       cl.changes?.some((c) => c.description.toLowerCase().includes(q))
     );
   });
+
+  // Pagination calculations
+  const totalItems = filteredChangelogs.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const safePage = Math.min(Math.max(1, currentPage), totalPages);
+  const startIndex = totalItems > 0 ? (safePage - 1) * pageSize : 0;
+  const endIndex = Math.min(startIndex + pageSize, totalItems);
+  const paginatedChangelogs = filteredChangelogs.slice(startIndex, endIndex);
 
   const handleOpenCreateChangelogModal = () => {
     setEditingChangelogId(null);
@@ -242,7 +254,10 @@ export default function AdminChangelogPage() {
               <input
                 type="text"
                 value={changelogSearch}
-                onChange={(e) => setChangelogSearch(e.target.value)}
+                onChange={(e) => {
+                  setChangelogSearch(e.target.value);
+                  setCurrentPage(1);
+                }}
                 placeholder="Tìm theo version, tiêu đề..."
                 className="pl-8 pr-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-indigo-500 text-xs text-slate-900 dark:text-slate-200 outline-none w-48 sm:w-60 transition"
               />
@@ -253,7 +268,7 @@ export default function AdminChangelogPage() {
               type="button"
               onClick={() => fetchAdminChangelogs(true)}
               disabled={changelogsLoading}
-              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-transparent transition"
+              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-transparent transition cursor-pointer"
               title="Tải lại danh sách"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${changelogsLoading ? 'animate-spin' : ''}`} />
@@ -263,7 +278,7 @@ export default function AdminChangelogPage() {
             <button
               type="button"
               onClick={handleOpenCreateChangelogModal}
-              className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md shadow-indigo-950/30 flex items-center gap-1.5 transition"
+              className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md shadow-indigo-950/30 flex items-center gap-1.5 transition cursor-pointer"
             >
               <PlusCircle className="w-3.5 h-3.5" />
               <span>Thêm Phiên Bản</span>
@@ -273,15 +288,15 @@ export default function AdminChangelogPage() {
 
         {/* Table */}
         <div className="overflow-x-auto w-full rounded-xl border border-slate-200/80 dark:border-slate-800/80">
-          <table className="w-full min-w-[700px] text-left border-collapse text-xs">
+          <table className="w-full table-fixed min-w-[750px] text-left border-collapse text-xs">
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-950/70 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold">
-                <th className="py-3 px-4">Phiên Bản</th>
-                <th className="py-3 px-4">Tiêu Đề Phát Hành</th>
-                <th className="py-3 px-4">Ngày Áp Dụng</th>
-                <th className="py-3 px-4">Mục Thay Đổi</th>
-                <th className="py-3 px-4">Trạng Thái</th>
-                <th className="py-3 px-4 text-right">Thao Tác</th>
+                <th className="py-3 px-4 w-[11%]">PHIÊN BẢN</th>
+                <th className="py-3 px-4 w-[38%]">TIÊU ĐỀ PHÁT HÀNH</th>
+                <th className="py-3 px-4 w-[13%]">NGÀY ÁP DỤNG</th>
+                <th className="py-3 px-4 w-[20%]">MỤC THAY ĐỔI</th>
+                <th className="py-3 px-4 w-[12%]">TRẠNG THÁI</th>
+                <th className="py-3 px-4 w-[6%] text-right">THAO TÁC</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200/80 dark:divide-slate-800/80">
@@ -292,53 +307,57 @@ export default function AdminChangelogPage() {
                     <span>Đang tải danh sách phiên bản...</span>
                   </td>
                 </tr>
-              ) : filteredChangelogs.length === 0 ? (
+              ) : paginatedChangelogs.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-slate-400">
                     Không tìm thấy phiên bản nào phù hợp.
                   </td>
                 </tr>
               ) : (
-                filteredChangelogs.map((cl) => {
+                paginatedChangelogs.map((cl) => {
                   const changesArr = Array.isArray(cl.changes) ? cl.changes : [];
                   return (
                     <tr key={cl.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-950/50 transition">
-                      <td className="py-3 px-4 font-mono font-bold">
+                      <td className="py-3 px-4 font-mono font-bold w-[11%]">
                         <span className="px-2 py-0.5 rounded-md bg-indigo-500/10 border border-indigo-500/20 text-indigo-700 dark:text-indigo-300">
                           {cl.version}
                         </span>
                       </td>
-                      <td className="py-3 px-4 font-medium text-slate-800 dark:text-slate-200 max-w-xs truncate">
+                      <td className="py-3 px-4 font-medium text-slate-800 dark:text-slate-200 truncate w-[38%]" title={cl.title}>
                         {cl.title}
                       </td>
-                      <td className="py-3 px-4 font-mono text-slate-500 dark:text-slate-400">
+                      <td className="py-3 px-4 font-mono text-slate-500 dark:text-slate-400 w-[13%]">
                         {cl.date}
                       </td>
-                      <td className="py-3 px-4">
-                        <div className="flex flex-wrap items-center gap-1">
-                          <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                      <td className="py-3 px-4 w-[20%]">
+                        <div className="flex items-center">
+                          <span className="text-slate-400 font-medium text-xs mr-2 shrink-0">
                             {changesArr.length} mục
                           </span>
-                          {changesArr.slice(0, 2).map((ch, chIdx) => (
-                            <span
-                              key={chIdx}
-                              className={`text-[9px] uppercase px-1.5 py-0.5 rounded font-bold ${
-                                ch.type === 'feat'
-                                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                                  : ch.type === 'fix'
-                                  ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
-                                  : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'
-                              }`}
-                            >
-                              {ch.type}
-                            </span>
-                          ))}
-                          {changesArr.length > 2 && (
-                            <span className="text-[10px] text-slate-400">+{changesArr.length - 2}</span>
-                          )}
+                          <div className="inline-flex flex-wrap items-center gap-1.5">
+                            {changesArr.slice(0, 2).map((ch, chIdx) => (
+                              <span
+                                key={chIdx}
+                                className={`text-[10px] uppercase px-1.5 py-0.5 rounded font-semibold border ${
+                                  ch.type === 'feat'
+                                    ? 'bg-emerald-950/60 text-emerald-400 border-emerald-800/80 dark:bg-emerald-950/60 dark:text-emerald-400 dark:border-emerald-800/80'
+                                    : ch.type === 'fix'
+                                    ? 'bg-rose-950/60 text-rose-400 border-rose-800/80 dark:bg-rose-950/60 dark:text-rose-400 dark:border-rose-800/80'
+                                    : 'bg-sky-950/60 text-sky-400 border-sky-800/80 dark:bg-sky-950/60 dark:text-sky-400 dark:border-sky-800/80'
+                                }`}
+                              >
+                                {ch.type}
+                              </span>
+                            ))}
+                            {changesArr.length > 2 && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 font-medium">
+                                +{changesArr.length - 2}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-4 w-[12%]">
                         <button
                           type="button"
                           onClick={() => handleToggleChangelogPublish(cl.id, cl.isPublished)}
@@ -353,12 +372,12 @@ export default function AdminChangelogPage() {
                           <span>{cl.isPublished ? 'Đã Xuất Bản' : 'Bản Nháp (Ẩn)'}</span>
                         </button>
                       </td>
-                      <td className="py-3 px-4 text-right">
+                      <td className="py-3 px-4 text-right w-[6%]">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             type="button"
                             onClick={() => handleOpenEditChangelogModal(cl)}
-                            className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-medium border border-slate-200 dark:border-transparent transition flex items-center gap-1"
+                            className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-medium border border-slate-200 dark:border-transparent transition flex items-center gap-1 cursor-pointer"
                             title="Chỉnh sửa phiên bản"
                           >
                             <Edit className="w-3.5 h-3.5" />
@@ -368,7 +387,7 @@ export default function AdminChangelogPage() {
                           <button
                             type="button"
                             onClick={() => handleDeleteChangelog(cl.id, cl.version)}
-                            className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 transition"
+                            className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 transition cursor-pointer"
                             title="Xóa phiên bản này"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -381,6 +400,56 @@ export default function AdminChangelogPage() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Pagination Footer */}
+        <div className="border-t border-slate-200 dark:border-slate-800 px-4 py-3 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
+          <div>
+            {totalItems === 0 ? (
+              'Không tìm thấy phiên bản nào'
+            ) : (
+              <>
+                Đang hiển thị <span className="font-semibold text-slate-700 dark:text-slate-200">{startIndex + 1}</span> - <span className="font-semibold text-slate-700 dark:text-slate-200">{endIndex}</span> trong tổng số <span className="font-semibold text-slate-700 dark:text-slate-200">{totalItems}</span> phiên bản
+              </>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              disabled={safePage <= 1}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800 transition text-xs font-medium flex items-center gap-1 cursor-pointer"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+              <span>Trang trước</span>
+            </button>
+
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+              <button
+                key={pageNum}
+                type="button"
+                onClick={() => setCurrentPage(pageNum)}
+                className={`w-7 h-7 rounded-lg text-xs font-semibold flex items-center justify-center border transition cursor-pointer ${
+                  pageNum === safePage
+                    ? 'bg-indigo-600 border-indigo-600 text-white shadow-xs'
+                    : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                }`}
+              >
+                {pageNum}
+              </button>
+            ))}
+
+            <button
+              type="button"
+              disabled={safePage >= totalPages}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800 transition text-xs font-medium flex items-center gap-1 cursor-pointer"
+            >
+              <span>Trang sau</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       </div>
 

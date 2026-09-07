@@ -291,12 +291,12 @@ export default function AdminChangelogPage() {
           <table className="w-full table-fixed min-w-[750px] text-left border-collapse text-xs">
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-950/70 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold">
-                <th className="py-3 px-4 w-[11%]">PHIÊN BẢN</th>
-                <th className="py-3 px-4 w-[38%]">TIÊU ĐỀ PHÁT HÀNH</th>
-                <th className="py-3 px-4 w-[13%]">NGÀY ÁP DỤNG</th>
-                <th className="py-3 px-4 w-[20%]">MỤC THAY ĐỔI</th>
-                <th className="py-3 px-4 w-[12%]">TRẠNG THÁI</th>
-                <th className="py-3 px-4 w-[6%] text-right">THAO TÁC</th>
+                <th className="py-3 px-4 w-[14%] min-w-[125px] whitespace-nowrap">PHIÊN BẢN</th>
+                <th className="py-3 px-4 w-[32%]">TIÊU ĐỀ PHÁT HÀNH</th>
+                <th className="py-3 px-4 w-[11%] min-w-[95px] whitespace-nowrap">NGÀY ÁP DỤNG</th>
+                <th className="py-3 px-4 w-[21%] min-w-[180px]">MỤC THAY ĐỔI</th>
+                <th className="py-3 px-4 w-[13%] min-w-[115px] whitespace-nowrap">TRẠNG THÁI</th>
+                <th className="py-3 px-4 w-[9%] min-w-[75px] whitespace-nowrap text-right">THAO TÁC</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200/80 dark:divide-slate-800/80">
@@ -318,27 +318,27 @@ export default function AdminChangelogPage() {
                   const changesArr = Array.isArray(cl.changes) ? cl.changes : [];
                   return (
                     <tr key={cl.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-950/50 transition">
-                      <td className="py-3 px-4 font-mono font-bold w-[11%]">
-                        <span className="px-2 py-0.5 rounded-md bg-indigo-500/10 border border-indigo-500/20 text-indigo-700 dark:text-indigo-300">
+                      <td className="py-3 px-4 font-mono font-bold w-[14%] min-w-[125px] whitespace-nowrap">
+                        <span className="px-2 py-0.5 rounded-md bg-indigo-500/10 border border-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-mono whitespace-nowrap">
                           {cl.version}
                         </span>
                       </td>
-                      <td className="py-3 px-4 font-medium text-slate-800 dark:text-slate-200 truncate w-[38%]" title={cl.title}>
+                      <td className="py-3 px-4 font-medium text-slate-800 dark:text-slate-200 truncate w-[32%]" title={cl.title}>
                         {cl.title}
                       </td>
-                      <td className="py-3 px-4 font-mono text-slate-500 dark:text-slate-400 w-[13%]">
+                      <td className="py-3 px-4 font-mono text-slate-500 dark:text-slate-400 w-[11%] min-w-[95px] whitespace-nowrap">
                         {cl.date}
                       </td>
-                      <td className="py-3 px-4 w-[20%]">
-                        <div className="flex items-center">
-                          <span className="text-slate-400 font-medium text-xs mr-2 shrink-0">
+                      <td className="py-3 px-4 w-[21%] min-w-[180px]">
+                        <div className="flex items-center gap-1.5 whitespace-nowrap">
+                          <span className="text-slate-400 font-medium text-xs mr-1 shrink-0 whitespace-nowrap">
                             {changesArr.length} mục
                           </span>
-                          <div className="inline-flex flex-wrap items-center gap-1.5">
+                          <div className="inline-flex items-center gap-1.5 whitespace-nowrap">
                             {changesArr.slice(0, 2).map((ch, chIdx) => (
                               <span
                                 key={chIdx}
-                                className={`text-[10px] uppercase px-1.5 py-0.5 rounded font-semibold border ${
+                                className={`text-[10px] uppercase px-1.5 py-0.5 rounded font-semibold border whitespace-nowrap inline-flex ${
                                   ch.type === 'feat'
                                     ? 'bg-emerald-950/60 text-emerald-400 border-emerald-800/80 dark:bg-emerald-950/60 dark:text-emerald-400 dark:border-emerald-800/80'
                                     : ch.type === 'fix'
@@ -350,29 +350,29 @@ export default function AdminChangelogPage() {
                               </span>
                             ))}
                             {changesArr.length > 2 && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 font-medium">
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 font-medium whitespace-nowrap inline-flex">
                                 +{changesArr.length - 2}
                               </span>
                             )}
                           </div>
                         </div>
                       </td>
-                      <td className="py-3 px-4 w-[12%]">
+                      <td className="py-3 px-4 w-[13%] min-w-[115px] whitespace-nowrap">
                         <button
                           type="button"
                           onClick={() => handleToggleChangelogPublish(cl.id, cl.isPublished)}
-                          className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border flex items-center gap-1.5 transition ${
+                          className={`whitespace-nowrap inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition ${
                             cl.isPublished
                               ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20'
                               : 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20'
                           }`}
                           title={cl.isPublished ? 'Bấm để ẩn bản ghi này' : 'Bấm để xuất bản công khai'}
                         >
-                          {cl.isPublished ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-                          <span>{cl.isPublished ? 'Đã Xuất Bản' : 'Bản Nháp (Ẩn)'}</span>
+                          {cl.isPublished ? <Eye className="w-3.5 h-3.5 shrink-0" /> : <EyeOff className="w-3.5 h-3.5 shrink-0" />}
+                          <span className="whitespace-nowrap">{cl.isPublished ? 'Đã Xuất Bản' : 'Bản Nháp (Ẩn)'}</span>
                         </button>
                       </td>
-                      <td className="py-3 px-4 text-right w-[6%]">
+                      <td className="py-3 px-4 text-right w-[9%] min-w-[75px] whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             type="button"

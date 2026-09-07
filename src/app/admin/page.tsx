@@ -1889,7 +1889,7 @@ export default function UnifiedAdminPage() {
                 </div>
 
                 <form onSubmit={handleCreateKey} className="flex flex-col gap-3">
-                  {/* Credit Quota Selection with Toggle & Quick Chips */}
+                  {/* Credit Quota Selection – Input + 4 Quick-Select Buttons */}
                   <div className="flex flex-col gap-1.5">
                     <div className="flex items-center justify-between gap-2">
                       <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1 shrink-0">
@@ -1903,78 +1903,58 @@ export default function UnifiedAdminPage() {
                         </span>
                       </label>
 
-                      <div className="flex items-center gap-2 min-w-0">
-                        {!isUnlimitedCredits && (
-                          <input
-                            type="number"
-                            min={1}
-                            max={99999}
-                            value={customCreditCount}
-                            onChange={(e) => setCustomCreditCount(Math.max(1, Number(e.target.value)))}
-                            placeholder="Số Ω..."
-                            className="w-20 h-8 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-cyan-500 rounded-md px-2 text-xs text-slate-900 dark:text-slate-200 outline-none transition font-medium"
-                            required
-                          />
-                        )}
-
-                        {/* Toggle Switch Không giới hạn */}
-                        <label className="flex items-center gap-1.5 cursor-pointer select-none shrink-0">
-                          <input
-                            type="checkbox"
-                            checked={isUnlimitedCredits}
-                            onChange={(e) => setIsUnlimitedCredits(e.target.checked)}
-                            className="sr-only"
-                          />
-                          <div
-                            className={`w-6 h-3.5 rounded-full transition-colors relative flex items-center p-0.5 ${
-                              isUnlimitedCredits ? 'bg-purple-600' : 'bg-slate-300 dark:bg-slate-700'
-                            }`}
-                          >
-                            <div
-                              className={`w-2.5 h-2.5 rounded-full bg-white transition-transform ${
-                                isUnlimitedCredits ? 'translate-x-2.5' : 'translate-x-0'
-                              }`}
-                            />
-                          </div>
-                          <span className="text-[11px] font-semibold text-purple-600 dark:text-purple-400 whitespace-nowrap">
-                            ∞ Vô hạn
-                          </span>
-                        </label>
-                      </div>
+                      {/* Custom number input – disabled & shows ∞ when unlimited selected */}
+                      <input
+                        type={isUnlimitedCredits ? 'text' : 'number'}
+                        min={1}
+                        max={99999}
+                        value={isUnlimitedCredits ? '∞' : customCreditCount}
+                        onChange={(e) => {
+                          if (!isUnlimitedCredits) setCustomCreditCount(Math.max(1, Number(e.target.value)));
+                        }}
+                        disabled={isUnlimitedCredits}
+                        placeholder="Số Ω..."
+                        className={`w-24 h-8 border rounded-lg px-2 text-center text-xs font-medium outline-none transition ${
+                          isUnlimitedCredits
+                            ? 'bg-purple-500/10 border-purple-500/40 text-purple-600 dark:text-purple-300 cursor-default font-bold'
+                            : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 focus:border-cyan-500 text-slate-900 dark:text-white'
+                        }`}
+                        required={!isUnlimitedCredits}
+                      />
                     </div>
 
-                    {isUnlimitedCredits ? (
-                      <div className="h-8 px-2.5 rounded-md bg-purple-500/10 border border-purple-500/30 text-purple-700 dark:text-purple-300 font-semibold text-xs flex items-center justify-between">
-                        <span className="flex items-center gap-1.5">
-                          <Sparkles className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
-                          Gói VIP - Vô hạn
-                        </span>
-                        <span className="text-[11px] px-2 py-0.5 rounded bg-purple-500/20 font-bold font-mono">
-                          ∞
-                        </span>
-                      </div>
-                    ) : (
-                      /* Quick Preset Chips 4 Columns */
-                      <div className="grid grid-cols-4 gap-1.5">
-                        {[30, 50, 100, 200].map((count) => (
-                          <button
-                            key={count}
-                            type="button"
-                            onClick={() => {
-                              setIsUnlimitedCredits(false);
-                              setCustomCreditCount(count);
-                            }}
-                            className={`py-1 px-1 rounded text-[11px] font-medium border text-center transition truncate ${
-                              !isUnlimitedCredits && customCreditCount === count
-                                ? 'bg-cyan-500/15 border-cyan-500 text-cyan-700 dark:text-cyan-300 font-bold shadow-xs'
-                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700'
-                            }`}
-                          >
-                            {count} Ω
-                          </button>
-                        ))}
-                      </div>
-                    )}
+                    {/* Quick-Select 4-Button Grid: 50Ω | 100Ω | 200Ω | Vô hạn Ω */}
+                    <div className="grid grid-cols-4 gap-2">
+                      {[50, 100, 200].map((count) => (
+                        <button
+                          key={count}
+                          type="button"
+                          onClick={() => {
+                            setIsUnlimitedCredits(false);
+                            setCustomCreditCount(count);
+                          }}
+                          className={`py-1.5 rounded-lg text-[11px] font-medium border text-center transition-all whitespace-nowrap ${
+                            !isUnlimitedCredits && customCreditCount === count
+                              ? 'bg-cyan-950/40 border-cyan-500 text-cyan-300 font-bold shadow-xs'
+                              : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600'
+                          }`}
+                        >
+                          {count} Ω
+                        </button>
+                      ))}
+                      {/* Vô hạn Ω button */}
+                      <button
+                        type="button"
+                        onClick={() => setIsUnlimitedCredits(true)}
+                        className={`py-1.5 rounded-lg text-[11px] font-medium border text-center transition-all whitespace-nowrap ${
+                          isUnlimitedCredits
+                            ? 'bg-purple-950/40 border-purple-500 text-purple-300 font-bold shadow-xs'
+                            : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600'
+                        }`}
+                      >
+                        ∞ Ω
+                      </button>
+                    </div>
                   </div>
 
                   {/* Duration Selection (Clean 4-column Segmented Pill) */}

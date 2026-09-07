@@ -1878,15 +1878,14 @@ export default function UnifiedAdminPage() {
           {activeTab === 'keys' && (
             <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-5 items-start lg:h-full w-full">
               {/* Create Key Form (4 Cols on lg, 3 on xl/2xl, Sticky on desktop) */}
-              <div className="lg:col-span-4 xl:col-span-3 2xl:col-span-3 bg-white dark:bg-[#111622] border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-3.5 sm:p-4 shadow-xs flex flex-col gap-3 transition-colors lg:sticky lg:top-0 lg:overflow-y-auto lg:max-h-full flex-shrink-0">
-                <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2.5 flex-shrink-0">
-                  <h2 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-md bg-cyan-500/10 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center">
+              <div className="lg:col-span-4 xl:col-span-3 2xl:col-span-3 bg-white dark:bg-[#111622] border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-3.5 sm:p-4 shadow-xs flex flex-col gap-3 transition-colors lg:sticky lg:top-0 overflow-hidden lg:overflow-y-auto lg:overflow-x-hidden lg:max-h-full flex-shrink-0">
+                <div className="flex items-center border-b border-slate-200 dark:border-slate-800 pb-2.5 flex-shrink-0">
+                  <h3 className="text-base font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-md bg-cyan-500/10 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center shrink-0">
                       <PlusCircle className="w-3.5 h-3.5" />
                     </div>
                     <span>Tạo License Key Mới</span>
-                  </h2>
-                  <span className="text-[10px] sm:text-[11px] font-mono text-slate-400">Cấp mã trực tuyến</span>
+                  </h3>
                 </div>
 
                 <form onSubmit={handleCreateKey} className="flex flex-col gap-3">
@@ -1904,7 +1903,7 @@ export default function UnifiedAdminPage() {
                         </span>
                       </label>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
                         {!isUnlimitedCredits && (
                           <input
                             type="number"
@@ -1913,7 +1912,7 @@ export default function UnifiedAdminPage() {
                             value={customCreditCount}
                             onChange={(e) => setCustomCreditCount(Math.max(1, Number(e.target.value)))}
                             placeholder="Số Ω..."
-                            className="w-20 sm:w-24 h-8 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-cyan-500 rounded-md px-2.5 text-xs text-slate-900 dark:text-slate-200 outline-none transition font-medium"
+                            className="w-20 h-8 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-cyan-500 rounded-md px-2 text-xs text-slate-900 dark:text-slate-200 outline-none transition font-medium"
                             required
                           />
                         )}
@@ -1937,7 +1936,7 @@ export default function UnifiedAdminPage() {
                               }`}
                             />
                           </div>
-                          <span className="text-[11px] font-semibold text-purple-600 dark:text-purple-400">
+                          <span className="text-[11px] font-semibold text-purple-600 dark:text-purple-400 whitespace-nowrap">
                             ∞ Vô hạn
                           </span>
                         </label>
@@ -1965,7 +1964,7 @@ export default function UnifiedAdminPage() {
                               setIsUnlimitedCredits(false);
                               setCustomCreditCount(count);
                             }}
-                            className={`py-1 px-2 rounded text-[11px] font-medium border text-center transition ${
+                            className={`py-1 px-1 rounded text-[11px] font-medium border text-center transition truncate ${
                               !isUnlimitedCredits && customCreditCount === count
                                 ? 'bg-cyan-500/15 border-cyan-500 text-cyan-700 dark:text-cyan-300 font-bold shadow-xs'
                                 : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700'
@@ -1978,31 +1977,30 @@ export default function UnifiedAdminPage() {
                     )}
                   </div>
 
-                  {/* Duration Selection (Segmented Pill) */}
+                  {/* Duration Selection (Clean 4-column Segmented Pill) */}
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                       <Clock className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
                       <span>Thời Hạn Gói</span>
                     </label>
-                    <div className="grid grid-cols-4 gap-1 p-0.5 bg-slate-100/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 rounded-lg">
+                    <div className="grid grid-cols-4 gap-1.5 p-1 bg-slate-100/80 dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-slate-800">
                       {[
-                        { label: '30 Ngày', sub: '(1T)', value: 30 },
-                        { label: '90 Ngày', sub: '(3T)', value: 90 },
-                        { label: '1 Năm', sub: '(365N)', value: 365 },
-                        { label: 'Vô hạn', sub: '', value: 0 },
+                        { label: '30 ngày', value: 30 },
+                        { label: '90 ngày', value: 90 },
+                        { label: '1 năm', value: 365 },
+                        { label: 'Vô hạn', value: 0 },
                       ].map((dur) => (
                         <button
                           key={dur.value}
                           type="button"
                           onClick={() => setDurationDays(dur.value)}
-                          className={`py-1 px-1.5 rounded-md text-[11px] font-medium text-center transition flex items-center justify-center gap-0.5 ${
+                          className={`py-2 text-xs font-medium text-center rounded-lg transition-all whitespace-nowrap ${
                             durationDays === dur.value
                               ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-300 font-bold shadow-xs border border-slate-200/60 dark:border-slate-700/60'
                               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                           }`}
                         >
-                          <span>{dur.label}</span>
-                          {dur.sub && <span className="text-[9px] opacity-75 font-normal">{dur.sub}</span>}
+                          {dur.label}
                         </button>
                       ))}
                     </div>

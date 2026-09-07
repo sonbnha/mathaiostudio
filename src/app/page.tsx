@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -13,17 +13,13 @@ import {
   Sparkles,
   LogIn,
   UserPlus,
-  User,
   Settings,
   Key,
-  Crown,
-  ChevronDown,
-  LogOut,
-  Coins,
 } from 'lucide-react';
 import { APP_VERSION } from '@/config/version';
 import { useAuth } from '@/context/AuthContext';
 import { useApiKey } from '@/context/ApiKeyContext';
+import UserProfileDropdown from '@/components/header/UserProfileDropdown';
 
 export default function HomePage() {
   const { user, isLoading, logout } = useAuth();
@@ -31,8 +27,6 @@ export default function HomePage() {
   const router = useRouter();
 
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
-  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
-  const userDropdownRef = useRef<HTMLDivElement>(null);
 
   // Sync theme
   useEffect(() => {
@@ -44,17 +38,6 @@ export default function HomePage() {
       setTheme('dark');
       document.documentElement.classList.add('dark');
     }
-  }, []);
-
-  // Click outside to close user dropdown
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (userDropdownRef.current && !userDropdownRef.current.contains(e.target as Node)) {
-        setIsUserDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const toggleTheme = () => {
@@ -69,7 +52,6 @@ export default function HomePage() {
   };
 
   const handleLogout = async () => {
-    setIsUserDropdownOpen(false);
     await logout();
     router.refresh();
   };
@@ -181,143 +163,7 @@ export default function HomePage() {
               </Link>
             </div>
           ) : (
-            /* Cụm User Profile đồng bộ hoàn toàn với /geometry */
-            <div ref={userDropdownRef} className="relative">
-              <button
-                type="button"
-                onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
-                className="h-10 flex items-center gap-2 bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 rounded-2xl pl-1.5 pr-2.5 py-1 shadow-xs transition-all cursor-pointer"
-              >
-                {/* Avatar tím gradient viền nổi bật (vương miện nếu VIP/Admin) */}
-                <div
-                  className={`w-7 h-7 rounded-xl overflow-hidden flex items-center justify-center shrink-0 ${
-                    isAdmin || isVip
-                      ? 'ring-2 ring-amber-400 shadow-amber-500/25 shadow-sm'
-                      : 'ring-1 ring-slate-700'
-                  }`}
-                >
-                  {user.avatar ? (
-                    <img
-                      src={user.avatar}
-                      alt={user.name || 'Avatar'}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div
-                      className={`w-full h-full ${
-                        isAdmin
-                          ? 'bg-gradient-to-tr from-purple-600 via-indigo-600 to-cyan-500'
-                          : isVip
-                          ? 'bg-gradient-to-tr from-amber-400 via-amber-500 to-yellow-500 text-slate-950 font-black'
-                          : 'bg-gradient-to-tr from-slate-600 to-slate-800'
-                      } text-white font-bold text-xs flex items-center justify-center`}
-                    >
-                      {(user.name || user.username || user.email || 'U').charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                </div>
-
-                {/* Tên Người Dùng & Vương Miện Hoàng Gia */}
-                <div className="hidden sm:flex flex-col text-left">
-                  <div className="text-xs font-semibold flex items-center gap-1.5 leading-tight text-white">
-                    {(isAdmin || isVip) && (
-                      <Crown className="w-3.5 h-3.5 text-amber-300 fill-amber-300/40 shrink-0" />
-                    )}
-                    <span className="max-w-[130px] truncate">
-                      {isAdmin
-                        ? `Super Admin (${user.name || user.username || 'Admin'})`
-                        : user.name || user.username || user.email?.split('@')[0]}
-                    </span>
-                  </div>
-                  <span className="text-[9px] text-slate-400 max-w-[110px] truncate leading-tight">
-                    {user.email || user.username}
-                  </span>
-                </div>
-
-                {/* Quota Badge (Pill mạ vàng/cam) */}
-                <span
-                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-mono font-bold shrink-0 ${
-                    isAdmin || isVip
-                      ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
-                      : 'bg-slate-800 text-slate-300 border border-slate-700'
-                  }`}
-                >
-                  {displayCredits}
-                </span>
-
-                {/* Mũi tên Dropdown */}
-                <ChevronDown
-                  className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
-                    isUserDropdownOpen ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
-
-              {/* User Dropdown Menu */}
-              {isUserDropdownOpen && (
-                <div className="absolute top-full right-0 mt-2 w-64 p-2 bg-slate-900 border border-slate-800 text-slate-200 rounded-2xl shadow-2xl z-50 text-left backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150">
-                  <div className="px-3 py-2.5 border-b border-slate-800/80 mb-1">
-                    <div className="flex items-center gap-2">
-                      <p className="text-xs font-bold text-white truncate">
-                        {user.name || user.username}
-                      </p>
-                      {isAdmin && (
-                        <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                          Admin
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-[11px] text-slate-400 truncate mt-0.5">
-                      {user.email}
-                    </p>
-                    <div className="mt-2 flex items-center justify-between text-[11px] text-slate-300 bg-slate-950/60 px-2.5 py-1 rounded-lg border border-slate-800 font-mono">
-                      <span>Tài nguyên Ω:</span>
-                      <span className="font-bold text-amber-300">{displayCredits}</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-0.5">
-                    {isAdmin && (
-                      <Link
-                        href="/admin"
-                        onClick={() => setIsUserDropdownOpen(false)}
-                        className="flex items-center gap-2.5 px-3 py-2 text-xs text-purple-300 hover:text-white hover:bg-purple-950/40 rounded-xl transition font-medium"
-                      >
-                        <Shield className="w-3.5 h-3.5" />
-                        <span>Trang Quản Trị Admin</span>
-                      </Link>
-                    )}
-                    <Link
-                      href="/profile"
-                      onClick={() => setIsUserDropdownOpen(false)}
-                      className="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-300 hover:text-white hover:bg-slate-800/80 rounded-xl transition"
-                    >
-                      <User className="w-3.5 h-3.5 text-slate-400" />
-                      <span>Hồ Sơ Cá Nhân</span>
-                    </Link>
-                    <Link
-                      href="/settings"
-                      onClick={() => setIsUserDropdownOpen(false)}
-                      className="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-300 hover:text-white hover:bg-slate-800/80 rounded-xl transition"
-                    >
-                      <Settings className="w-3.5 h-3.5 text-slate-400" />
-                      <span>Cài Đặt &amp; Ví Tài Nguyên</span>
-                    </Link>
-                  </div>
-
-                  <div className="border-t border-slate-800/80 pt-1 mt-1">
-                    <button
-                      type="button"
-                      onClick={handleLogout}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-950/30 rounded-xl transition cursor-pointer"
-                    >
-                      <LogOut className="w-3.5 h-3.5" />
-                      <span>Đăng Xuất</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+            <UserProfileDropdown user={user} onLogout={handleLogout} />
           )}
 
           {/* Theme Toggle (Nút bo tròn cạnh cụm tài khoản) */}

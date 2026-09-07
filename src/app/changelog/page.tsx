@@ -75,7 +75,7 @@ export default async function ChangelogPage() {
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-3">
             Cập nhật sản phẩm &amp; Tính năng mới
           </h1>
-          <p className="text-sm sm:text-base text-slate-400 max-w-2xl leading-relaxed mb-12">
+          <p className="text-sm sm:text-base text-slate-400 max-w-3xl leading-relaxed mb-12 text-balance">
             Khám phá tất cả các cập nhật, tính năng mới và cải tiến hiệu năng định kỳ của MathAIO Studio. Nền tảng được tối ưu hóa liên tục để phục vụ công tác giảng dạy &amp; học tập hình học THCS/THPT.
           </p>
         </div>

@@ -161,6 +161,30 @@ export async function deductUserCredit(
     };
   }
 
+  // Tài khoản có gói thuê bao Unlimited còn hiệu lực (monthlyCredits === -1 hoặc monthlyAllowance === -1)
+  if (state.isPlanActive && (state.monthlyCredits === -1 || state.monthlyAllowance === -1)) {
+    return {
+      success: true,
+      walletDeducted: 'unlimited',
+      monthlyCredits: -1,
+      monthlyAllowance: -1,
+      lifetimeCredits: state.lifetimeCredits,
+      totalCredits: -1,
+    };
+  }
+
+  // Tài khoản sở hữu ví trọn đời Unlimited (lifetimeCredits === -1)
+  if (state.lifetimeCredits === -1) {
+    return {
+      success: true,
+      walletDeducted: 'unlimited',
+      monthlyCredits: state.monthlyCredits,
+      monthlyAllowance: state.monthlyAllowance,
+      lifetimeCredits: -1,
+      totalCredits: -1,
+    };
+  }
+
   let newMonthly = state.monthlyCredits;
   let newLifetime = state.lifetimeCredits;
   let walletDeducted: 'monthly' | 'lifetime' | undefined;

@@ -305,13 +305,29 @@ export default function SettingsPage() {
   const resetAt = currentUser?.next_credit_reset_at || null;
   const isPlanActive = Boolean(planExp && new Date(planExp) > new Date());
   const lifetimeCredits = Number(currentUser?.lifetime_credits ?? currentUser?.lifetime_quota ?? 0);
-  const isUnlimited =
+  const hasUnlimitedCredits =
     isAdmin ||
     Boolean(currentUser?.is_unlimited || currentUser?.isUnlimited) ||
+    currentUser?.monthly_credits === -1 ||
     currentUser?.remaining_quota === -1 ||
     currentUser?.remaining_credits === -1 ||
     Number(currentUser?.remaining_quota) >= 999;
-  const isVip = Boolean(currentUser?.is_vip || currentUser?.isVip || isPlanActive || isAdmin || isUnlimited);
+
+  const hasUnlimitedTime = isAdmin || !planExp;
+
+  let subDaysRemaining: number | null = null;
+  if (planExp) {
+    const diffTime = new Date(planExp).getTime() - new Date().getTime();
+    subDaysRemaining = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+  }
+
+  let resetDaysRemaining: number | null = null;
+  if (resetAt) {
+    const diffReset = new Date(resetAt).getTime() - new Date().getTime();
+    resetDaysRemaining = Math.max(0, Math.ceil(diffReset / (1000 * 60 * 60 * 24)));
+  }
+
+  const isVip = Boolean(currentUser?.is_vip || currentUser?.isVip || isPlanActive || isAdmin || (hasUnlimitedCredits && (hasUnlimitedTime || isPlanActive)));
   const isTrial = Boolean(currentUser?.is_trial && !isVip);
 
   const formattedPlanExp = planExp
@@ -584,6 +600,10 @@ export default function SettingsPage() {
                     <Crown className="w-3.5 h-3.5" />
                     👑 VIP ACCOUNT
                   </span>
+                ) : (hasUnlimitedCredits && !hasUnlimitedTime && !isPlanActive) ? (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30 text-xs font-bold">
+                    HẾT HẠN VIP
+                  </span>
                 ) : isTrial ? (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30 text-xs font-semibold">
                     <Sparkles className="w-3.5 h-3.5 text-cyan-500" />
@@ -638,7 +658,7 @@ export default function SettingsPage() {
                   </div>
                 </div>
               </div>
-            ) : isUnlimited ? (
+            ) : (hasUnlimitedCredits && !hasUnlimitedTime) ? (
               <div className="p-5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-yellow-500/10 to-indigo-500/10 border border-amber-500/30 flex flex-col gap-3 mb-6 shadow-xs">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
@@ -647,15 +667,65 @@ export default function SettingsPage() {
                     </div>
                     <div>
                       <h3 className="text-sm sm:text-base font-bold text-amber-950 dark:text-amber-200">
-                        Tài Khoản Không Giới Hạn (VIP Unlimited)
+                        Gói VIP Không Giới Hạn (Có Thời Hạn)
                       </h3>
                       <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                        Đặc quyền VIP không giới hạn lượt tạo hình và soạn giáo án toán học (∞)
+                        Đặc quyền VIP không giới hạn lượt tạo hình và soạn giáo án toán học (∞) trong thời hạn sử dụng
+                      </p>
+                    </div>
+                  </div>
+                  <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                    isPlanActive
+                      ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30'
+                      : 'bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-500/30'
+                  }`}>
+                    {isPlanActive ? 'VIP Unlimited' : 'Đã hết hạn'}
+                  </span>
+                </div>
+
+                <div className="flex items-baseline gap-2 pt-1">
+                  <span className="text-2xl sm:text-3xl font-black text-amber-600 dark:text-amber-400">
+                    ∞ Không giới hạn
+                  </span>
+                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Credits</span>
+                </div>
+
+                <div className="pt-3 border-t border-amber-200/60 dark:border-amber-900/40 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                  <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
+                    <span>Thời hạn sử dụng:</span>
+                    <span className={`font-bold ${isPlanActive ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                      {isPlanActive && planExp ? (
+                        <>Còn {subDaysRemaining} ngày • {formattedPlanExp}</>
+                      ) : formattedPlanExp ? (
+                        <>Đã hết hạn ({formattedPlanExp})</>
+                      ) : (
+                        <>Có thời hạn</>
+                      )}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 italic">
+                    Gói VIP Unlimited không bị trừ Credit trong suốt thời gian hiệu lực.
+                  </div>
+                </div>
+              </div>
+            ) : (hasUnlimitedCredits && hasUnlimitedTime) ? (
+              <div className="p-5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-yellow-500/10 to-indigo-500/10 border border-amber-500/30 flex flex-col gap-3 mb-6 shadow-xs">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                      <Crown className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm sm:text-base font-bold text-amber-950 dark:text-amber-200">
+                        Tài Khoản Vĩnh Viễn Không Giới Hạn (VIP Lifetime)
+                      </h3>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                        Đặc quyền VIP trọn đời không giới hạn lượt tạo hình và soạn giáo án toán học (∞)
                       </p>
                     </div>
                   </div>
                   <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30">
-                    ∞ Vô hạn
+                    VIP Lifetime (∞)
                   </span>
                 </div>
 
@@ -674,7 +744,7 @@ export default function SettingsPage() {
                     </span>
                   </div>
                   <div className="text-[11px] text-slate-500 dark:text-slate-400 italic">
-                    Tài khoản được miễn phí không giới hạn số lượng Credit.
+                    Tài khoản được miễn phí không giới hạn số lượng Credit trọn đời.
                   </div>
                 </div>
               </div>

@@ -31,6 +31,8 @@ export function computeLicenseStatus({
   const role = (user?.role || '').toLowerCase();
   const isAdmin = role === 'admin';
 
+  const now = new Date().getTime();
+
   const isUnlimited =
     isAdmin ||
     Boolean(user?.is_unlimited) ||
@@ -43,30 +45,71 @@ export function computeLicenseStatus({
     user?.usageLimit === -1 ||
     user?.usage_limit === -1;
 
-  if (isUnlimited) {
-    return {
-      isVipActive: true,
-      isNearExpiry: false,
-      isFullyExpired: false,
-      isExpiredOrDepleted: false,
-      isTrial: false,
-      daysRemaining: null,
-      daysLeft: 999,
-      remainingCredits: -1,
-      remaining_quota: null,
-      remainingQuota: null,
-      turnsLeft: 999,
-      totalCredits: -1,
-      max_quota: null,
-      maxQuota: null,
-      usedCredits: 0,
-      vipExpiresAt: null,
-      vip_expires_at: null,
-      isAdmin: Boolean(isAdmin),
-    };
-  }
+  const rawSubExpiresAt =
+    user?.plan_expires_at ||
+    user?.planExpiresAt ||
+    user?.subscription_expires_at ||
+    user?.subscriptionExpiresAt ||
+    user?.vip_expires_at ||
+    user?.vipExpiresAt ||
+    guestLicenseStatus?.expiresAt ||
+    null;
 
-  const now = new Date().getTime();
+  const hasUnlimitedTime = isAdmin || !rawSubExpiresAt;
+
+  if (isUnlimited) {
+    if (hasUnlimitedTime) {
+      return {
+        isVipActive: true,
+        isNearExpiry: false,
+        isFullyExpired: false,
+        isExpiredOrDepleted: false,
+        isTrial: false,
+        daysRemaining: null,
+        daysLeft: 999,
+        remainingCredits: -1,
+        remaining_quota: null,
+        remainingQuota: null,
+        turnsLeft: 999,
+        totalCredits: -1,
+        max_quota: null,
+        maxQuota: null,
+        usedCredits: 0,
+        vipExpiresAt: null,
+        vip_expires_at: null,
+        isAdmin: Boolean(isAdmin),
+      };
+    } else {
+      const subExpireTime = new Date(rawSubExpiresAt!).getTime();
+      const isSubActive = subExpireTime > now;
+      const daysLeft = Math.ceil((subExpireTime - now) / (1000 * 60 * 60 * 24));
+      const daysRemaining = Math.max(0, daysLeft);
+      const isNearExpiry = isSubActive && daysLeft <= 3 && daysLeft > 0;
+      const isFullyExpired = !isSubActive;
+      const isExpiredOrDepleted = !isSubActive;
+
+      return {
+        isVipActive: isSubActive,
+        isNearExpiry,
+        isFullyExpired,
+        isExpiredOrDepleted,
+        isTrial: false,
+        daysRemaining,
+        daysLeft,
+        remainingCredits: -1,
+        remaining_quota: null,
+        remainingQuota: null,
+        turnsLeft: isSubActive ? 999 : 0,
+        totalCredits: -1,
+        max_quota: null,
+        maxQuota: null,
+        usedCredits: 0,
+        vipExpiresAt: new Date(rawSubExpiresAt!).toISOString(),
+        vip_expires_at: new Date(rawSubExpiresAt!).toISOString(),
+        isAdmin: false,
+      };
+    }
+  }
 
   // 1. Trường hợp người dùng đã đăng nhập (currentUser)
   if (user) {

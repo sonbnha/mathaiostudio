@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
@@ -53,7 +53,9 @@ export default async function ChangelogPage() {
       <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 py-10">
         {/* 1. Thanh Top Navigation */}
         <div className="w-full flex items-center justify-between mb-10 pb-4 border-b border-slate-800/60">
-          <ChangelogBackButton />
+          <Suspense fallback={<div className="h-4 w-20 bg-slate-800/60 rounded animate-pulse" />}>
+            <ChangelogBackButton />
+          </Suspense>
 
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono text-emerald-400 bg-emerald-950/40 border border-emerald-800/60">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />

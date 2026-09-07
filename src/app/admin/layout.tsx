@@ -516,7 +516,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-2 shrink-0">
             {/* Changelog Version Button */}
             <Link
-              href="/changelog"
+              href={pathname ? `/changelog?from=${encodeURIComponent(pathname)}` : '/changelog'}
               title="Bấm để xem lịch sử phiên bản (Changelog)"
               className="hidden sm:inline-flex text-[11px] font-mono font-medium px-2.5 py-1 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-400 border border-slate-200 dark:border-slate-700 transition items-center gap-1 cursor-pointer shadow-xs"
             >
@@ -544,7 +544,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
         <footer className="border-t border-slate-200 dark:border-slate-800/60 py-4 px-4 flex flex-wrap items-center justify-between gap-2 max-w-7xl mx-auto w-full text-xs text-slate-500 dark:text-slate-500 z-10 transition-colors">
           <span>MathAIO Studio &copy; {new Date().getFullYear()} – Hệ thống Quản trị & Nền tảng Toán học All-in-One</span>
           <Link
-            href="/changelog"
+            href={pathname ? `/changelog?from=${encodeURIComponent(pathname)}` : '/changelog'}
             title="Bấm để xem lịch sử phiên bản (Changelog)"
             className="font-mono text-[11px] px-2 py-0.5 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700 text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-700 transition cursor-pointer"
           >

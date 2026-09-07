@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import {
   Compass,
   BookOpen,
@@ -15,6 +15,7 @@ import LessonPlanView from '@/components/LessonPlanView';
 
 export default function LessonPlanPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
   useEffect(() => {
@@ -64,7 +65,7 @@ export default function LessonPlanPage() {
             </div>
           </Link>
           <Link
-            href="/changelog"
+            href={pathname ? `/changelog?from=${encodeURIComponent(pathname)}` : '/changelog'}
             title="Bấm để xem lịch sử phiên bản (Changelog)"
             className="text-[11px] font-mono font-medium px-2 py-0.5 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-400 border border-slate-200 dark:border-slate-700 tracking-normal shadow-xs transition flex items-center gap-1 cursor-pointer"
           >
@@ -123,7 +124,7 @@ export default function LessonPlanPage() {
           <span className="hidden sm:inline text-slate-300 dark:text-slate-700">|</span>
           <span className="hidden sm:inline">Chuẩn Công văn 5512 BGD&ĐT</span>
           <Link
-            href="/changelog"
+            href={pathname ? `/changelog?from=${encodeURIComponent(pathname)}` : '/changelog'}
             className="hover:text-cyan-600 dark:hover:text-cyan-400 underline decoration-dotted transition cursor-pointer font-mono"
             title="Xem Changelog"
           >

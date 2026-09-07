@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import {
   Compass,
   BookOpen,
@@ -20,6 +21,7 @@ import { APP_VERSION } from '@/config/version';
 import { useApiKey } from '@/context/ApiKeyContext';
 
 export default function LandingShowcaseView() {
+  const pathname = usePathname();
   const { openApiKeyModal, isCustomKeyActive } = useApiKey();
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
@@ -78,7 +80,7 @@ export default function LandingShowcaseView() {
           </Link>
 
           <Link
-            href="/changelog"
+            href={pathname ? `/changelog?from=${encodeURIComponent(pathname)}` : '/changelog'}
             title="Xem nhật ký phát hành (Changelog)"
             className="text-[11px] font-mono font-medium px-2.5 py-1 rounded-full bg-slate-900 hover:bg-slate-850 text-slate-400 hover:text-indigo-400 border border-slate-800 hover:border-slate-700 transition flex items-center gap-1 cursor-pointer"
           >
@@ -586,7 +588,7 @@ export default function LandingShowcaseView() {
           <span className="hidden sm:inline text-slate-700">|</span>
           <span className="hidden sm:inline">Chuẩn Công văn 5512 BGD&amp;ĐT</span>
           <Link
-            href="/changelog"
+            href={pathname ? `/changelog?from=${encodeURIComponent(pathname)}` : '/changelog'}
             className="hover:text-cyan-400 underline decoration-dotted transition font-mono"
             title="Xem Changelog"
           >

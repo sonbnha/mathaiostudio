@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
+import Link from 'next/link';
 import {
   History,
   Search,
@@ -10,81 +11,12 @@ import {
   Trash2,
   Eye,
   EyeOff,
-  Tag,
-  Calendar,
   Loader2,
-  X,
-  AlertCircle,
   Shield,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
-import { useAdminContext, ChangelogItem } from '../AdminContext';
-
-function serializeChangesToText(changes?: any[]): string {
-  if (!Array.isArray(changes) || changes.length === 0) return '';
-  return changes
-    .map((c) => {
-      const type = (c.type || 'feat').toLowerCase();
-      const content = (c.description ?? c.content ?? '').trim();
-      return `/${type} ${content}`;
-    })
-    .join('\n');
-}
-
-function parseChangesText(rawText: string) {
-  const lines = rawText
-    .split('\n')
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0);
-
-  return lines
-    .map((line) => {
-      // Strip leading bullets if any
-      const cleaned = line.replace(/^[-*•]\s+/, '').trim();
-
-      // /feat or [FEAT] (case-insensitive)
-      const featMatch = cleaned.match(/^(?:\/feat|\[feat\])\s+(.*)$/i);
-      if (featMatch) {
-        const content = featMatch[1].trim();
-        return {
-          type: 'feat' as const,
-          description: content,
-          content: content,
-        };
-      }
-
-      // /fix or [FIX] (case-insensitive)
-      const fixMatch = cleaned.match(/^(?:\/fix|\[fix\])\s+(.*)$/i);
-      if (fixMatch) {
-        const content = fixMatch[1].trim();
-        return {
-          type: 'fix' as const,
-          description: content,
-          content: content,
-        };
-      }
-
-      // /improve or [IMPROVE] (case-insensitive)
-      const improveMatch = cleaned.match(/^(?:\/improve|\[improve\])\s+(.*)$/i);
-      if (improveMatch) {
-        const content = improveMatch[1].trim();
-        return {
-          type: 'improve' as const,
-          description: content,
-          content: content,
-        };
-      }
-
-      // Default to 'feat'
-      return {
-        type: 'feat' as const,
-        description: cleaned,
-        content: cleaned,
-      };
-    })
-    .filter((item) => item.description.length > 0);
-}
+import { useAdminContext } from '../AdminContext';
 
 export default function AdminChangelogPage() {
   const {
@@ -99,18 +31,6 @@ export default function AdminChangelogPage() {
   const [changelogSearch, setChangelogSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 8;
-
-  // Changelog Create/Edit Modal State
-  const [isChangelogEditModalOpen, setIsChangelogEditModalOpen] = useState(false);
-  const [editingChangelogId, setEditingChangelogId] = useState<string | null>(null);
-  const [clVersion, setClVersion] = useState('');
-  const [clDate, setClDate] = useState('');
-  const [clTitle, setClTitle] = useState('');
-  const [clChangesText, setClChangesText] = useState('');
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const [clIsPublished, setClIsPublished] = useState(true);
-  const [clSaveLoading, setClSaveLoading] = useState(false);
-  const [clError, setClError] = useState<string | null>(null);
 
   // Filter changelogs
   const filteredChangelogs = changelogs.filter((cl) => {
@@ -131,107 +51,6 @@ export default function AdminChangelogPage() {
   const startIndex = totalItems > 0 ? (safePage - 1) * pageSize : 0;
   const endIndex = Math.min(startIndex + pageSize, totalItems);
   const paginatedChangelogs = filteredChangelogs.slice(startIndex, endIndex);
-
-  const handleOpenCreateChangelogModal = () => {
-    setEditingChangelogId(null);
-    setClVersion('');
-    const today = new Date();
-    const formattedDate = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
-    setClDate(formattedDate);
-    setClTitle('');
-    setClChangesText('');
-    setClIsPublished(true);
-    setClError(null);
-    setIsChangelogEditModalOpen(true);
-  };
-
-  const handleOpenEditChangelogModal = (item: ChangelogItem) => {
-    setEditingChangelogId(item.id);
-    setClVersion(item.version);
-    setClDate(item.date);
-    setClTitle(item.title);
-    setClChangesText(serializeChangesToText(item.changes));
-    setClIsPublished(item.isPublished);
-    setClError(null);
-    setIsChangelogEditModalOpen(true);
-  };
-
-  const handleInsertTag = (tag: string) => {
-    const textarea = textareaRef.current;
-    if (!textarea) {
-      setClChangesText((prev) => (prev.trim() ? `${prev}\n${tag} ` : `${tag} `));
-      return;
-    }
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const text = textarea.value;
-
-    const before = text.substring(0, start);
-    const after = text.substring(end);
-
-    const needsNewlineBefore = before.length > 0 && !before.endsWith('\n');
-    const insertText = `${needsNewlineBefore ? '\n' : ''}${tag} `;
-    const nextText = before + insertText + after;
-
-    setClChangesText(nextText);
-
-    setTimeout(() => {
-      textarea.focus();
-      const newCursorPos = start + insertText.length;
-      textarea.setSelectionRange(newCursorPos, newCursorPos);
-    }, 0);
-  };
-
-  const handleSaveChangelog = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setClError(null);
-
-    if (!clVersion.trim() || !clTitle.trim() || !clDate.trim()) {
-      setClError('Vui lòng điền đầy đủ Phiên bản, Tiêu đề và Ngày áp dụng.');
-      return;
-    }
-
-    const parsedChanges = parseChangesText(clChangesText);
-    if (parsedChanges.length === 0) {
-      setClError('Vui lòng thêm ít nhất 1 mục mô tả thay đổi.');
-      return;
-    }
-
-    setClSaveLoading(true);
-    try {
-      const isEditing = Boolean(editingChangelogId);
-      const url = isEditing
-        ? `/api/admin/changelog/${editingChangelogId}`
-        : '/api/admin/changelog';
-      const method = isEditing ? 'PUT' : 'POST';
-
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          version: clVersion.trim(),
-          date: clDate.trim(),
-          title: clTitle.trim(),
-          changes: parsedChanges,
-          isPublished: clIsPublished,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Lỗi khi lưu Changelog.');
-      }
-
-      await fetchAdminChangelogs(false);
-      setIsChangelogEditModalOpen(false);
-      showToast(isEditing ? 'Đã cập nhật phiên bản thành công!' : 'Đã thêm phiên bản mới thành công!');
-    } catch (err: any) {
-      setClError(err.message);
-    } finally {
-      setClSaveLoading(false);
-    }
-  };
 
   const handleToggleChangelogPublish = async (id: string, currentStatus: boolean) => {
     try {
@@ -334,14 +153,13 @@ export default function AdminChangelogPage() {
             </button>
 
             {/* Add New Release Button */}
-            <button
-              type="button"
-              onClick={handleOpenCreateChangelogModal}
+            <Link
+              href="/admin/changelog/new"
               className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md shadow-indigo-950/30 flex items-center gap-1.5 transition cursor-pointer"
             >
               <PlusCircle className="w-3.5 h-3.5" />
               <span>Thêm Phiên Bản</span>
-            </button>
+            </Link>
           </div>
         </div>
 
@@ -433,15 +251,14 @@ export default function AdminChangelogPage() {
                       </td>
                       <td className="py-3 px-4 text-right w-[9%] min-w-[75px] whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => handleOpenEditChangelogModal(cl)}
+                          <Link
+                            href={`/admin/changelog/${cl.id}/edit`}
                             className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-medium border border-slate-200 dark:border-transparent transition flex items-center gap-1 cursor-pointer"
                             title="Chỉnh sửa phiên bản"
                           >
                             <Edit className="w-3.5 h-3.5" />
                             <span>Sửa</span>
-                          </button>
+                          </Link>
 
                           <button
                             type="button"
@@ -511,190 +328,6 @@ export default function AdminChangelogPage() {
           </div>
         </div>
       </div>
-
-      {/* CREATE / EDIT CHANGELOG MODAL */}
-      {isChangelogEditModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="relative w-full max-w-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl p-6 flex flex-col gap-4 max-h-[88vh] overflow-hidden">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-                  <History className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                    {editingChangelogId ? 'Chỉnh Sửa Phiên Bản' : 'Thêm Phiên Bản Mới'}
-                  </h3>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                    Cập nhật các tính năng và sửa lỗi hiển thị trong Changelog
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setIsChangelogEditModalOpen(false)}
-                className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Form Body */}
-            <form onSubmit={handleSaveChangelog} className="flex-1 overflow-y-auto pr-1 flex flex-col gap-4 text-xs">
-              {/* Row 1: Version + Date */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                    <Tag className="w-3.5 h-3.5 text-indigo-500" />
-                    <span>Số Phiên Bản</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={clVersion}
-                    onChange={(e) => setClVersion(e.target.value)}
-                    placeholder="Ví dụ: v0.1.3-alpha"
-                    className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-indigo-500 rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-slate-200 font-mono outline-none transition"
-                    required
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5 text-indigo-500" />
-                    <span>Ngày Áp Dụng (dd/MM/yyyy)</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={clDate}
-                    onChange={(e) => setClDate(e.target.value)}
-                    placeholder="Ví dụ: 31/08/2026"
-                    className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-indigo-500 rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-slate-200 font-mono outline-none transition"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Row 2: Title */}
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  Tiêu Đề Phát Hành
-                </label>
-                <input
-                  type="text"
-                  value={clTitle}
-                  onChange={(e) => setClTitle(e.target.value)}
-                  placeholder="Ví dụ: Tối ưu hóa tiến trình & Fix kẹt loading"
-                  className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-indigo-500 rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-slate-200 outline-none transition"
-                  required
-                />
-              </div>
-
-              {/* Row 3: Quick-tag Editor */}
-              <div className="flex flex-col gap-2 pt-1 border-t border-slate-200 dark:border-slate-800">
-                {/* Toolbar */}
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    Nội dung cập nhật (Mỗi dòng một mục)
-                  </label>
-
-                  {/* Quick-insert Chips */}
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => handleInsertTag('/feat')}
-                      className="px-2 py-0.5 rounded-lg text-emerald-400 bg-emerald-950/50 hover:bg-emerald-900/50 border border-emerald-800 text-[11px] font-mono font-medium transition cursor-pointer"
-                      title="Chèn tag /feat"
-                    >
-                      + /feat
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleInsertTag('/fix')}
-                      className="px-2 py-0.5 rounded-lg text-rose-400 bg-rose-950/50 hover:bg-rose-900/50 border border-rose-800 text-[11px] font-mono font-medium transition cursor-pointer"
-                      title="Chèn tag /fix"
-                    >
-                      + /fix
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleInsertTag('/improve')}
-                      className="px-2 py-0.5 rounded-lg text-sky-400 bg-sky-950/50 hover:bg-sky-900/50 border border-sky-800 text-[11px] font-mono font-medium transition cursor-pointer"
-                      title="Chèn tag /improve"
-                    >
-                      + /improve
-                    </button>
-                  </div>
-                </div>
-
-                {/* Textarea */}
-                <textarea
-                  ref={textareaRef}
-                  value={clChangesText}
-                  onChange={(e) => setClChangesText(e.target.value)}
-                  placeholder={`/feat Hoán đổi trực tiếp thanh Header Canvas\n/fix Khắc phục lỗi kẹt loading khi tải ảnh\n/improve Tối ưu bộ nhớ đệm và tăng tốc độ vẽ SVG`}
-                  className="w-full h-44 bg-slate-950/80 border border-slate-700/80 rounded-xl p-3 font-mono text-xs text-slate-200 placeholder:text-slate-500 focus:border-cyan-500 outline-none leading-relaxed resize-y"
-                  required
-                />
-              </div>
-
-              {/* Row 4: Is Published Switch */}
-              <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
-                <div>
-                  <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 block">
-                    Trạng Thái Xuất Bản
-                  </span>
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                    {clIsPublished
-                      ? 'Công khai trên popup lịch sử phiên bản người dùng'
-                      : 'Bản nháp nội bộ, chưa hiển thị cho người dùng'}
-                  </span>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setClIsPublished(!clIsPublished)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold border flex items-center gap-1.5 transition ${
-                    clIsPublished
-                      ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
-                      : 'bg-amber-500/15 border-amber-500/30 text-amber-600 dark:text-amber-400'
-                  }`}
-                >
-                  {clIsPublished ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-                  <span>{clIsPublished ? 'Đang Xuất Bản' : 'Bản Nháp (Ẩn)'}</span>
-                </button>
-              </div>
-
-              {clError && (
-                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
-                  <span>{clError}</span>
-                </div>
-              )}
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800 mt-1">
-                <button
-                  type="button"
-                  onClick={() => setIsChangelogEditModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-medium transition"
-                >
-                  Hủy
-                </button>
-
-                <button
-                  type="submit"
-                  disabled={clSaveLoading}
-                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition shadow-md shadow-indigo-950/30 disabled:opacity-50 flex items-center gap-1.5"
-                >
-                  {clSaveLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-                  <span>{editingChangelogId ? 'Lưu Thay Đổi' : 'Tạo Phiên Bản'}</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

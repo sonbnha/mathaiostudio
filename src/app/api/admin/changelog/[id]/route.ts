@@ -15,6 +15,36 @@ async function checkAdmin(req: NextRequest) {
   return user;
 }
 
+// GET /api/admin/changelog/[id]: Get a single changelog release
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const admin = await checkAdmin(req);
+  if (!admin) {
+    return NextResponse.json({ error: 'Page not found' }, { status: 404 });
+  }
+
+  try {
+    const { id } = await params;
+    const decodedId = decodeURIComponent(id);
+    const changelog = await prisma.changelog.findFirst({
+      where: {
+        OR: [{ id: decodedId }, { version: decodedId }],
+      },
+    });
+
+    if (!changelog) {
+      return NextResponse.json({ error: 'Không tìm thấy phiên bản changelog.' }, { status: 404 });
+    }
+
+    return NextResponse.json({ changelog });
+  } catch (error: any) {
+    console.error('Error fetching single changelog:', error);
+    return NextResponse.json({ error: 'Lỗi khi tải thông tin phiên bản.' }, { status: 500 });
+  }
+}
+
 // PUT /api/admin/changelog/[id]: Update changelog details
 export async function PUT(
   req: NextRequest,
@@ -27,6 +57,17 @@ export async function PUT(
 
   try {
     const { id } = await params;
+    const decodedId = decodeURIComponent(id);
+    const current = await prisma.changelog.findFirst({
+      where: {
+        OR: [{ id: decodedId }, { version: decodedId }],
+      },
+    });
+
+    if (!current) {
+      return NextResponse.json({ error: 'Không tìm thấy bản ghi phiên bản để cập nhật.' }, { status: 404 });
+    }
+
     const body = await req.json();
     const { version, date, title, changes, isPublished } = body;
 
@@ -42,7 +83,7 @@ export async function PUT(
       const duplicate = await prisma.changelog.findFirst({
         where: {
           version: updateData.version,
-          NOT: { id },
+          NOT: { id: current.id },
         },
       });
       if (duplicate) {
@@ -54,7 +95,7 @@ export async function PUT(
     }
 
     const updated = await prisma.changelog.update({
-      where: { id },
+      where: { id: current.id },
       data: updateData,
     });
 

@@ -132,9 +132,15 @@ export async function GET(req: NextRequest) {
 
     const isPlanActive = Boolean(planExpiresAt && new Date(planExpiresAt) > now);
     const isFreeAccount = !isAdmin && !isPlanActive && monthlyCredits <= 0 && lifetimeCredits <= 0;
-    const finalIsVip = Boolean(isAdmin || (!isFreeAccount && (isPlanActive || (isVip && lifetimeCredits > 0))));
-    const finalIsTrial = Boolean(!isAdmin && !finalIsVip && !isFreeAccount && lifetimeCredits > 0);
-    const finalIsUnlimited = isFreeAccount ? false : isUnlimited;
+    const isTrial = 
+      !isAdmin && 
+      !isUnlimited && 
+      (!planExpiresAt || new Date(planExpiresAt) <= now) && 
+      monthlyAllowance === 0 && 
+      Boolean((user as any).is_trial || (lifetimeCredits > 0 && !(user as any).has_paid));
+    const finalIsVip = Boolean(isAdmin || (!isFreeAccount && !isTrial && (isPlanActive || (isVip && !(user as any).is_trial))));
+    const finalIsTrial = Boolean(!isAdmin && !finalIsVip && !isFreeAccount && isTrial);
+    const finalIsUnlimited = (isFreeAccount || finalIsTrial) ? false : isUnlimited;
     const finalRemainingQuota = isFreeAccount ? 0 : remainingQuota;
 
     return NextResponse.json({
@@ -150,8 +156,8 @@ export async function GET(req: NextRequest) {
         isUnlimited: finalIsUnlimited,
         is_free_account: isFreeAccount,
         isFreeAccount,
-        vip_expires_at: (isFreeAccount || (finalIsVip && lifetimeCredits > 0 && !isPlanActive)) ? null : (planExpiresAtIso || vipExpiresAtIso),
-        vipExpiresAt: (isFreeAccount || (finalIsVip && lifetimeCredits > 0 && !isPlanActive)) ? null : (planExpiresAtIso || vipExpiresAtIso),
+        vip_expires_at: (isFreeAccount || finalIsTrial || (finalIsVip && lifetimeCredits > 0 && !isPlanActive)) ? null : (planExpiresAtIso || vipExpiresAtIso),
+        vipExpiresAt: (isFreeAccount || finalIsTrial || (finalIsVip && lifetimeCredits > 0 && !isPlanActive)) ? null : (planExpiresAtIso || vipExpiresAtIso),
         subscription_expires_at: planExpiresAtIso,
         subscriptionExpiresAt: planExpiresAtIso,
         subscription_quota: monthlyCredits,

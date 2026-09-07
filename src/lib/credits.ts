@@ -17,6 +17,8 @@ export interface UserCreditsState {
   isPlanActive: boolean;
   isVip?: boolean;
   is_vip?: boolean;
+  isTrial?: boolean;
+  is_trial?: boolean;
   isFreeAccount?: boolean;
 }
 
@@ -87,11 +89,15 @@ export async function syncUserCredits(userId: string, sqlClient?: any): Promise<
   const isPlanActive = Boolean(planExpiresAt && planExpiresAt > now);
   const totalAvailableCredits = (isPlanActive ? monthlyCredits : 0) + lifetimeCredits;
 
-  // Kiểm tra toàn diện điều kiện Gói Free:
-  // Nếu monthly_credits === 0 VÀ lifetime_credits === 0 VÀ user không phải là Admin:
-  // Gán/nhận diện trạng thái tài khoản là is_vip = false.
+  // Kiểm tra toàn diện điều kiện Gói Free & Gói Dùng Thử (Trial):
   const isFreeAccount = !isAdmin && !isPlanActive && monthlyCredits <= 0 && lifetimeCredits <= 0;
-  const targetIsVip = isAdmin ? true : (!isFreeAccount && isPlanActive);
+  const isTrial = 
+    !isAdmin && 
+    !Boolean((u as any).is_unlimited) && 
+    (!planExpiresAt || planExpiresAt <= now) && 
+    monthlyAllowance === 0 && 
+    Boolean(u.is_trial || (lifetimeCredits > 0 && !(u as any).has_paid));
+  const targetIsVip = isAdmin ? true : (!isFreeAccount && !isTrial && isPlanActive);
 
   if (Boolean(u.is_vip) !== targetIsVip) {
     needUpdate = true;
@@ -134,6 +140,8 @@ export async function syncUserCredits(userId: string, sqlClient?: any): Promise<
     isPlanActive,
     isVip: targetIsVip,
     is_vip: targetIsVip,
+    isTrial,
+    is_trial: isTrial,
     isFreeAccount,
   };
 }

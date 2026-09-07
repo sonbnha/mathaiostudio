@@ -28,7 +28,18 @@ export interface AuthUser {
   subscription_quota?: number | null;
   subscriptionQuota?: number | null;
   subscription_expires_at?: string | null;
-  subscriptionExpiresAt?: string | null;
+  isTrial?: boolean;
+  is_trial?: boolean;
+  isFreeAccount?: boolean;
+  is_free_account?: boolean;
+  monthly_allowance?: number | null;
+  monthlyAllowance?: number | null;
+  monthly_credits?: number | null;
+  monthlyCredits?: number | null;
+  lifetime_credits?: number | null;
+  lifetimeCredits?: number | null;
+  plan_expires_at?: string | null;
+  planExpiresAt?: string | null;
   avatar?: string | null;
 }
 

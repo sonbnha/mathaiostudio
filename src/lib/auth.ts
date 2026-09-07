@@ -95,7 +95,13 @@ export async function getCurrentUserFromRequest(req: NextRequest) {
       const isPlanActive = Boolean(u.plan_expires_at && new Date(u.plan_expires_at) > new Date());
       const totalCredits = (isPlanActive ? Number(u.monthly_credits || 0) : 0) + Number(u.lifetime_credits || 0);
       const isFreeAccount = !isAdmin && !isPlanActive && Number(u.monthly_credits || 0) <= 0 && Number(u.lifetime_credits || 0) <= 0;
-      const isVipFinal = isAdmin || (!isFreeAccount && isPlanActive);
+      const isTrial = 
+        !isAdmin && 
+        !Boolean(u.is_unlimited) && 
+        (!u.plan_expires_at || new Date(u.plan_expires_at) <= new Date()) && 
+        Number(u.monthly_allowance || 0) === 0 && 
+        Boolean(u.is_trial || (Number(u.lifetime_credits || 0) > 0 && !u.has_paid));
+      const isVipFinal = isAdmin || (!isFreeAccount && !isTrial && (isPlanActive || (Boolean(u.is_vip) && !u.is_trial)));
 
       return {
         id: u.id,
@@ -110,12 +116,12 @@ export async function getCurrentUserFromRequest(req: NextRequest) {
         keyQuota: u.key_quota,
         isVip: isVipFinal,
         is_vip: isVipFinal,
-        isTrial: Boolean(!isVipFinal && !isFreeAccount && totalCredits > 0),
-        is_trial: Boolean(!isVipFinal && !isFreeAccount && totalCredits > 0),
+        isTrial: Boolean(!isVipFinal && !isFreeAccount && isTrial),
+        is_trial: Boolean(!isVipFinal && !isFreeAccount && isTrial),
         isFreeAccount,
         is_free_account: isFreeAccount,
-        vipExpiresAt: isFreeAccount ? null : (u.plan_expires_at || u.vip_expires_at),
-        vip_expires_at: isFreeAccount ? null : (u.plan_expires_at || u.vip_expires_at),
+        vipExpiresAt: (isFreeAccount || isTrial) ? null : (u.plan_expires_at || u.vip_expires_at),
+        vip_expires_at: (isFreeAccount || isTrial) ? null : (u.plan_expires_at || u.vip_expires_at),
         remaining_quota: totalCredits,
         remainingQuota: totalCredits,
         max_quota: typeof u.max_quota === 'number' ? u.max_quota : totalCredits,

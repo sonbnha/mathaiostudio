@@ -326,7 +326,15 @@ export default function SettingsPage() {
     currentUser?.remaining_credits === -1 ||
     Number(currentUser?.remaining_quota) >= 999;
 
-  const hasUnlimitedTime = isAdmin || !planExp;
+  const isTrial = Boolean(
+    !isAdmin &&
+    !Boolean(currentUser?.is_unlimited || currentUser?.isUnlimited) &&
+    (!planExp || new Date(planExp) <= new Date()) &&
+    monthlyAllowance === 0 &&
+    (currentUser?.is_trial || (lifetimeCredits > 0 && !(currentUser as any)?.has_paid && !planExp))
+  );
+
+  const hasUnlimitedTime = isAdmin || (!isTrial && hasUnlimitedCredits && !planExp);
 
   let subDaysRemaining: number | null = null;
   if (planExp) {
@@ -340,8 +348,7 @@ export default function SettingsPage() {
     resetDaysRemaining = Math.max(0, Math.ceil(diffReset / (1000 * 60 * 60 * 24)));
   }
 
-  const isVip = Boolean(currentUser?.is_vip || currentUser?.isVip || isPlanActive || isAdmin || (hasUnlimitedCredits && (hasUnlimitedTime || isPlanActive)));
-  const isTrial = Boolean(currentUser?.is_trial && !isVip);
+  const isVip = !isTrial && Boolean(isAdmin || isPlanActive || ((currentUser?.is_vip || currentUser?.isVip) && !(currentUser as any)?.is_trial));
 
   const formattedPlanExp = planExp
     ? new Date(planExp).toLocaleDateString('vi-VN', {

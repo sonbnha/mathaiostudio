@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   History,
   Search,
@@ -20,6 +20,71 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { useAdminContext, ChangelogItem } from '../AdminContext';
+
+function serializeChangesToText(changes?: any[]): string {
+  if (!Array.isArray(changes) || changes.length === 0) return '';
+  return changes
+    .map((c) => {
+      const type = (c.type || 'feat').toLowerCase();
+      const content = (c.description ?? c.content ?? '').trim();
+      return `/${type} ${content}`;
+    })
+    .join('\n');
+}
+
+function parseChangesText(rawText: string) {
+  const lines = rawText
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+
+  return lines
+    .map((line) => {
+      // Strip leading bullets if any
+      const cleaned = line.replace(/^[-*•]\s+/, '').trim();
+
+      // /feat or [FEAT] (case-insensitive)
+      const featMatch = cleaned.match(/^(?:\/feat|\[feat\])\s+(.*)$/i);
+      if (featMatch) {
+        const content = featMatch[1].trim();
+        return {
+          type: 'feat' as const,
+          description: content,
+          content: content,
+        };
+      }
+
+      // /fix or [FIX] (case-insensitive)
+      const fixMatch = cleaned.match(/^(?:\/fix|\[fix\])\s+(.*)$/i);
+      if (fixMatch) {
+        const content = fixMatch[1].trim();
+        return {
+          type: 'fix' as const,
+          description: content,
+          content: content,
+        };
+      }
+
+      // /improve or [IMPROVE] (case-insensitive)
+      const improveMatch = cleaned.match(/^(?:\/improve|\[improve\])\s+(.*)$/i);
+      if (improveMatch) {
+        const content = improveMatch[1].trim();
+        return {
+          type: 'improve' as const,
+          description: content,
+          content: content,
+        };
+      }
+
+      // Default to 'feat'
+      return {
+        type: 'feat' as const,
+        description: cleaned,
+        content: cleaned,
+      };
+    })
+    .filter((item) => item.description.length > 0);
+}
 
 export default function AdminChangelogPage() {
   const {
@@ -41,9 +106,8 @@ export default function AdminChangelogPage() {
   const [clVersion, setClVersion] = useState('');
   const [clDate, setClDate] = useState('');
   const [clTitle, setClTitle] = useState('');
-  const [clChanges, setClChanges] = useState<{ type: 'feat' | 'fix' | 'improve'; description: string }[]>([
-    { type: 'feat', description: '' },
-  ]);
+  const [clChangesText, setClChangesText] = useState('');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [clIsPublished, setClIsPublished] = useState(true);
   const [clSaveLoading, setClSaveLoading] = useState(false);
   const [clError, setClError] = useState<string | null>(null);
@@ -56,7 +120,7 @@ export default function AdminChangelogPage() {
       cl.version.toLowerCase().includes(q) ||
       cl.title.toLowerCase().includes(q) ||
       cl.date.toLowerCase().includes(q) ||
-      cl.changes?.some((c) => c.description.toLowerCase().includes(q))
+      cl.changes?.some((c) => ((c.description || (c as any).content || '') as string).toLowerCase().includes(q))
     );
   });
 
@@ -75,7 +139,7 @@ export default function AdminChangelogPage() {
     const formattedDate = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
     setClDate(formattedDate);
     setClTitle('');
-    setClChanges([{ type: 'feat', description: '' }]);
+    setClChangesText('');
     setClIsPublished(true);
     setClError(null);
     setIsChangelogEditModalOpen(true);
@@ -86,42 +150,37 @@ export default function AdminChangelogPage() {
     setClVersion(item.version);
     setClDate(item.date);
     setClTitle(item.title);
-    setClChanges(
-      Array.isArray(item.changes) && item.changes.length > 0
-        ? JSON.parse(JSON.stringify(item.changes))
-        : [{ type: 'feat', description: '' }]
-    );
+    setClChangesText(serializeChangesToText(item.changes));
     setClIsPublished(item.isPublished);
     setClError(null);
     setIsChangelogEditModalOpen(true);
   };
 
-  const handleAddChangeRow = () => {
-    setClChanges((prev) => [...prev, { type: 'improve', description: '' }]);
-  };
+  const handleInsertTag = (tag: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      setClChangesText((prev) => (prev.trim() ? `${prev}\n${tag} ` : `${tag} `));
+      return;
+    }
 
-  const handleRemoveChangeRow = (index: number) => {
-    setClChanges((prev) => {
-      const next = [...prev];
-      next.splice(index, 1);
-      return next.length > 0 ? next : [{ type: 'feat', description: '' }];
-    });
-  };
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
 
-  const handleChangeRowType = (index: number, type: 'feat' | 'fix' | 'improve') => {
-    setClChanges((prev) => {
-      const next = [...prev];
-      next[index] = { ...next[index], type };
-      return next;
-    });
-  };
+    const before = text.substring(0, start);
+    const after = text.substring(end);
 
-  const handleChangeRowDesc = (index: number, description: string) => {
-    setClChanges((prev) => {
-      const next = [...prev];
-      next[index] = { ...next[index], description };
-      return next;
-    });
+    const needsNewlineBefore = before.length > 0 && !before.endsWith('\n');
+    const insertText = `${needsNewlineBefore ? '\n' : ''}${tag} `;
+    const nextText = before + insertText + after;
+
+    setClChangesText(nextText);
+
+    setTimeout(() => {
+      textarea.focus();
+      const newCursorPos = start + insertText.length;
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+    }, 0);
   };
 
   const handleSaveChangelog = async (e: React.FormEvent) => {
@@ -133,8 +192,8 @@ export default function AdminChangelogPage() {
       return;
     }
 
-    const filteredChanges = clChanges.filter((c) => c.description.trim().length > 0);
-    if (filteredChanges.length === 0) {
+    const parsedChanges = parseChangesText(clChangesText);
+    if (parsedChanges.length === 0) {
       setClError('Vui lòng thêm ít nhất 1 mục mô tả thay đổi.');
       return;
     }
@@ -154,7 +213,7 @@ export default function AdminChangelogPage() {
           version: clVersion.trim(),
           date: clDate.trim(),
           title: clTitle.trim(),
-          changes: filteredChanges,
+          changes: parsedChanges,
           isPublished: clIsPublished,
         }),
       });
@@ -456,7 +515,7 @@ export default function AdminChangelogPage() {
       {/* CREATE / EDIT CHANGELOG MODAL */}
       {isChangelogEditModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl p-6 flex flex-col gap-4 max-h-[88vh] overflow-hidden">
+          <div className="relative w-full max-w-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl p-6 flex flex-col gap-4 max-h-[88vh] overflow-hidden">
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
               <div className="flex items-center gap-2.5">
@@ -532,67 +591,52 @@ export default function AdminChangelogPage() {
                 />
               </div>
 
-              {/* Row 3: Dynamic Changes List */}
+              {/* Row 3: Quick-tag Editor */}
               <div className="flex flex-col gap-2 pt-1 border-t border-slate-200 dark:border-slate-800">
-                <div className="flex items-center justify-between">
+                {/* Toolbar */}
+                <div className="flex items-center justify-between gap-2 flex-wrap">
                   <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    Danh Sách Thay Đổi ({clChanges.length})
+                    Nội dung cập nhật (Mỗi dòng một mục)
                   </label>
-                  <button
-                    type="button"
-                    onClick={handleAddChangeRow}
-                    className="px-2.5 py-1 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-semibold text-[11px] transition flex items-center gap-1"
-                  >
-                    <PlusCircle className="w-3.5 h-3.5" />
-                    <span>+ Thêm Mục</span>
-                  </button>
-                </div>
 
-                <div className="flex flex-col gap-2 max-h-60 overflow-y-auto pr-0.5">
-                  {clChanges.map((change, idx) => (
-                    <div
-                      key={idx}
-                      className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 flex items-center gap-2"
+                  {/* Quick-insert Chips */}
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => handleInsertTag('/feat')}
+                      className="px-2 py-0.5 rounded-lg text-emerald-400 bg-emerald-950/50 hover:bg-emerald-900/50 border border-emerald-800 text-[11px] font-mono font-medium transition cursor-pointer"
+                      title="Chèn tag /feat"
                     >
-                      {/* Type Select */}
-                      <select
-                        value={change.type}
-                        onChange={(e) => handleChangeRowType(idx, e.target.value as any)}
-                        className={`px-2 py-1.5 rounded-lg text-[11px] font-bold border outline-none cursor-pointer uppercase ${
-                          change.type === 'feat'
-                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
-                            : change.type === 'fix'
-                            ? 'bg-rose-500/10 border-rose-500/30 text-rose-600 dark:text-rose-400'
-                            : 'bg-blue-500/10 border-blue-500/30 text-blue-600 dark:text-blue-400'
-                        }`}
-                      >
-                        <option value="feat">FEAT (Tính năng)</option>
-                        <option value="fix">FIX (Sửa lỗi)</option>
-                        <option value="improve">IMPROVE (Cải tiến)</option>
-                      </select>
-
-                      {/* Description Input */}
-                      <input
-                        type="text"
-                        value={change.description}
-                        onChange={(e) => handleChangeRowDesc(idx, e.target.value)}
-                        placeholder="Mô tả chi tiết nội dung thay đổi..."
-                        className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 focus:border-indigo-500 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 outline-none transition"
-                        required
-                      />
-
-                      {/* Delete Row Button */}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveChangeRow(idx)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition"
-                        title="Xóa dòng này"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ))}
+                      + /feat
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleInsertTag('/fix')}
+                      className="px-2 py-0.5 rounded-lg text-rose-400 bg-rose-950/50 hover:bg-rose-900/50 border border-rose-800 text-[11px] font-mono font-medium transition cursor-pointer"
+                      title="Chèn tag /fix"
+                    >
+                      + /fix
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleInsertTag('/improve')}
+                      className="px-2 py-0.5 rounded-lg text-sky-400 bg-sky-950/50 hover:bg-sky-900/50 border border-sky-800 text-[11px] font-mono font-medium transition cursor-pointer"
+                      title="Chèn tag /improve"
+                    >
+                      + /improve
+                    </button>
+                  </div>
                 </div>
+
+                {/* Textarea */}
+                <textarea
+                  ref={textareaRef}
+                  value={clChangesText}
+                  onChange={(e) => setClChangesText(e.target.value)}
+                  placeholder={`/feat Hoán đổi trực tiếp thanh Header Canvas\n/fix Khắc phục lỗi kẹt loading khi tải ảnh\n/improve Tối ưu bộ nhớ đệm và tăng tốc độ vẽ SVG`}
+                  className="w-full h-44 bg-slate-950/80 border border-slate-700/80 rounded-xl p-3 font-mono text-xs text-slate-200 placeholder:text-slate-500 focus:border-cyan-500 outline-none leading-relaxed resize-y"
+                  required
+                />
               </div>
 
               {/* Row 4: Is Published Switch */}

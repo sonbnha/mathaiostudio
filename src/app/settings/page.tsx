@@ -25,6 +25,10 @@ import {
   Compass,
   Save,
   Zap,
+  History,
+  Copy,
+  Check,
+  KeyRound,
 } from 'lucide-react';
 import { AvatarSelector } from '@/components/AvatarSelector';
 import { DEFAULT_AVATAR, sanitizeAvatar, PRESET_AVATARS } from '@/config/avatars';
@@ -81,11 +85,66 @@ export default function SettingsPage() {
     }
   }, []);
 
-  // Form 3: License Key Redemption State
+  // Form 3: License Key Redemption State & History
   const [redeemKeyInput, setRedeemKeyInput] = useState('');
   const [redeeming, setRedeeming] = useState(false);
   const [redeemSuccess, setRedeemSuccess] = useState<string | null>(null);
   const [redeemError, setRedeemError] = useState<string | null>(null);
+  const [licenseHistory, setLicenseHistory] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  const fetchLicenseHistory = async () => {
+    if (!checkHasAuthToken()) return;
+    setLoadingHistory(true);
+    try {
+      const res = await fetch('/api/user/license-history');
+      if (res.ok) {
+        const data = await res.json();
+        setLicenseHistory(data.history || []);
+      }
+    } catch (err) {
+      console.warn('Lỗi lấy lịch sử nạp key:', err);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  const handleCopyKey = (k: string) => {
+    if (!navigator?.clipboard) return;
+    navigator.clipboard.writeText(k);
+    setCopiedKey(k);
+    setTimeout(() => setCopiedKey(null), 2000);
+  };
+
+  const formatActivationTime = (timeStr?: string | null) => {
+    if (!timeStr) return 'Không rõ thời gian';
+    try {
+      return new Date(timeStr).toLocaleString('vi-VN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch {
+      return timeStr;
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'quota') {
+      fetchLicenseHistory();
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    const handleRedeemed = () => {
+      fetchLicenseHistory();
+    };
+    window.addEventListener('license-redeemed', handleRedeemed);
+    return () => window.removeEventListener('license-redeemed', handleRedeemed);
+  }, []);
 
   // Theme Toggle State
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
@@ -755,13 +814,13 @@ export default function SettingsPage() {
                     </div>
 
                     <div className={`text-2xl font-black ${
-                      hasUnlimitedCredits && isPlanActive
+                      (hasUnlimitedCredits || monthlyCredits === -1) && isPlanActive
                         ? 'text-amber-600 dark:text-amber-400'
                         : 'text-indigo-600 dark:text-indigo-400'
                     }`}>
-                      {hasUnlimitedCredits
+                      {hasUnlimitedCredits || monthlyCredits === -1
                         ? (isPlanActive ? '∞ Vô hạn' : '0')
-                        : `${monthlyCredits}${monthlyAllowance > 0 ? ` / ${monthlyAllowance}` : ''}`}{' '}
+                        : `${monthlyCredits === -1 ? '∞ Vô hạn' : monthlyCredits}${monthlyAllowance > 0 ? ` / ${monthlyAllowance === -1 ? '∞' : monthlyAllowance}` : ''}`}{' '}
                       <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Ω</span>
                     </div>
 
@@ -814,7 +873,7 @@ export default function SettingsPage() {
                     </div>
 
                     <div className="text-2xl font-black text-amber-600 dark:text-amber-400">
-                      {lifetimeCredits}{' '}
+                      {lifetimeCredits === -1 ? '∞ Vô hạn' : lifetimeCredits}{' '}
                       <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Ω</span>
                     </div>
 
@@ -888,6 +947,113 @@ export default function SettingsPage() {
                   <span>Kích hoạt ngay</span>
                 </button>
               </form>
+            </div>
+
+            {/* Lịch sử kích hoạt License Key */}
+            <div className="mt-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs flex flex-col gap-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                    <History className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                      <span>Lịch sử kích hoạt License Key</span>
+                      {licenseHistory.length > 0 && (
+                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-800/60">
+                          {licenseHistory.length}
+                        </span>
+                      )}
+                    </h3>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Danh sách các mã thẻ / bản quyền đã nạp thành công vào tài khoản của bạn.
+                    </p>
+                  </div>
+                </div>
+
+                {loadingHistory && (
+                  <div className="flex items-center gap-1.5 text-xs text-indigo-600 dark:text-indigo-400 font-medium">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span className="hidden sm:inline">Đang tải...</span>
+                  </div>
+                )}
+              </div>
+
+              {licenseHistory.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-100 dark:border-slate-800 text-[11px] text-slate-400 uppercase tracking-wider">
+                        <th className="py-2.5 px-3 font-semibold">Mã Key</th>
+                        <th className="py-2.5 px-3 font-semibold">Gói bản quyền / Giá trị</th>
+                        <th className="py-2.5 px-3 font-semibold">Thời điểm kích hoạt</th>
+                        <th className="py-2.5 px-3 font-semibold">Trạng thái</th>
+                        <th className="py-2.5 px-3 font-semibold text-right">Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                      {licenseHistory.map((item, idx) => {
+                        const isCopied = copiedKey === item.key;
+                        const dur = item.durationDays ?? 30;
+                        const isLt = dur === 0 || item.key?.startsWith('AIO-LT-');
+                        const durText = isLt ? 'Vô hạn (∞)' : `+${dur} ngày`;
+                        const creditsVal = item.totalCredits ?? 50;
+                        const creditsText = creditsVal === -1 ? '∞ Ω' : (isLt ? `+${creditsVal} Ω vô hạn` : `${creditsVal} Ω/tháng`);
+
+                        return (
+                          <tr key={item.id || idx} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition">
+                            <td className="py-3 px-3">
+                              <span className="font-mono font-bold text-xs text-indigo-600 dark:text-indigo-400 tracking-wider">
+                                {item.key}
+                              </span>
+                            </td>
+                            <td className="py-3 px-3">
+                              <div className="flex items-center gap-1.5 font-medium">
+                                <span className="text-emerald-600 dark:text-emerald-400 font-mono font-semibold">
+                                  {durText} • {creditsText}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="py-3 px-3 text-slate-500 dark:text-slate-400 font-mono text-[11px]">
+                              {formatActivationTime(item.usedAt || item.createdAt)}
+                            </td>
+                            <td className="py-3 px-3">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                                Thành công
+                              </span>
+                            </td>
+                            <td className="py-3 px-3 text-right">
+                              <button
+                                type="button"
+                                onClick={() => handleCopyKey(item.key)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition text-[11px] font-medium cursor-pointer"
+                                title="Sao chép mã Key"
+                              >
+                                {isCopied ? (
+                                  <>
+                                    <Check className="w-3 h-3 text-emerald-500" />
+                                    <span className="text-emerald-600 dark:text-emerald-400">Đã chép</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy className="w-3 h-3 text-slate-400" />
+                                    <span>Sao chép</span>
+                                  </>
+                                )}
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="py-8 text-center text-xs text-slate-400 italic">
+                  {loadingHistory ? 'Đang tải lịch sử...' : 'Bạn chưa kích hoạt mã License Key nào trên hệ thống.'}
+                </div>
+              )}
             </div>
           </section>
         )}

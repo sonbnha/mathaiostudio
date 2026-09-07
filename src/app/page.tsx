@@ -1732,7 +1732,7 @@ function HomeContent() {
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 shrink-0">
                           0 Ω
                         </span>
-                      ) : isUnlimitedActive ? (
+                      ) : isUnlimitedActive || totalCredits === -1 ? (
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60 shrink-0">
                           ∞ Ω
                         </span>
@@ -1748,7 +1748,7 @@ function HomeContent() {
                               : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
                           }`}
                         >
-                          {totalCredits > 0 ? `${totalCredits} Ω` : '0 Ω'}
+                          {totalCredits === -1 ? '∞ Ω' : (totalCredits > 0 ? `${totalCredits} Ω` : '0 Ω')}
                         </span>
                       )}
 
@@ -1926,7 +1926,7 @@ function HomeContent() {
                         }`}>
                           {isFreeAccount
                             ? '0 Ω (Hạn mức đã hết)'
-                            : isAdmin || (hasUnlimitedCredits && isPlanActive) || (hasUnlimitedCredits && hasUnlimitedTime)
+                            : isAdmin || (hasUnlimitedCredits && isPlanActive) || (hasUnlimitedCredits && hasUnlimitedTime) || remainingCredits === -1
                             ? '∞ Ω'
                             : `${remainingCredits} Ω`}
                         </span>
@@ -1972,7 +1972,7 @@ function HomeContent() {
                                 ? 'bg-slate-100 text-slate-500 border border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'
                                 : 'bg-amber-100 text-amber-900 border border-amber-300/80 dark:bg-amber-950/60 dark:text-amber-200 dark:border-amber-700/60'
                             } font-bold text-xs px-2.5 py-0.5 rounded-full shrink-0 shadow-xs`}>
-                              {isAdmin || (hasUnlimitedCredits && isPlanActive)
+                              {isAdmin || (hasUnlimitedCredits && isPlanActive) || monthlyCredits === -1
                                 ? '∞ Ω'
                                 : (isFreeAccount || isTrial)
                                 ? '0 Ω'
@@ -2038,7 +2038,7 @@ function HomeContent() {
                                 ? 'bg-slate-100 text-slate-500 border border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'
                                 : 'bg-amber-50 text-amber-800 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/50'
                             } font-bold text-xs px-2.5 py-0.5 rounded-full shrink-0 shadow-xs`}>
-                              {isAdmin ? '∞ Ω' : `${lifetimeCredits || 0} Ω`}
+                              {isAdmin || lifetimeCredits === -1 ? '∞ Ω' : `${lifetimeCredits || 0} Ω`}
                             </span>
                           </div>
 

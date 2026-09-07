@@ -90,6 +90,7 @@ export async function GET(req: NextRequest) {
           u.next_credit_reset_at,
           u.plan_expires_at,
           COALESCE(u.lifetime_credits, 0) AS lifetime_credits,
+          u.avatar,
           (
             SELECT json_build_object('key', lk.key, 'used_at', lk.used_at)
             FROM license_keys lk
@@ -106,7 +107,7 @@ export async function GET(req: NextRequest) {
         GROUP BY u.id, u.name, u.email, u.username, u.role, u.status, u.is_active, u.api_key, u.cuid, u.created_at, 
                  u.key_quota, u.is_vip, u.is_trial, u.vip_expires_at, u.remaining_quota, u.max_quota, 
                  u.lifetime_quota, u.subscription_quota, u.subscription_expires_at,
-                 u.monthly_allowance, u.monthly_credits, u.next_credit_reset_at, u.plan_expires_at, u.lifetime_credits
+                 u.monthly_allowance, u.monthly_credits, u.next_credit_reset_at, u.plan_expires_at, u.lifetime_credits, u.avatar
         ORDER BY u.created_at DESC
       `;
     } else {
@@ -136,6 +137,7 @@ export async function GET(req: NextRequest) {
           u.next_credit_reset_at,
           u.plan_expires_at,
           COALESCE(u.lifetime_credits, 0) AS lifetime_credits,
+          u.avatar,
           (
             SELECT json_build_object('key', lk.key, 'used_at', lk.used_at)
             FROM license_keys lk
@@ -151,7 +153,7 @@ export async function GET(req: NextRequest) {
         GROUP BY u.id, u.name, u.email, u.username, u.role, u.status, u.is_active, u.api_key, u.cuid, u.created_at, 
                  u.key_quota, u.is_vip, u.is_trial, u.vip_expires_at, u.remaining_quota, u.max_quota, 
                  u.lifetime_quota, u.subscription_quota, u.subscription_expires_at,
-                 u.monthly_allowance, u.monthly_credits, u.next_credit_reset_at, u.plan_expires_at, u.lifetime_credits
+                 u.monthly_allowance, u.monthly_credits, u.next_credit_reset_at, u.plan_expires_at, u.lifetime_credits, u.avatar
         ORDER BY u.created_at DESC
       `;
     }
@@ -161,6 +163,9 @@ export async function GET(req: NextRequest) {
       name: r.name || r.username || r.email,
       email: r.email,
       username: r.username || r.email,
+      avatar: r.avatar || null,
+      avatar_url: r.avatar || null,
+      photo_url: r.avatar || null,
       role: r.role || 'user',
       status: r.status || 'active',
       is_active: r.status === 'active',

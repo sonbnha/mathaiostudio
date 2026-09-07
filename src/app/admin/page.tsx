@@ -148,6 +148,9 @@ interface UserAccountItem {
   username: string;
   name: string;
   email?: string;
+  avatar?: string | null;
+  avatar_url?: string | null;
+  photo_url?: string | null;
   role: string;
   status?: string;
   key_quota?: number;
@@ -2357,24 +2360,43 @@ export default function UnifiedAdminPage() {
                         ? 100
                         : Math.min(100, Math.round((createdCount / (quotaLimit || 50)) * 100));
 
+                      const formatOmega = (val: number | null | undefined) => {
+                        if (val === -1 || val === null || typeof val === 'undefined') return '∞ Ω';
+                        return `${val} Ω`;
+                      };
+
                       return (
                         <tr key={u.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/30 transition">
                           {/* 1. Họ và Tên */}
                           <td className="py-3 px-3 align-middle">
                             <div className="flex items-center gap-2.5">
-                              <div
-                                className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${
-                                  isUAdmin
-                                    ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
-                                    : isUStaff
-                                    ? 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30'
-                                    : isUVip
-                                    ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 font-extrabold'
-                                    : 'bg-slate-500/15 text-slate-600 dark:text-slate-400 border border-slate-500/30'
-                                }`}
-                              >
-                                {(u.name || u.username || 'U').charAt(0).toUpperCase()}
-                              </div>
+                              {(() => {
+                                const avatarSrc = u.avatar || u.avatar_url || u.photo_url || (u as any).avatarUrl;
+                                if (avatarSrc) {
+                                  return (
+                                    <img
+                                      src={avatarSrc}
+                                      alt={u.name || u.username || 'Avatar'}
+                                      className="w-7 h-7 rounded-full object-cover border border-slate-200 dark:border-slate-700 shrink-0 shadow-xs"
+                                    />
+                                  );
+                                }
+                                return (
+                                  <div
+                                    className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${
+                                      isUAdmin
+                                        ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
+                                        : isUStaff
+                                        ? 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30'
+                                        : isUVip
+                                        ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 font-extrabold'
+                                        : 'bg-slate-500/15 text-slate-600 dark:text-slate-400 border border-slate-500/30'
+                                    }`}
+                                  >
+                                    {(u.name || u.username || 'U').charAt(0).toUpperCase()}
+                                  </div>
+                                );
+                              })()}
                               <span className="font-semibold text-slate-900 dark:text-slate-100 truncate max-w-[180px]">
                                 {u.name || u.username || '—'}
                               </span>
@@ -2387,7 +2409,8 @@ export default function UnifiedAdminPage() {
                               <button
                                 type="button"
                                 onClick={() => {
-                                  const matchedKey = keys.find((k) => k.usedBy?.id === u.id);
+                                  const userKeys = keys.filter((k) => k.usedBy?.id === u.id || k.used_by === u.id);
+                                  const matchedKey = userKeys[0];
                                   const fallbackKey = u.lastActivatedKey || u.last_activated_key;
                                   setSelectedAccountModal({
                                     user: u,
@@ -2407,6 +2430,7 @@ export default function UnifiedAdminPage() {
                                       usedAt: fallbackKey.used_at,
                                       used_at: fallbackKey.used_at,
                                     } : null),
+                                    licenseKeys: userKeys,
                                   });
                                 }}
                                 className="text-left font-medium text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 hover:underline transition-colors block cursor-pointer"
@@ -2431,37 +2455,10 @@ export default function UnifiedAdminPage() {
                                 Cộng tác viên (CTV)
                               </span>
                             ) : isUVip ? (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const matchedKey = keys.find((k) => k.usedBy?.id === u.id);
-                                  const fallbackKey = u.lastActivatedKey || u.last_activated_key;
-                                  setSelectedAccountModal({
-                                    user: u,
-                                    licenseKey: matchedKey ? {
-                                      id: matchedKey.id,
-                                      key: matchedKey.key,
-                                      durationDays: matchedKey.durationDays,
-                                      duration_days: matchedKey.duration_days,
-                                      maxUsage: matchedKey.maxUsage,
-                                      max_usage: matchedKey.max_usage,
-                                      totalCredits: matchedKey.totalCredits,
-                                      usedAt: matchedKey.usedAt,
-                                      used_at: matchedKey.used_at,
-                                      createdBy: matchedKey.createdBy,
-                                    } : (fallbackKey ? {
-                                      key: fallbackKey.key,
-                                      usedAt: fallbackKey.used_at,
-                                      used_at: fallbackKey.used_at,
-                                    } : null),
-                                  });
-                                }}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-600/50 hover:bg-amber-100 dark:hover:bg-amber-900/50 hover:shadow-sm transition-all cursor-pointer whitespace-nowrap"
-                                title="Bấm để xem chi tiết gói VIP"
-                              >
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-bold text-[11px] border whitespace-nowrap bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30">
                                 <span>👑</span>
                                 <span>VIP Account</span>
-                              </button>
+                              </span>
                             ) : (u.lifetime_quota ?? u.lifetimeQuota ?? 0) > 0 || u.is_trial ? (
                               <span className="inline-flex items-center px-2.5 py-1 rounded-full font-bold text-[11px] border whitespace-nowrap bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/30">
                                 Dùng thử (Trial)
@@ -2506,7 +2503,7 @@ export default function UnifiedAdminPage() {
                                   if (isSubActive) {
                                     return (
                                       <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20 font-medium text-[11px] whitespace-nowrap">
-                                        Thuê bao: {subQuota} Ω (Hạn: {formatDateVN(subExp)})
+                                        Thuê bao: {formatOmega(subQuota)} (Hạn: {formatDateVN(subExp)})
                                       </span>
                                     );
                                   } else if (subExp) {
@@ -2522,17 +2519,17 @@ export default function UnifiedAdminPage() {
                                 {/* Vĩnh viễn / Dùng thử badge */}
                                 {(() => {
                                   const ltQuota = u.lifetime_credits ?? u.lifetimeCredits ?? u.lifetime_quota ?? u.lifetimeQuota ?? 0;
-                                  if (ltQuota > 0) {
+                                  if (ltQuota > 0 || ltQuota === -1) {
                                     if (isUVip) {
                                       return (
                                         <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 font-medium text-[11px] whitespace-nowrap">
-                                          👑 VIP Vô hạn: {ltQuota} Ω
+                                          👑 VIP Vô hạn: {formatOmega(ltQuota)}
                                         </span>
                                       );
                                     } else {
                                       return (
                                         <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/20 font-medium text-[11px] whitespace-nowrap">
-                                          Dùng thử: {ltQuota} Ω
+                                          Dùng thử: {formatOmega(ltQuota)}
                                         </span>
                                       );
                                     }

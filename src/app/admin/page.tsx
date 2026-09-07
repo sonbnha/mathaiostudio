@@ -2111,8 +2111,8 @@ export default function UnifiedAdminPage() {
                       <tr>
                         <th className="py-3 px-4 w-[205px] min-w-[195px] whitespace-nowrap">Mã Key</th>
                         <th className="py-3 px-4 min-w-[180px] whitespace-nowrap">Người Tạo</th>
-                        <th className="py-3 px-4 min-w-[170px] whitespace-nowrap">Người Kích Hoạt</th>
-                        <th className="py-3 px-5 min-w-[190px] whitespace-nowrap">ĐỊNH MỨC Ω & THỜI HẠN</th>
+                        <th className="py-3 px-4 min-w-[170px] whitespace-nowrap">NGƯỜI NẠP</th>
+                        <th className="py-3 px-5 min-w-[190px] whitespace-nowrap">ĐỊNH MỨC Ω</th>
                         <th className="py-3 px-3 text-center sticky right-0 z-30 bg-slate-100 dark:bg-[#182030] shadow-[-4px_0_8px_-2px_rgba(0,0,0,0.08)] w-[105px] min-w-[105px] whitespace-nowrap">
                           Thao Tác
                         </th>
@@ -2179,7 +2179,7 @@ export default function UnifiedAdminPage() {
                               )}
                             </td>
 
-                            {/* 3. Người Kích Hoạt (Used By) */}
+                            {/* 3. Người Nạp (Used By) */}
                             <td className="px-4 py-3 align-middle whitespace-nowrap min-w-[170px]">
                               {k.usedBy ? (
                                 <button
@@ -2220,7 +2220,7 @@ export default function UnifiedAdminPage() {
                               )}
                             </td>
 
-                            {/* 4. ĐỊNH MỨC Ω & THỜI HẠN */}
+                            {/* 4. ĐỊNH MỨC Ω */}
                             <td className="px-5 py-3 pr-6 align-middle whitespace-nowrap min-w-[190px]">
                               <div className="flex flex-col justify-center">
                                 <div className="text-xs font-semibold text-slate-800 dark:text-slate-200 font-mono">

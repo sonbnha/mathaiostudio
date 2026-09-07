@@ -1946,109 +1946,71 @@ function HomeContent() {
                         }`}>
                           <div className="flex items-center justify-between">
                             <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                              {isAdmin ? (
-                                <Shield className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-                              ) : (hasUnlimitedCredits && isPlanActive) ? (
-                                <Crown className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />
-                              ) : (
-                                <span className={`w-2 h-2 rounded-full shrink-0 ${!isFreeAccount && !isTrial && isPlanActive ? 'bg-emerald-500' : 'bg-slate-400'}`}></span>
-                              )}
+                              <Crown className={`w-3.5 h-3.5 shrink-0 ${
+                                isAdmin
+                                  ? 'text-rose-500 fill-rose-500'
+                                  : (hasUnlimitedCredits && isPlanActive)
+                                  ? 'text-amber-500 fill-amber-500'
+                                  : isPlanActive
+                                  ? 'text-amber-500 fill-amber-500'
+                                  : 'text-slate-400 fill-slate-300 dark:fill-slate-600'
+                              }`} />
                               <span>
                                 {isAdmin 
-                                  ? 'Gói Quản Trị Viên (Super Admin)' 
+                                  ? 'Gói Quản Trị Viên' 
                                   : isFreeAccount
-                                  ? 'Thuê Bao Ω (Chưa kích hoạt / Đã hết hạn)'
+                                  ? 'Gói Thuê Bao'
                                   : isTrial
-                                  ? 'Thuê Bao Ω (Chưa kích hoạt)'
+                                  ? 'Gói Thuê Bao'
                                   : hasUnlimitedCredits 
                                   ? 'Gói VIP Vô Hạn' 
-                                  : 'Thuê Bao Ω'}
+                                  : 'Gói Thuê Bao'}
                               </span>
                             </span>
-                            <span className={`${badgeBase} ${
-                              isAdmin
-                                ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30 font-semibold'
-                                : (isFreeAccount || isTrial)
+                            <span className={`${
+                              isFreeAccount
                                 ? 'bg-slate-100 text-slate-500 border border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'
-                                : (hasUnlimitedCredits && isPlanActive)
-                                ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 font-semibold'
-                                : isPlanActive
-                                ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 font-semibold'
-                                : 'bg-slate-100 text-slate-500 border border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'
-                            }`}>
-                              {isAdmin
-                                ? 'Super Admin'
-                                : isFreeAccount
-                                ? 'Đã hết hạn'
-                                : isTrial
-                                ? 'Chưa kích hoạt'
-                                : (hasUnlimitedCredits && isPlanActive)
-                                ? 'VIP Vô Hạn'
-                                : isPlanActive
-                                ? 'Đang hoạt động'
-                                : planExp
-                                ? 'Đã hết hạn'
-                                : 'Chưa kích hoạt'}
+                                : 'bg-amber-100 text-amber-900 border border-amber-300/80 dark:bg-amber-950/60 dark:text-amber-200 dark:border-amber-700/60'
+                            } font-bold text-xs px-2.5 py-0.5 rounded-full shrink-0 shadow-xs`}>
+                              {isAdmin || (hasUnlimitedCredits && isPlanActive)
+                                ? '∞ Ω'
+                                : (isFreeAccount || isTrial)
+                                ? '0 Ω'
+                                : hasUnlimitedCredits
+                                ? (isPlanActive ? '∞ Ω' : '0 Ω')
+                                : `${monthlyCredits} Ω`}
                             </span>
                           </div>
 
-                          <div className="flex flex-col gap-1.5">
-                            <div className="flex items-baseline justify-between">
-                              <span className="text-xs text-slate-500 dark:text-slate-400 font-normal">Khả dụng:</span>
-                              <span className={`text-xs font-medium text-right ${
-                                isAdmin
-                                  ? 'text-rose-600 dark:text-rose-400 font-semibold'
-                                  : (isFreeAccount || isTrial)
-                                  ? 'text-slate-700 dark:text-slate-300'
-                                  : (hasUnlimitedCredits && isPlanActive)
-                                  ? 'text-amber-600 dark:text-amber-400 font-semibold'
-                                  : 'text-indigo-700 dark:text-indigo-300'
-                              }`}>
-                                {isAdmin
-                                  ? '∞ Ω'
-                                  : (isFreeAccount || isTrial)
-                                  ? '0 Ω'
-                                  : hasUnlimitedCredits
-                                  ? (isPlanActive ? '∞ Ω' : '0 Ω')
-                                  : `${monthlyCredits}${monthlyAllowance > 0 ? ` / ${monthlyAllowance}` : ''} Ω`}
-                              </span>
-                            </div>
-
-                            {!isFreeAccount && !isTrial && isPlanActive && resetAt && !hasUnlimitedCredits && !isAdmin && (
-                              <div className="flex items-baseline justify-between">
-                                <span className="text-xs text-slate-500 dark:text-slate-400 font-normal">Làm mới:</span>
-                                <span className="text-xs font-medium text-right text-indigo-600 dark:text-indigo-400">
-                                  {resetDaysRemaining !== null ? `Còn ${resetDaysRemaining} ngày` : ''} ({formatDateVN(resetAt)})
+                          <div className="flex items-baseline justify-between pt-0.5">
+                            <span className="text-xs text-slate-500 dark:text-slate-400 font-normal">Hạn gói:</span>
+                            <span className="text-xs font-medium text-right">
+                              {isAdmin ? (
+                                <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                                  Vô hạn
                                 </span>
-                              </div>
-                            )}
-
-                            <div className="flex items-baseline justify-between">
-                              <span className="text-xs text-slate-500 dark:text-slate-400 font-normal">Hạn gói:</span>
-                              <span className="text-xs font-medium text-right">
-                                {isAdmin ? (
-                                  <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
-                                    Vô hạn
-                                  </span>
-                                ) : isFreeAccount ? (
-                                  <span className="text-slate-400 italic">
-                                    {planExp ? `Đã hết hạn (${formatDateVN(planExp)})` : 'Chưa đăng ký'}
-                                  </span>
-                                ) : isTrial ? (
-                                  <span className="text-slate-400 italic">Chưa đăng ký</span>
-                                ) : isPlanActive && planExp ? (
-                                  <span className={hasUnlimitedCredits ? 'text-amber-600 dark:text-amber-400 font-semibold' : 'text-slate-700 dark:text-slate-300'}>
-                                    Còn {subDaysRemaining} ngày • {formatDateVN(planExp)}
-                                  </span>
-                                ) : planExp ? (
-                                  <span className="text-rose-500 font-medium">
-                                    Hết hạn ({formatDateVN(planExp)})
-                                  </span>
-                                ) : (
-                                  <span className="text-slate-400 italic">Chưa đăng ký</span>
-                                )}
-                              </span>
-                            </div>
+                              ) : hasUnlimitedCredits && (!planExp || hasUnlimitedTime) ? (
+                                <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                                  Vô hạn
+                                </span>
+                              ) : isFreeAccount ? (
+                                <span className="text-slate-400 italic">
+                                  {planExp ? `Đã hết hạn (${formatDateVN(planExp)})` : 'Chưa đăng ký'}
+                                </span>
+                              ) : isTrial ? (
+                                <span className="text-slate-400 italic">Chưa đăng ký</span>
+                              ) : isPlanActive && planExp ? (
+                                <span className={hasUnlimitedCredits ? 'text-amber-600 dark:text-amber-400 font-semibold' : 'text-slate-700 dark:text-slate-300'}>
+                                  Còn {subDaysRemaining} ngày • {formatDateVN(planExp)}
+                                </span>
+                              ) : planExp ? (
+                                <span className="text-rose-500 font-medium">
+                                  Hết hạn ({formatDateVN(planExp)})
+                                </span>
+                              ) : (
+                                <span className="text-slate-400 italic">Chưa đăng ký</span>
+                              )}
+                            </span>
                           </div>
                         </div>
 
@@ -2071,32 +2033,24 @@ function HomeContent() {
                               )}
                               <span>{isTrial ? 'Ω Dùng Thử (Trial)' : 'Ω Vô Hạn'}</span>
                             </span>
+                            <span className={`${
+                              isFreeAccount
+                                ? 'bg-slate-100 text-slate-500 border border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'
+                                : 'bg-amber-50 text-amber-800 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/50'
+                            } font-bold text-xs px-2.5 py-0.5 rounded-full shrink-0 shadow-xs`}>
+                              {isAdmin ? '∞ Ω' : `${lifetimeCredits || 0} Ω`}
+                            </span>
                           </div>
 
-                          <div className="flex flex-col gap-1.5">
-                            <div className="flex items-baseline justify-between">
-                              <span className="text-xs text-slate-500 dark:text-slate-400 font-normal">Tích lũy:</span>
-                              <span className={`text-xs font-medium text-right ${
-                                isFreeAccount
-                                  ? 'text-slate-700 dark:text-slate-300'
-                                  : isTrial
-                                  ? 'text-sky-700 dark:text-sky-300'
-                                  : 'text-amber-700 dark:text-amber-300'
-                              }`}>
-                                {isAdmin ? '∞ Ω' : isFreeAccount ? '0 Ω' : `${lifetimeCredits} Ω`}
-                              </span>
-                            </div>
-
-                            <div className="flex items-baseline justify-between">
-                              <span className="text-xs text-slate-500 dark:text-slate-400 font-normal">Hạn dùng:</span>
-                              <span className={`text-xs font-medium text-right ${
-                                isFreeAccount
-                                  ? 'text-rose-500 dark:text-rose-400'
-                                  : 'text-emerald-600 dark:text-emerald-400'
-                              }`}>
-                                {isFreeAccount ? 'Đã dùng hết' : 'Vô hạn'}
-                              </span>
-                            </div>
+                          <div className="flex items-baseline justify-between pt-0.5">
+                            <span className="text-xs text-slate-500 dark:text-slate-400 font-normal">Hạn dùng:</span>
+                            <span className={`text-xs font-medium text-right ${
+                              isFreeAccount
+                                ? 'text-rose-500 dark:text-rose-400'
+                                : 'text-emerald-600 dark:text-emerald-400 font-medium'
+                            }`}>
+                              {isFreeAccount ? 'Đã dùng hết' : 'Vô hạn'}
+                            </span>
                           </div>
 
                           {/* Ghi chú phụ nếu đang có gói thuê bao active */}

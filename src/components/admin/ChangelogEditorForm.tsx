@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
-  ChevronRight,
   Save,
   Loader2,
   Tag,
@@ -295,37 +294,33 @@ export default function ChangelogEditorForm({
   }
 
   return (
-    <form onSubmit={handleSave} className="space-y-6 max-w-7xl mx-auto pb-12">
-      {/* TOP HEADER BAR */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
-        {/* Left: Back button & Breadcrumb */}
-        <div className="flex items-center gap-3 flex-wrap">
+    <form onSubmit={handleSave} className="space-y-5 max-w-7xl mx-auto pb-6">
+      {/* TOP ACTION BAR */}
+      <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+        {/* Left: Back button & Streamlined Title */}
+        <div className="flex items-center gap-3">
           <Link
             href="/admin/changelog"
-            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition shrink-0"
+            className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors shrink-0"
             title="Quay lại danh sách Changelog"
           >
             <ArrowLeft className="w-4 h-4" />
           </Link>
 
-          <nav className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
-            <span className="hover:text-slate-700 dark:hover:text-slate-200">Admin Portal</span>
-            <ChevronRight className="w-3.5 h-3.5 opacity-60" />
-            <Link
-              href="/admin/changelog"
-              className="hover:text-slate-900 dark:hover:text-slate-100 font-medium transition"
-            >
-              Lịch Sử Phiên Bản
-            </Link>
-            <ChevronRight className="w-3.5 h-3.5 opacity-60" />
-            <span className="font-semibold text-slate-900 dark:text-slate-100">
-              {isNew ? 'Tạo Phiên Bản Mới' : `Chỉnh Sửa ${clVersion || 'Phiên Bản'}`}
-            </span>
-          </nav>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h1 className="text-base font-bold text-slate-900 dark:text-slate-100">
+              {isNew ? 'Tạo Phiên Bản Mới' : 'Chỉnh Sửa Phiên Bản'}
+            </h1>
+            {clVersion.trim() && (
+              <span className="text-xs font-mono px-2 py-0.5 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-800/80">
+                {clVersion.trim()}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Right: Actions */}
-        <div className="flex items-center gap-3 self-end sm:self-auto flex-wrap">
+        <div className="flex items-center gap-2.5 self-end sm:self-auto flex-wrap">
           {/* Published Status Toggle */}
           <button
             type="button"
@@ -371,15 +366,15 @@ export default function ChangelogEditorForm({
         </div>
       )}
 
-      {/* 2-COLUMN GRID */}
+      {/* 2-COLUMN BALANCED STUDIO GRID */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* LEFT COLUMN: EDITOR PANEL (~58% width: 7/12) */}
-        <div className="lg:col-span-7 flex flex-col gap-5">
-          {/* Metadata Card */}
-          <div className="p-5 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800/80 shadow-sm space-y-4">
-            <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800/60">
-              <FileText className="w-4 h-4 text-indigo-500" />
-              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+        {/* LEFT COLUMN: UNIFIED STUDIO EDITOR CARD (~58% width: 7/12) */}
+        <div className="lg:col-span-7 bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 flex flex-col h-[calc(100vh-190px)] min-h-[620px]">
+          {/* Metadata Section */}
+          <div className="space-y-3.5 shrink-0">
+            <div className="flex items-center gap-2 pb-2 border-b border-slate-800/60">
+              <FileText className="w-4 h-4 text-cyan-400" />
+              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-300">
                 Thông Tin Bản Phát Hành
               </h2>
             </div>
@@ -387,8 +382,8 @@ export default function ChangelogEditorForm({
             {/* Row 1: Version + Date */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                  <Tag className="w-3.5 h-3.5 text-indigo-500" />
+                <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                  <Tag className="w-3.5 h-3.5 text-cyan-400" />
                   <span>Số Phiên Bản</span>
                 </label>
                 <input
@@ -396,14 +391,14 @@ export default function ChangelogEditorForm({
                   value={clVersion}
                   onChange={(e) => setClVersion(e.target.value)}
                   placeholder="Ví dụ: v1.2.2"
-                  className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-indigo-500 rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-slate-200 font-mono outline-none transition"
+                  className="bg-slate-950/80 border border-slate-700/70 focus:border-cyan-500 rounded-xl px-3.5 py-2 text-xs text-slate-200 font-mono outline-none transition"
                   required
                 />
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-indigo-500" />
+                <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-cyan-400" />
                   <span>Ngày Áp Dụng (DD/MM/YYYY)</span>
                 </label>
                 <input
@@ -411,7 +406,7 @@ export default function ChangelogEditorForm({
                   value={clDate}
                   onChange={(e) => setClDate(e.target.value)}
                   placeholder="Ví dụ: 08/09/2026"
-                  className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-indigo-500 rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-slate-200 font-mono outline-none transition"
+                  className="bg-slate-950/80 border border-slate-700/70 focus:border-cyan-500 rounded-xl px-3.5 py-2 text-xs text-slate-200 font-mono outline-none transition"
                   required
                 />
               </div>
@@ -419,7 +414,7 @@ export default function ChangelogEditorForm({
 
             {/* Row 2: Title */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              <label className="text-xs font-semibold text-slate-300">
                 Tiêu Đề Phát Hành
               </label>
               <input
@@ -427,18 +422,21 @@ export default function ChangelogEditorForm({
                 value={clTitle}
                 onChange={(e) => setClTitle(e.target.value)}
                 placeholder="Ví dụ: Tối ưu hóa tiến trình & Fix kẹt loading"
-                className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-indigo-500 rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-slate-200 font-medium outline-none transition"
+                className="bg-slate-950/80 border border-slate-700/70 focus:border-cyan-500 rounded-xl px-3.5 py-2 text-xs text-slate-200 font-medium outline-none transition"
                 required
               />
             </div>
           </div>
 
-          {/* Quick-tag Editor Card */}
-          <div className="p-5 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800/80 shadow-sm space-y-3">
+          {/* Subtle separator */}
+          <div className="border-t border-slate-800/60 my-4 shrink-0" />
+
+          {/* Quick-tag Editor Section (fills remaining height) */}
+          <div className="flex-1 flex flex-col min-h-0 space-y-3">
             {/* Toolbar */}
-            <div className="flex items-center justify-between gap-2 flex-wrap pb-2 border-b border-slate-100 dark:border-slate-800/60">
+            <div className="flex items-center justify-between gap-2 flex-wrap pb-1 shrink-0">
               <div>
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block">
+                <label className="text-xs font-semibold text-slate-300 block">
                   Nội dung cập nhật (Mỗi dòng một mục)
                 </label>
                 <span className="text-[11px] text-slate-400">
@@ -475,38 +473,38 @@ export default function ChangelogEditorForm({
               </div>
             </div>
 
-            {/* Editor Textarea */}
+            {/* Editor Textarea seamlessly filling to the bottom */}
             <textarea
               ref={textareaRef}
               value={clChangesText}
               onChange={(e) => setClChangesText(e.target.value)}
               placeholder={`/feat Hoán đổi trực tiếp thanh Header Canvas\n/fix Khắc phục lỗi kẹt loading khi tải ảnh\n/improve Tối ưu bộ nhớ đệm và tăng tốc độ vẽ SVG`}
-              className="w-full min-h-[420px] font-mono text-xs leading-relaxed bg-slate-950/80 border border-slate-700/80 rounded-xl p-4 text-slate-200 placeholder:text-slate-500 focus:border-cyan-500 outline-none resize-y"
+              className="flex-1 w-full bg-slate-950/80 border border-slate-700/70 rounded-xl p-3.5 font-mono text-xs text-slate-200 resize-none outline-none focus:border-cyan-500 leading-relaxed"
               required
             />
           </div>
         </div>
 
-        {/* RIGHT COLUMN: LIVE PREVIEW PANEL (~42% width: 5/12, STICKY) */}
-        <div className="lg:col-span-5 sticky top-6 space-y-4">
+        {/* RIGHT COLUMN: BALANCED LIVE PREVIEW PANEL (~42% width: 5/12) */}
+        <div className="lg:col-span-5 bg-slate-900/60 border border-slate-800/80 rounded-2xl flex flex-col h-[calc(100vh-190px)] min-h-[620px] overflow-hidden">
           {/* Header */}
-          <div className="p-4 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800/80 shadow-sm flex items-center justify-between gap-2">
+          <div className="px-4 py-3.5 border-b border-slate-800/80 flex items-center justify-between gap-2 shrink-0 bg-slate-900/40">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-600 dark:text-cyan-400">
+              <div className="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
                 <Eye className="w-3.5 h-3.5" />
               </div>
-              <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
+              <span className="text-xs font-bold text-slate-200">
                 Xem Trước Thực Tế (Giao Diện User)
               </span>
             </div>
 
-            <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+            <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
               Live Preview
             </span>
           </div>
 
-          {/* User Popup Changelog Simulation Card */}
-          <div className="rounded-2xl bg-slate-900/90 border border-slate-800 p-5 shadow-xl space-y-4">
+          {/* User Popup Changelog Simulation Area */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
             {/* Version Meta */}
             <div className="flex items-start justify-between gap-3 pb-3 border-b border-slate-800">
               <div className="space-y-1 flex-1">
@@ -537,9 +535,9 @@ export default function ChangelogEditorForm({
             </div>
 
             {/* Changes List Simulation */}
-            <div className="space-y-2.5 max-h-[480px] overflow-y-auto pr-1">
+            <div className="space-y-2.5">
               {parsedChanges.length === 0 ? (
-                <div className="py-12 flex flex-col items-center justify-center text-center gap-2 text-slate-500">
+                <div className="py-16 flex flex-col items-center justify-center text-center gap-2 text-slate-500">
                   <Sparkles className="w-6 h-6 text-slate-600" />
                   <p className="text-xs italic">
                     Chưa có nội dung thay đổi nào...
@@ -549,7 +547,7 @@ export default function ChangelogEditorForm({
                   </p>
                 </div>
               ) : (
-                <ul className="flex flex-col gap-2.5 text-xs">
+                <ul className="flex flex-col gap-2 text-xs">
                   {parsedChanges.map((change, idx) => (
                     <li
                       key={idx}
@@ -581,24 +579,22 @@ export default function ChangelogEditorForm({
                 </ul>
               )}
             </div>
+          </div>
 
-            {/* Summary Footer */}
-            {parsedChanges.length > 0 && (
-              <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400 font-mono">
-                <span>Tổng cộng: {counts.total} mục</span>
-                <div className="flex items-center gap-2">
-                  {counts.feat > 0 && (
-                    <span className="text-emerald-400">{counts.feat} feat</span>
-                  )}
-                  {counts.improve > 0 && (
-                    <span className="text-sky-400">{counts.improve} improve</span>
-                  )}
-                  {counts.fix > 0 && (
-                    <span className="text-rose-400">{counts.fix} fix</span>
-                  )}
-                </div>
-              </div>
-            )}
+          {/* Fixed Bottom Summary Footer */}
+          <div className="border-t border-slate-800/80 px-4 py-3 bg-slate-950/40 flex items-center justify-between text-xs text-slate-400 shrink-0 font-mono">
+            <span>Tổng cộng: {counts.total} mục</span>
+            <div className="flex items-center gap-2">
+              {counts.feat > 0 && (
+                <span className="text-emerald-400">{counts.feat} feat</span>
+              )}
+              {counts.improve > 0 && (
+                <span className="text-sky-400">{counts.improve} improve</span>
+              )}
+              {counts.fix > 0 && (
+                <span className="text-rose-400">{counts.fix} fix</span>
+              )}
+            </div>
           </div>
         </div>
       </div>

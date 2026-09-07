@@ -232,39 +232,134 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { email, username, password, name, role = 'user', source = 'neon', maxCredits = 50, key_quota } = body;
+    const {
+      email,
+      username,
+      password,
+      name,
+      full_name,
+      role = 'user',
+      source = 'neon',
+      maxCredits = 50,
+      key_quota,
+      tier,
+      plan_type,
+      monthly_credits,
+      credits,
+      duration_days,
+    } = body;
 
-    const identifier = (email || username || '').trim().toLowerCase();
-    if (!identifier || !password || !name) {
+    const cleanName = (full_name || name || '').trim();
+    const rawEmail = (email || '').trim().toLowerCase();
+    const rawUsername = (username || '').trim().toLowerCase();
+
+    if (!cleanName || !password) {
       return NextResponse.json(
-        { error: 'Vui lòng điền đầy đủ Họ tên, Email/Tên đăng nhập và Mật khẩu.' },
+        { error: 'Vui lòng điền đầy đủ Họ tên và Mật khẩu.' },
         { status: 400 }
       );
     }
 
+    if (!rawEmail && !rawUsername) {
+      return NextResponse.json(
+        { error: 'Vui lòng nhập Email hoặc Tên đăng nhập.' },
+        { status: 400 }
+      );
+    }
+
+    const cleanUsername = rawUsername || (rawEmail.includes('@') ? rawEmail.split('@')[0] : rawEmail);
+    const cleanEmail = rawEmail || `${cleanUsername}@mathaio.local`;
+
     // 1. Tạo trên Neon
-    if (source === 'neon' || identifier.includes('@') || role) {
+    if (source === 'neon' || cleanEmail || role) {
       await initDb();
       const sql = getDb();
 
-      const cleanUsername = (username || (identifier.includes('@') ? identifier.split('@')[0] : identifier)).trim().toLowerCase();
-      const cleanEmail = (email || (identifier.includes('@') ? identifier : `${cleanUsername}@mathaio.local`)).trim().toLowerCase();
-
-      const existing = await sql`SELECT id FROM users WHERE LOWER(email) = ${cleanEmail} OR (username IS NOT NULL AND LOWER(username) = ${cleanUsername}) LIMIT 1`;
+      const existing = await sql`SELECT id, email, username FROM users WHERE LOWER(email) = ${cleanEmail} OR (username IS NOT NULL AND LOWER(username) = ${cleanUsername}) LIMIT 1`;
       if (existing && existing.length > 0) {
+        const isEmailMatch = existing[0].email?.toLowerCase() === cleanEmail;
         return NextResponse.json(
-          { error: `Tên đăng nhập hoặc Email "${identifier}" đã được đăng ký.` },
+          { error: isEmailMatch ? `Email "${cleanEmail}" đã được sử dụng.` : `Tên đăng nhập "${cleanUsername}" đã được sử dụng.` },
           { status: 400 }
         );
       }
 
       const passwordHash = await bcrypt.hash(password, 10);
-      const normalizedRole = ['admin', 'ctv', 'user'].includes(role.toLowerCase()) ? role.toLowerCase() : 'user';
-      const effectiveKeyQuota = normalizedRole === 'admin'
-        ? -1
-        : (key_quota !== undefined ? Number(key_quota) : (maxCredits !== undefined ? Number(maxCredits) : 50));
+      const normalizedRole = ['admin', 'ctv', 'staff', 'user'].includes(role.toLowerCase())
+        ? (role.toLowerCase() === 'staff' ? 'ctv' : role.toLowerCase())
+        : 'user';
 
-      const isUserRole = normalizedRole === 'user';
+      let isVip = false;
+      let isTrial = true;
+      let lifetimeQuota = 10;
+      let lifetimeCredits = 10;
+      let subscriptionQuota = 0;
+      let monthlyAllowance = 0;
+      let monthlyCredits = 0;
+      let subscriptionExpiresAt: Date | null = null;
+      let planExpiresAt: Date | null = null;
+      let vipExpiresAt: Date | null = null;
+      let nextCreditResetAt: Date | null = null;
+      let remainingQuota = 10;
+      let maxQuota = 10;
+      let effectiveKeyQuota = 0;
+
+      if (normalizedRole === 'admin') {
+        isVip = true;
+        isTrial = false;
+        lifetimeQuota = 999999;
+        lifetimeCredits = 999999;
+        remainingQuota = 999999;
+        maxQuota = 999999;
+        effectiveKeyQuota = -1;
+      } else {
+        if (normalizedRole === 'ctv') {
+          effectiveKeyQuota = key_quota !== undefined
+            ? Number(key_quota)
+            : (maxCredits !== undefined ? Number(maxCredits) : 50);
+        } else {
+          effectiveKeyQuota = 0;
+        }
+
+        const rawOmega = monthly_credits !== undefined
+          ? Number(monthly_credits)
+          : (credits !== undefined ? Number(credits) : 50);
+
+        const isUnlimitedOmega = rawOmega === -1 || rawOmega >= 999999;
+        const omegaGranted = isUnlimitedOmega ? 999999 : Math.max(0, rawOmega);
+
+        const isLifetime = plan_type === 'lifetime' || duration_days === 0 || duration_days === -1 || duration_days === null;
+
+        if (isLifetime) {
+          lifetimeQuota = omegaGranted;
+          lifetimeCredits = omegaGranted;
+          subscriptionQuota = 0;
+          monthlyAllowance = 0;
+          monthlyCredits = 0;
+          remainingQuota = omegaGranted;
+          maxQuota = omegaGranted;
+          isVip = isUnlimitedOmega || omegaGranted > 10 || tier === 'VIP';
+          isTrial = !isVip;
+        } else {
+          const durDays = Number(duration_days) > 0 ? Number(duration_days) : 30;
+          const now = new Date();
+          planExpiresAt = new Date(now.getTime() + durDays * 24 * 60 * 60 * 1000);
+          subscriptionExpiresAt = planExpiresAt;
+          vipExpiresAt = planExpiresAt;
+          nextCreditResetAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+          monthlyAllowance = omegaGranted;
+          monthlyCredits = omegaGranted;
+          subscriptionQuota = omegaGranted;
+          lifetimeQuota = 0;
+          lifetimeCredits = 0;
+          remainingQuota = omegaGranted;
+          maxQuota = omegaGranted;
+          isVip = true;
+          isTrial = false;
+        }
+      }
+
       const inserted = await sql`
         INSERT INTO users (
           email, 
@@ -272,11 +367,18 @@ export async function POST(req: NextRequest) {
           password_hash, 
           name, 
           role, 
+          status,
           is_active, 
           key_quota,
           lifetime_quota,
+          lifetime_credits,
           subscription_quota,
           subscription_expires_at,
+          monthly_allowance,
+          monthly_credits,
+          next_credit_reset_at,
+          plan_expires_at,
+          vip_expires_at,
           remaining_quota,
           max_quota,
           is_vip,
@@ -286,19 +388,26 @@ export async function POST(req: NextRequest) {
           ${cleanEmail}, 
           ${cleanUsername}, 
           ${passwordHash}, 
-          ${name.trim()}, 
+          ${cleanName}, 
           ${normalizedRole}, 
+          'active',
           true, 
           ${effectiveKeyQuota},
-          ${isUserRole ? 10 : 0},
-          0,
-          NULL,
-          ${isUserRole ? 10 : (effectiveKeyQuota === -1 ? 999999 : effectiveKeyQuota)},
-          ${isUserRole ? 10 : (effectiveKeyQuota === -1 ? 999999 : effectiveKeyQuota)},
-          ${normalizedRole === 'admin'},
-          ${isUserRole}
+          ${lifetimeQuota},
+          ${lifetimeCredits},
+          ${subscriptionQuota},
+          ${subscriptionExpiresAt},
+          ${monthlyAllowance},
+          ${monthlyCredits},
+          ${nextCreditResetAt},
+          ${planExpiresAt},
+          ${vipExpiresAt},
+          ${remainingQuota},
+          ${maxQuota},
+          ${isVip},
+          ${isTrial}
         )
-        RETURNING id, name, email, username, role, is_active, key_quota, created_at
+        RETURNING id, name, email, username, role, is_active, key_quota, created_at, is_vip, remaining_quota, max_quota, lifetime_quota, subscription_quota, plan_expires_at
       `;
 
       const u = inserted[0] as any;
@@ -311,7 +420,7 @@ export async function POST(req: NextRequest) {
               id: u.id,
               username: cleanUsername,
               passwordHash,
-              name: name.trim(),
+              name: cleanName,
               role: prismaRole,
               maxCredits: effectiveKeyQuota,
               isActive: true,
@@ -333,9 +442,13 @@ export async function POST(req: NextRequest) {
           role: u.role,
           is_active: u.is_active,
           isActive: u.is_active,
+          is_vip: u.is_vip,
+          isVip: u.is_vip,
           key_quota: u.key_quota,
           keyQuota: u.key_quota,
           maxCredits: u.key_quota,
+          remaining_quota: u.remaining_quota,
+          remainingQuota: u.remaining_quota,
           created_at: u.created_at,
           createdAt: u.created_at,
           savedDiagramsCount: 0,
@@ -345,12 +458,12 @@ export async function POST(req: NextRequest) {
 
     // 2. Tạo trên Prisma cho Staff License Key
     const existingPrisma = await prisma.user.findUnique({
-      where: { username: identifier },
+      where: { username: cleanUsername },
     });
 
     if (existingPrisma) {
       return NextResponse.json(
-        { error: `Tên đăng nhập "${identifier}" đã tồn tại.` },
+        { error: `Tên đăng nhập "${cleanUsername}" đã tồn tại.` },
         { status: 400 }
       );
     }
@@ -358,9 +471,9 @@ export async function POST(req: NextRequest) {
     const passwordHash = await bcrypt.hash(password, 10);
     const newUser = await prisma.user.create({
       data: {
-        username: identifier,
+        username: cleanUsername,
         passwordHash,
-        name: name.trim(),
+        name: cleanName,
         role: role.toUpperCase() === 'ADMIN' ? 'ADMIN' : 'STAFF',
         maxCredits: role.toUpperCase() === 'ADMIN' ? -1 : (typeof maxCredits === 'number' ? maxCredits : Number(maxCredits) || 50),
         isActive: true,

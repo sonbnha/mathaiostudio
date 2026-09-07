@@ -259,7 +259,7 @@ export async function POST(req: NextRequest) {
 
     // 4. Trả về thông tin cập nhật cho frontend
     const successMsg = isLifetimeKey
-      ? `Kích hoạt thành công gói Vĩnh viễn (+${keyQuotaGranted === -1 ? '∞' : keyQuotaGranted} Credits trọn đời)!`
+      ? `Kích hoạt thành công gói Vô Hạn (+${keyQuotaGranted === -1 ? '∞' : keyQuotaGranted} Credits vô hạn)!`
       : `Kích hoạt thành công gói Thuê bao (${keyQuotaGranted === -1 ? '∞' : keyQuotaGranted} Credits/tháng, +${durationDays} ngày)!`;
 
     const planExpiresAtIso = newPlanExpiresAt ? newPlanExpiresAt.toISOString() : null;

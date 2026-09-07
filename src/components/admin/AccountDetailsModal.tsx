@@ -139,11 +139,11 @@ export default function AccountDetailsModal({ isOpen, onClose, data }: AccountDe
   // License Key Details
   const duration = licenseKey?.durationDays ?? licenseKey?.duration_days ?? 30;
   const isKeyLifetime = duration === 0 || licenseKey?.key?.startsWith('AIO-LT-');
-  const durationStr = isKeyLifetime ? 'Vĩnh viễn (∞)' : `+${duration} ngày`;
+  const durationStr = isKeyLifetime ? 'Vô hạn (∞)' : `+${duration} ngày`;
   const usage = licenseKey?.credits ?? licenseKey?.maxUsage ?? licenseKey?.max_usage ?? licenseKey?.totalCredits ?? licenseKey?.total_credits ?? 50;
   const usageStr = usage === -1 
     ? '∞ Credits' 
-    : (isKeyLifetime ? `+${usage} Credits trọn đời` : `${usage} Credits/tháng`);
+    : (isKeyLifetime ? `+${usage} Credits vô hạn` : `${usage} Credits/tháng`);
   const activationTime = formatActivationTime(licenseKey?.used_at || licenseKey?.usedAt);
   const creatorName = licenseKey?.createdBy?.name || licenseKey?.createdBy?.username || licenseKey?.created_by?.name || licenseKey?.created_by?.username || licenseKey?.created_by_name || 'Quản trị viên';
 
@@ -219,7 +219,7 @@ export default function AccountDetailsModal({ isOpen, onClose, data }: AccountDe
           </button>
         </div>
 
-        {/* PHẦN 2: Trạng Thái Dịch Vụ & 2 Ví Credit (Credit Thuê Bao & Credit Trọn Đời) */}
+        {/* PHẦN 2: Trạng Thái Dịch Vụ & 2 Ví Credit (Credit Thuê Bao & Credit Vô Hạn) */}
         <div className="flex flex-col gap-2.5">
           {/* Thanh tổng quan khả dụng */}
           <div className="px-3.5 py-2 rounded-xl bg-slate-100/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between text-xs">
@@ -271,16 +271,16 @@ export default function AccountDetailsModal({ isOpen, onClose, data }: AccountDe
               </div>
             </div>
 
-            {/* Khối 2: [Credit Trọn Đời VIP / Ví Dùng Thử] */}
+            {/* Khối 2: [Credit Vô Hạn VIP / Ví Dùng Thử] */}
             {isVip || isAdmin ? (
               <div className="p-3.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-900/40 flex flex-col gap-1.5">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] text-amber-700 dark:text-amber-300 flex items-center gap-1 font-bold">
                     <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                    Credit Trọn Đời:
+                    Credit Vô Hạn:
                   </span>
                   <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
-                    Trọn đời (∞)
+                    Vô hạn (∞)
                   </span>
                 </div>
                 <div className="flex items-baseline justify-between mt-0.5">
@@ -292,7 +292,7 @@ export default function AccountDetailsModal({ isOpen, onClose, data }: AccountDe
                 <div className="flex items-center justify-between text-[11px] pt-1 border-t border-amber-200/50 dark:border-amber-900/30 text-slate-500 dark:text-slate-400">
                   <span>Thời hạn:</span>
                   <span className="font-medium text-emerald-600 dark:text-emerald-400 font-mono">
-                    Không bao giờ hết hạn
+                    Vô hạn
                   </span>
                 </div>
               </div>

@@ -95,7 +95,7 @@ function RegisterForm() {
         throw new Error(data.error || 'Đã có lỗi xảy ra khi tạo tài khoản.');
       }
 
-      setSuccessMsg('🎉 Đăng ký tài khoản thành công! Tặng bạn 10 Credits Trial trọn đời. Đang chuyển hướng...');
+      setSuccessMsg('🎉 Đăng ký tài khoản thành công! Tặng bạn 10 Credits Trial vô hạn. Đang chuyển hướng...');
 
       // 1. Cập nhật trực tiếp State Auth toàn cục ngay tại Client & lưu Cache và Token
       if (typeof window !== 'undefined' && data.user) {
@@ -292,7 +292,7 @@ function RegisterForm() {
       <div className="mt-5 p-3 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-emerald-500/5 border border-emerald-500/20 text-xs text-slate-700 dark:text-slate-300 flex items-center gap-2.5">
         <Sparkles className="w-4 h-4 text-emerald-500 shrink-0" />
         <p className="text-[11px] text-slate-600 dark:text-slate-400">
-          🎁 <span className="font-bold text-emerald-700 dark:text-emerald-400">Đăng ký ngay nhận ngay 10 Credits miễn phí trọn đời (Trial)</span> trong Ví Trọn Đời.
+          🎁 <span className="font-bold text-emerald-700 dark:text-emerald-400">Đăng ký ngay nhận ngay 10 Credits miễn phí vô hạn (Trial)</span> trong Credit Vô Hạn.
         </p>
       </div>
 

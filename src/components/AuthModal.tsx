@@ -200,7 +200,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                 <span className="font-bold text-amber-800 dark:text-amber-300">Phát hiện License Key trên máy: </span>
                 <span className="font-mono font-semibold">{guestKey}</span>
                 <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-1">
-                  {tab === 'login' ? 'Đăng nhập' : 'Đăng ký'} tài khoản ngay để hệ thống tự động liên kết key này, nhận <strong>Badge ⭐ VIP vĩnh viễn</strong> trên mọi thiết bị!
+                  {tab === 'login' ? 'Đăng nhập' : 'Đăng ký'} tài khoản ngay để hệ thống tự động liên kết key này, nhận <strong>Badge ⭐ VIP vô hạn</strong> trên mọi thiết bị!
                 </p>
               </div>
             </div>

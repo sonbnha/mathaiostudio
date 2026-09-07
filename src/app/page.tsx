@@ -957,7 +957,7 @@ function HomeContent() {
         }
 
         // 3. Hiển thị thông báo thành công và nhắc liên kết
-        setRedeemSuccessMsg('🎉 Đã kích hoạt License Key trên trình duyệt này! Hãy đăng nhập để liên kết key này vĩnh viễn vào tài khoản của bạn.');
+        setRedeemSuccessMsg('🎉 Đã kích hoạt License Key trên trình duyệt này! Hãy đăng nhập để liên kết key này vô hạn vào tài khoản của bạn.');
 
         // Bắn event đồng bộ realtime
         window.dispatchEvent(new CustomEvent('auth-updated', { detail: { key: cleanKey, licenseStatus: checkData } }));
@@ -1466,7 +1466,7 @@ function HomeContent() {
                         setIsRedeemModalOpen(true);
                       }}
                       className="h-10 inline-flex items-center justify-center gap-2 px-3.5 rounded-xl border border-amber-300/90 dark:border-amber-700/60 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950/50 dark:to-yellow-950/40 text-amber-800 dark:text-amber-300 text-xs font-semibold shadow-xs hover:shadow-sm transition-all cursor-pointer shrink-0"
-                      title="Đăng nhập để liên kết key này vĩnh viễn vào tài khoản của bạn"
+                      title="Đăng nhập để liên kết key này vô hạn vào tài khoản của bạn"
                     >
                       <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
                       <span className="flex items-center gap-1 font-mono text-[11px] text-amber-700 dark:text-amber-400 font-bold">
@@ -1491,7 +1491,7 @@ function HomeContent() {
                         <span>License Key VIP trên trình duyệt</span>
                       </div>
                       <p className="text-[11px] text-slate-300 leading-tight">
-                        Đăng nhập để liên kết key này vĩnh viễn vào tài khoản của bạn, tránh bị mất khi đổi máy hoặc xóa cache.
+                        Đăng nhập để liên kết key này vô hạn vào tài khoản của bạn, tránh bị mất khi đổi máy hoặc xóa cache.
                       </p>
                       <Link
                         href="/login"
@@ -1927,7 +1927,7 @@ function HomeContent() {
                           {isFreeAccount
                             ? '0 Credit (Hạn mức đã hết)'
                             : isAdmin || (hasUnlimitedCredits && isPlanActive) || (hasUnlimitedCredits && hasUnlimitedTime)
-                            ? '∞ Không giới hạn'
+                            ? '∞ Vô hạn'
                             : `${remainingCredits} Credits`}
                         </span>
                       </div>
@@ -1961,7 +1961,7 @@ function HomeContent() {
                                   : isTrial
                                   ? 'Gói Thuê Bao (Chưa kích hoạt)'
                                   : hasUnlimitedCredits 
-                                  ? 'Gói VIP Unlimited' 
+                                  ? 'Gói VIP Vô Hạn' 
                                   : 'Credit Thuê Bao'}
                               </span>
                             </span>
@@ -1983,7 +1983,7 @@ function HomeContent() {
                                 : isTrial
                                 ? 'Chưa kích hoạt'
                                 : (hasUnlimitedCredits && isPlanActive)
-                                ? 'VIP Unlimited'
+                                ? 'VIP Vô Hạn'
                                 : isPlanActive
                                 ? 'Đang hoạt động'
                                 : planExp
@@ -2005,11 +2005,11 @@ function HomeContent() {
                                   : 'text-indigo-700 dark:text-indigo-300'
                               }`}>
                                 {isAdmin
-                                  ? '∞ Không giới hạn'
+                                  ? '∞ Vô hạn'
                                   : (isFreeAccount || isTrial)
                                   ? '0 Credit'
                                   : hasUnlimitedCredits
-                                  ? (isPlanActive ? '∞ Không giới hạn' : '0 Credit')
+                                  ? (isPlanActive ? '∞ Vô hạn' : '0 Credit')
                                   : `${monthlyCredits}${monthlyAllowance > 0 ? ` / ${monthlyAllowance}` : ''} Credits`}
                               </span>
                             </div>
@@ -2028,7 +2028,7 @@ function HomeContent() {
                               <span className="text-xs font-medium text-right">
                                 {isAdmin ? (
                                   <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
-                                    Vô thời hạn (Trọn đời)
+                                    Vô hạn
                                   </span>
                                 ) : isFreeAccount ? (
                                   <span className="text-slate-400 italic">
@@ -2052,7 +2052,7 @@ function HomeContent() {
                           </div>
                         </div>
 
-                        {/* CARD 2: CREDIT TRỌN ĐỜI / CREDIT DÙNG THỬ (TRIAL) - LUÔN LUÔN HIỆN */}
+                        {/* CARD 2: CREDIT VÔ HẠN / CREDIT DÙNG THỬ (TRIAL) - LUÔN LUÔN HIỆN */}
                         <div className={`p-3 rounded-xl border flex flex-col gap-2 ${
                           isFreeAccount
                             ? 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/60'
@@ -2069,7 +2069,7 @@ function HomeContent() {
                               ) : (
                                 <Crown className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />
                               )}
-                              <span>{isTrial ? 'Credit Dùng Thử (Trial)' : 'Credit Trọn Đời'}</span>
+                              <span>{isTrial ? 'Credit Dùng Thử (Trial)' : 'Credit Vô Hạn'}</span>
                             </span>
                           </div>
 
@@ -2083,7 +2083,7 @@ function HomeContent() {
                                   ? 'text-sky-700 dark:text-sky-300'
                                   : 'text-amber-700 dark:text-amber-300'
                               }`}>
-                                {isAdmin ? '∞ Không giới hạn' : isFreeAccount ? '0 Credit' : `${lifetimeCredits} Credits`}
+                                {isAdmin ? '∞ Vô hạn' : isFreeAccount ? '0 Credit' : `${lifetimeCredits} Credits`}
                               </span>
                             </div>
 
@@ -2092,11 +2092,9 @@ function HomeContent() {
                               <span className={`text-xs font-medium text-right ${
                                 isFreeAccount
                                   ? 'text-rose-500 dark:text-rose-400'
-                                  : isTrial
-                                  ? 'text-sky-600 dark:text-sky-400'
                                   : 'text-emerald-600 dark:text-emerald-400'
                               }`}>
-                                {isAdmin ? 'Vĩnh viễn' : isFreeAccount ? 'Đã dùng hết' : isTrial ? 'Không giới hạn thời gian' : 'Không bao giờ hết hạn'}
+                                {isFreeAccount ? 'Đã dùng hết' : 'Vô hạn'}
                               </span>
                             </div>
                           </div>
@@ -2896,7 +2894,7 @@ function HomeContent() {
                   <p className="text-[11px] text-slate-500 dark:text-slate-400">
                     {currentUser
                       ? 'Liên kết License Key để nâng cấp tài khoản lên VIP trên Neon DB'
-                      : 'Kích hoạt trên trình duyệt này hoặc đăng nhập để liên kết vĩnh viễn'}
+                      : 'Kích hoạt trên trình duyệt này hoặc đăng nhập để liên kết vô hạn'}
                   </p>
                 </div>
               </div>
@@ -2927,7 +2925,7 @@ function HomeContent() {
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                  <span>Lưu trữ và đồng bộ hóa không giới hạn bộ sưu tập lên Neon DB</span>
+                  <span>Lưu trữ và đồng bộ hóa vô hạn bộ sưu tập lên Neon DB</span>
                 </li>
               </ul>
             </div>

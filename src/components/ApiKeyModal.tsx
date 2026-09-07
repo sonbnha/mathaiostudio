@@ -170,7 +170,7 @@ export const ApiKeyModal: React.FC = () => {
             </div>
             <div>
               <h3 className="font-bold text-base leading-tight">Cấu hình Gemini API Key Cá Nhân</h3>
-              <p className="text-xs text-blue-100 mt-0.5">Tăng tốc xử lý & không giới hạn lượt gọi AI</p>
+              <p className="text-xs text-blue-100 mt-0.5">Tăng tốc xử lý & vô hạn lượt gọi AI</p>
             </div>
           </div>
           <button

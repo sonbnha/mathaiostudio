@@ -617,10 +617,10 @@ export default function UnifiedAdminPage() {
     const creditsCount = newlyCreatedKey.credits ?? newlyCreatedKey.totalCredits ?? 50;
     const creditsStr = creditsCount === -1 
       ? '∞ Credits' 
-      : (isLifetime ? `${creditsCount} Credits trọn đời` : `${creditsCount} Credits/tháng`);
+      : (isLifetime ? `${creditsCount} Credits vô hạn` : `${creditsCount} Credits/tháng`);
 
     const expireStr = isLifetime
-      ? 'Vĩnh viễn (∞)'
+      ? 'Vô hạn (∞)'
       : newlyCreatedKey.expiresAt
       ? new Date(newlyCreatedKey.expiresAt).toLocaleDateString('vi-VN')
       : `+${durDays} ngày`;
@@ -649,10 +649,10 @@ export default function UnifiedAdminPage() {
     const creditsCount = keyItem.credits ?? keyItem.totalCredits ?? 50;
     const creditsStr = creditsCount === -1 
       ? '∞ Credits' 
-      : (isLifetime ? `${creditsCount} Credits trọn đời` : `${creditsCount} Credits/tháng`);
+      : (isLifetime ? `${creditsCount} Credits vô hạn` : `${creditsCount} Credits/tháng`);
 
     const expireStr = isLifetime
-      ? 'Vĩnh viễn (∞)'
+      ? 'Vô hạn (∞)'
       : keyItem.expiresAt
       ? new Date(keyItem.expiresAt).toLocaleDateString('vi-VN')
       : `+${durDays} ngày`;
@@ -1600,7 +1600,7 @@ export default function UnifiedAdminPage() {
                     </div>
                     <span className="text-xs font-bold text-cyan-600 dark:text-cyan-400">
                       {isStaffUnlimited
-                        ? `∞ Không giới hạn (Đã tạo ${staffCreatedCount} keys)`
+                        ? `∞ Vô hạn (Đã tạo ${staffCreatedCount} keys)`
                         : `${staffCreatedCount} / ${staffMaxCredits} Key (${staffQuotaPercent}%)`}
                     </span>
                   </div>
@@ -1625,7 +1625,7 @@ export default function UnifiedAdminPage() {
                   ) : (
                     <p className="text-[11px] text-slate-500 dark:text-slate-400">
                       Tài khoản của bạn được cấp quyền tạo key{' '}
-                      <strong className="text-purple-600 dark:text-purple-400">∞ không giới hạn</strong>.
+                      <strong className="text-purple-600 dark:text-purple-400">∞ vô hạn</strong>.
                     </p>
                   )}
                 </div>
@@ -1914,14 +1914,14 @@ export default function UnifiedAdminPage() {
                           />
                         </div>
                         <span className="text-[11px] font-semibold text-purple-600 dark:text-purple-400">
-                          ∞ Không giới hạn
+                          ∞ Vô hạn
                         </span>
                       </label>
                     </div>
 
                     <div className="text-[11px] text-slate-500 dark:text-slate-400">
                       {Number(durationDays) === 0
-                        ? '⚡ Credit nạp trọn đời (Lifetime Credits - Không hết hạn)'
+                        ? '⚡ Credit nạp vô hạn (Credit Vô Hạn)'
                         : '🔄 Credit cấp mỗi tháng (Monthly Allowance - Làm mới mỗi 30 ngày)'}
                     </div>
 
@@ -1929,7 +1929,7 @@ export default function UnifiedAdminPage() {
                       <div className="h-10 px-3.5 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-700 dark:text-purple-300 font-semibold text-xs flex items-center justify-between">
                         <span className="flex items-center gap-1.5">
                           <Sparkles className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
-                          Gói VIP - Không giới hạn
+                          Gói VIP - Vô hạn
                         </span>
                         <span className="text-[11px] px-2 py-0.5 rounded-full bg-purple-500/20 font-bold font-mono">
                           ∞
@@ -1983,7 +1983,7 @@ export default function UnifiedAdminPage() {
                         { label: '30 Ngày (1T)', value: 30 },
                         { label: '90 Ngày (3T)', value: 90 },
                         { label: '1 Năm (365N)', value: 365 },
-                        { label: 'Vĩnh viễn', value: 0 },
+                        { label: 'Vô hạn', value: 0 },
                       ].map((dur) => (
                         <button
                           key={dur.value}
@@ -2231,7 +2231,7 @@ export default function UnifiedAdminPage() {
                                   {(() => {
                                     const durDays = k.durationDays ?? k.duration_days ?? 30;
                                     const isLifetime = durDays === 0 || k.key?.startsWith('AIO-LT-');
-                                    return isLifetime ? 'Vĩnh viễn (∞)' : `Hạn: ${durDays} ngày`;
+                                    return isLifetime ? 'Vô hạn (∞)' : `Hạn: ${durDays} ngày`;
                                   })()}
                                 </div>
                               </div>
@@ -2259,7 +2259,7 @@ export default function UnifiedAdminPage() {
                                   type="button"
                                   onClick={() => handleDeleteKey(k.id)}
                                   className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/15 dark:hover:bg-rose-500/25 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30 transition shadow-2xs"
-                                  title="Xóa Key vĩnh viễn"
+                                  title="Xóa Key"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>
@@ -2522,7 +2522,7 @@ export default function UnifiedAdminPage() {
                                     if (isUVip) {
                                       return (
                                         <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 font-medium text-[11px] whitespace-nowrap">
-                                          👑 VIP Vĩnh viễn: {ltQuota} Credits
+                                          👑 VIP Vô hạn: {ltQuota} Credits
                                         </span>
                                       );
                                     } else {
@@ -2843,7 +2843,7 @@ export default function UnifiedAdminPage() {
                     const isLifetime = durDays === 0 || newlyCreatedKey.key?.startsWith('AIO-LT-');
                     const creditsCount = newlyCreatedKey.credits ?? newlyCreatedKey.totalCredits ?? 50;
                     if (creditsCount === -1) return '∞ Credits';
-                    return isLifetime ? `${creditsCount} Credits trọn đời` : `${creditsCount} Credits/tháng`;
+                    return isLifetime ? `${creditsCount} Credits vô hạn` : `${creditsCount} Credits/tháng`;
                   })()}
                 </span>
               </div>
@@ -2857,7 +2857,7 @@ export default function UnifiedAdminPage() {
                   {(() => {
                     const durDays = newlyCreatedKey.durationDays ?? newlyCreatedKey.duration_days ?? 30;
                     const isLifetime = durDays === 0 || newlyCreatedKey.key?.startsWith('AIO-LT-');
-                    if (isLifetime) return 'Vĩnh viễn (∞)';
+                    if (isLifetime) return 'Vô hạn (∞)';
                     return newlyCreatedKey.expiresAt
                       ? new Date(newlyCreatedKey.expiresAt).toLocaleDateString('vi-VN')
                       : `${durDays} ngày`;
@@ -3080,14 +3080,14 @@ export default function UnifiedAdminPage() {
                         />
                       </div>
                       <span className="text-[11px] font-semibold text-purple-600 dark:text-purple-400">
-                        ∞ Không giới hạn
+                        ∞ Vô hạn
                       </span>
                     </label>
                   </div>
 
                   {isNewAccUnlimitedCredits ? (
                     <div className="p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-700 dark:text-purple-300 font-semibold text-xs flex items-center justify-between">
-                      <span>Cấp quyền tạo key không giới hạn</span>
+                      <span>Cấp quyền tạo key vô hạn</span>
                       <span className="text-[11px] px-2 py-0.5 rounded-full bg-purple-500/20 font-bold font-mono">
                         ∞
                       </span>
@@ -3318,14 +3318,14 @@ export default function UnifiedAdminPage() {
                         />
                       </div>
                       <span className="text-[11px] font-semibold text-purple-600 dark:text-purple-400">
-                        ∞ Không giới hạn
+                        ∞ Vô hạn
                       </span>
                     </label>
                   </div>
 
                   {isEditAccUnlimitedQuota ? (
                     <div className="p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-700 dark:text-purple-300 font-semibold text-xs flex items-center justify-between">
-                      <span>Cấp quyền tạo key không giới hạn</span>
+                      <span>Cấp quyền tạo key vô hạn</span>
                       <span className="text-[11px] px-2 py-0.5 rounded-full bg-purple-500/20 font-bold font-mono">
                         ∞
                       </span>

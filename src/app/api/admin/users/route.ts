@@ -85,6 +85,11 @@ export async function GET(req: NextRequest) {
           COALESCE(u.lifetime_quota, 0) AS lifetime_quota,
           COALESCE(u.subscription_quota, 0) AS subscription_quota,
           u.subscription_expires_at,
+          COALESCE(u.monthly_allowance, 0) AS monthly_allowance,
+          COALESCE(u.monthly_credits, 0) AS monthly_credits,
+          u.next_credit_reset_at,
+          u.plan_expires_at,
+          COALESCE(u.lifetime_credits, 0) AS lifetime_credits,
           (
             SELECT json_build_object('key', lk.key, 'used_at', lk.used_at)
             FROM license_keys lk
@@ -98,7 +103,10 @@ export async function GET(req: NextRequest) {
         LEFT JOIN saved_diagrams d ON d.user_id = u.id
         LEFT JOIN "LicenseKey" lk ON (lk."createdById" = u.id::text OR (u.cuid IS NOT NULL AND lk."createdById" = u.cuid))
         WHERE u.name ILIKE ${pattern} OR u.email ILIKE ${pattern} OR (u.username IS NOT NULL AND u.username ILIKE ${pattern})
-        GROUP BY u.id, u.name, u.email, u.username, u.role, u.status, u.is_active, u.api_key, u.cuid, u.created_at, u.key_quota, u.is_vip, u.is_trial, u.vip_expires_at, u.remaining_quota, u.max_quota, u.lifetime_quota, u.subscription_quota, u.subscription_expires_at
+        GROUP BY u.id, u.name, u.email, u.username, u.role, u.status, u.is_active, u.api_key, u.cuid, u.created_at, 
+                 u.key_quota, u.is_vip, u.is_trial, u.vip_expires_at, u.remaining_quota, u.max_quota, 
+                 u.lifetime_quota, u.subscription_quota, u.subscription_expires_at,
+                 u.monthly_allowance, u.monthly_credits, u.next_credit_reset_at, u.plan_expires_at, u.lifetime_credits
         ORDER BY u.created_at DESC
       `;
     } else {
@@ -123,6 +131,11 @@ export async function GET(req: NextRequest) {
           COALESCE(u.lifetime_quota, 0) AS lifetime_quota,
           COALESCE(u.subscription_quota, 0) AS subscription_quota,
           u.subscription_expires_at,
+          COALESCE(u.monthly_allowance, 0) AS monthly_allowance,
+          COALESCE(u.monthly_credits, 0) AS monthly_credits,
+          u.next_credit_reset_at,
+          u.plan_expires_at,
+          COALESCE(u.lifetime_credits, 0) AS lifetime_credits,
           (
             SELECT json_build_object('key', lk.key, 'used_at', lk.used_at)
             FROM license_keys lk
@@ -135,7 +148,10 @@ export async function GET(req: NextRequest) {
         FROM users u
         LEFT JOIN saved_diagrams d ON d.user_id = u.id
         LEFT JOIN "LicenseKey" lk ON (lk."createdById" = u.id::text OR (u.cuid IS NOT NULL AND lk."createdById" = u.cuid))
-        GROUP BY u.id, u.name, u.email, u.username, u.role, u.status, u.is_active, u.api_key, u.cuid, u.created_at, u.key_quota, u.is_vip, u.is_trial, u.vip_expires_at, u.remaining_quota, u.max_quota, u.lifetime_quota, u.subscription_quota, u.subscription_expires_at
+        GROUP BY u.id, u.name, u.email, u.username, u.role, u.status, u.is_active, u.api_key, u.cuid, u.created_at, 
+                 u.key_quota, u.is_vip, u.is_trial, u.vip_expires_at, u.remaining_quota, u.max_quota, 
+                 u.lifetime_quota, u.subscription_quota, u.subscription_expires_at,
+                 u.monthly_allowance, u.monthly_credits, u.next_credit_reset_at, u.plan_expires_at, u.lifetime_credits
         ORDER BY u.created_at DESC
       `;
     }
@@ -153,18 +169,28 @@ export async function GET(req: NextRequest) {
       isVip: Boolean(r.is_vip),
       is_trial: Boolean(r.is_trial),
       isTrial: Boolean(r.is_trial),
-      vip_expires_at: r.vip_expires_at,
-      vipExpiresAt: r.vip_expires_at,
+      vip_expires_at: r.plan_expires_at || r.vip_expires_at,
+      vipExpiresAt: r.plan_expires_at || r.vip_expires_at,
       remaining_quota: r.remaining_quota !== null && r.remaining_quota !== undefined ? Number(r.remaining_quota) : null,
       remainingQuota: r.remaining_quota !== null && r.remaining_quota !== undefined ? Number(r.remaining_quota) : null,
       max_quota: r.max_quota !== null && r.max_quota !== undefined ? Number(r.max_quota) : null,
       maxQuota: r.max_quota !== null && r.max_quota !== undefined ? Number(r.max_quota) : null,
-      lifetime_quota: Number(r.lifetime_quota ?? 0),
-      lifetimeQuota: Number(r.lifetime_quota ?? 0),
-      subscription_quota: Number(r.subscription_quota ?? 0),
-      subscriptionQuota: Number(r.subscription_quota ?? 0),
-      subscription_expires_at: r.subscription_expires_at || null,
-      subscriptionExpiresAt: r.subscription_expires_at || null,
+      lifetime_quota: Number(r.lifetime_credits ?? r.lifetime_quota ?? 0),
+      lifetimeQuota: Number(r.lifetime_credits ?? r.lifetime_quota ?? 0),
+      subscription_quota: Number(r.monthly_credits ?? r.subscription_quota ?? 0),
+      subscriptionQuota: Number(r.monthly_credits ?? r.subscription_quota ?? 0),
+      subscription_expires_at: r.plan_expires_at || r.subscription_expires_at || null,
+      subscriptionExpiresAt: r.plan_expires_at || r.subscription_expires_at || null,
+      monthly_allowance: Number(r.monthly_allowance ?? 0),
+      monthlyAllowance: Number(r.monthly_allowance ?? 0),
+      monthly_credits: Number(r.monthly_credits ?? 0),
+      monthlyCredits: Number(r.monthly_credits ?? 0),
+      next_credit_reset_at: r.next_credit_reset_at || null,
+      nextCreditResetAt: r.next_credit_reset_at || null,
+      plan_expires_at: r.plan_expires_at || r.subscription_expires_at || null,
+      planExpiresAt: r.plan_expires_at || r.subscription_expires_at || null,
+      lifetime_credits: Number(r.lifetime_credits ?? r.lifetime_quota ?? 0),
+      lifetimeCredits: Number(r.lifetime_credits ?? r.lifetime_quota ?? 0),
       last_activated_key: r.last_activated_key || null,
       lastActivatedKey: r.last_activated_key || null,
       api_key: r.api_key,

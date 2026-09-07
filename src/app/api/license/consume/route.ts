@@ -4,7 +4,7 @@ import { getDb } from '@/lib/db';
 
 export async function POST(req: NextRequest) {
   try {
-    // 0. Nếu người dùng đang đăng nhập, áp dụng quy tắc khấu trừ 2 ví: Ưu tiên 1 Ví Gói Thuê Bao -> Ưu tiên 2 Ví Vĩnh Viễn
+    // 0. Nếu người dùng đang đăng nhập, áp dụng quy tắc khấu trừ 2 ví: Ưu tiên 1 Ví Monthly Credits -> Ưu tiên 2 Ví Lifetime Credits
     try {
       const { getCurrentUserFromRequest } = await import('@/lib/auth');
       const currentUser = await getCurrentUserFromRequest(req);
@@ -18,77 +18,38 @@ export async function POST(req: NextRequest) {
           });
         }
 
+        const { deductUserCredit } = await import('@/lib/credits');
         const sql = getDb();
-        const userRows = await sql`
-          SELECT id, role, subscription_quota, subscription_expires_at, lifetime_quota, remaining_quota, max_quota
-          FROM users
-          WHERE id = ${currentUser.id}::uuid
-          LIMIT 1
-        `;
+        const userApiKey = (currentUser as any).apiKey || (currentUser as any).api_key;
+        const deductResult = await deductUserCredit(currentUser.id, sql, { apiKey: userApiKey });
 
-        if (userRows && userRows.length > 0) {
-          const u = userRows[0];
-          const now = new Date();
-          const subActive = Boolean(u.subscription_expires_at && new Date(u.subscription_expires_at) > now);
-          const subQuota = Number(u.subscription_quota || 0);
-          const lifeQuota = Number(u.lifetime_quota || 0);
-
-          // Ưu tiên 1: Ví có hạn (Subscription)
-          if (subActive && subQuota > 0) {
-            const newSub = subQuota - 1;
-            const newTotal = newSub + lifeQuota;
-            await sql`
-              UPDATE users
-              SET 
-                subscription_quota = ${newSub},
-                remaining_quota = ${newTotal}
-              WHERE id = ${u.id}::uuid
-            `;
-            return NextResponse.json({
-              success: true,
-              walletDeducted: 'subscription',
-              remainingCredits: newTotal,
-              remaining_quota: newTotal,
-              subscriptionQuota: newSub,
-              subscription_quota: newSub,
-              lifetimeQuota: lifeQuota,
-              lifetime_quota: lifeQuota,
-            });
-          }
-
-          // Ưu tiên 2: Ví vĩnh viễn (Lifetime)
-          if (lifeQuota > 0) {
-            const newLife = lifeQuota - 1;
-            const newTotal = (subActive ? subQuota : 0) + newLife;
-            await sql`
-              UPDATE users
-              SET 
-                lifetime_quota = ${newLife},
-                remaining_quota = ${newTotal}
-              WHERE id = ${u.id}::uuid
-            `;
-            return NextResponse.json({
-              success: true,
-              walletDeducted: 'lifetime',
-              remainingCredits: newTotal,
-              remaining_quota: newTotal,
-              subscriptionQuota: subQuota,
-              subscription_quota: subQuota,
-              lifetimeQuota: newLife,
-              lifetime_quota: newLife,
-            });
-          }
-
-          // Cả 2 ví đều không đủ điều kiện
+        if (!deductResult.success) {
           return NextResponse.json(
             {
               success: false,
-              error: 'Bạn đã hết lượt sử dụng. Vui lòng nạp thêm License Key để tiếp tục.',
-              message: 'Bạn đã hết lượt sử dụng. Vui lòng nạp thêm License Key để tiếp tục.',
+              error: deductResult.error || 'Tài khoản của bạn đã hết Credit. Vui lòng nạp thêm để tiếp tục.',
+              message: deductResult.error || 'Tài khoản của bạn đã hết Credit. Vui lòng nạp thêm để tiếp tục.',
             },
             { status: 403 }
           );
         }
+
+        return NextResponse.json({
+          success: true,
+          walletDeducted: deductResult.walletDeducted,
+          remainingCredits: deductResult.totalCredits,
+          remaining_quota: deductResult.totalCredits,
+          monthlyCredits: deductResult.monthlyCredits,
+          monthly_credits: deductResult.monthlyCredits,
+          monthlyAllowance: deductResult.monthlyAllowance,
+          monthly_allowance: deductResult.monthlyAllowance,
+          lifetimeCredits: deductResult.lifetimeCredits,
+          lifetime_credits: deductResult.lifetimeCredits,
+          lifetimeQuota: deductResult.lifetimeCredits,
+          lifetime_quota: deductResult.lifetimeCredits,
+          subscriptionQuota: deductResult.monthlyCredits,
+          subscription_quota: deductResult.monthlyCredits,
+        });
       }
     } catch (userDeductErr) {
       console.warn('Lỗi khấu trừ ví user:', userDeductErr);

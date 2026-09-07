@@ -122,8 +122,17 @@ export async function GET(req: NextRequest) {
                   ? remainingCredits
                   : (usageLimit === -1 ? null : 0))));
 
-    const finalIsVip = Boolean(isAdmin || isVipFlag || isSubActive);
-    const finalIsTrial = Boolean(!finalIsVip);
+    const monthlyAllowance = Number((user as any).monthly_allowance ?? (user as any).monthlyAllowance ?? 0);
+    const monthlyCredits = Number((user as any).monthly_credits ?? (user as any).monthlyCredits ?? rawSubscriptionQuota);
+    const lifetimeCredits = Number((user as any).lifetime_credits ?? (user as any).lifetimeCredits ?? rawLifetimeQuota);
+    const nextCreditResetAt = (user as any).next_credit_reset_at || (user as any).nextCreditResetAt || null;
+    const planExpiresAt = (user as any).plan_expires_at || (user as any).planExpiresAt || rawSubExpiresAt;
+    const planExpiresAtIso = planExpiresAt ? new Date(planExpiresAt).toISOString() : null;
+    const nextCreditResetAtIso = nextCreditResetAt ? new Date(nextCreditResetAt).toISOString() : null;
+
+    const isPlanActive = Boolean(planExpiresAt && new Date(planExpiresAt) > now);
+    const finalIsVip = Boolean(isAdmin || isVip || isPlanActive);
+    const finalIsTrial = Boolean(!finalIsVip && (user as any).is_trial !== false && lifetimeCredits > 0);
 
     return NextResponse.json({
       user: {
@@ -136,14 +145,24 @@ export async function GET(req: NextRequest) {
         isTrial: finalIsTrial,
         is_unlimited: isUnlimited,
         isUnlimited: isUnlimited,
-        vip_expires_at: (finalIsVip && rawLifetimeQuota > 0 && !isSubActive) ? null : (subExpiresAtIso || vipExpiresAtIso),
-        vipExpiresAt: (finalIsVip && rawLifetimeQuota > 0 && !isSubActive) ? null : (subExpiresAtIso || vipExpiresAtIso),
-        subscription_expires_at: subExpiresAtIso,
-        subscriptionExpiresAt: subExpiresAtIso,
-        subscription_quota: rawSubscriptionQuota,
-        subscriptionQuota: rawSubscriptionQuota,
-        lifetime_quota: rawLifetimeQuota,
-        lifetimeQuota: rawLifetimeQuota,
+        vip_expires_at: (finalIsVip && lifetimeCredits > 0 && !isPlanActive) ? null : (planExpiresAtIso || vipExpiresAtIso),
+        vipExpiresAt: (finalIsVip && lifetimeCredits > 0 && !isPlanActive) ? null : (planExpiresAtIso || vipExpiresAtIso),
+        subscription_expires_at: planExpiresAtIso,
+        subscriptionExpiresAt: planExpiresAtIso,
+        subscription_quota: monthlyCredits,
+        subscriptionQuota: monthlyCredits,
+        lifetime_quota: lifetimeCredits,
+        lifetimeQuota: lifetimeCredits,
+        monthly_allowance: monthlyAllowance,
+        monthlyAllowance: monthlyAllowance,
+        monthly_credits: monthlyCredits,
+        monthlyCredits: monthlyCredits,
+        next_credit_reset_at: nextCreditResetAtIso,
+        nextCreditResetAt: nextCreditResetAtIso,
+        plan_expires_at: planExpiresAtIso,
+        planExpiresAt: planExpiresAtIso,
+        lifetime_credits: lifetimeCredits,
+        lifetimeCredits: lifetimeCredits,
         remaining_quota: remainingQuota,
         remainingQuota: remainingQuota,
         max_quota: maxQuota,

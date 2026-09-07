@@ -939,7 +939,7 @@ function HomeContent() {
 
         const checkData = await checkRes.json();
         if (!checkRes.ok || !checkData.valid) {
-          throw new Error(checkData.message || 'Mã License Key không hợp lệ hoặc đã hết lượt sử dụng.');
+          throw new Error(checkData.message || 'Mã License Key không hợp lệ hoặc đã hết Credit sử dụng.');
         }
 
         // 2. Lưu key vào localStorage như cơ chế cũ để mở khóa sử dụng trên trình duyệt hiện tại
@@ -1066,12 +1066,12 @@ function HomeContent() {
       return;
     }
 
-    // Chặn và mở Popup Gia hạn ngay lập tức khi tài khoản hết hạn hoặc hết lượt
+    // Chặn và mở Popup Gia hạn ngay lập tức khi tài khoản hết hạn hoặc hết Credit
     if (licenseInfo.isFullyExpired || licenseInfo.turnsLeft <= 0 || licenseInfo.isExpiredOrDepleted) {
       openRenewModal({
         isNearExpiry: false,
-        customTitle: 'Tài khoản đã hết lượt sử dụng hoặc hết hạn VIP',
-        customDescription: 'Vui lòng nhập mã License Key mới để tiếp tục tạo hình minh họa toán học không giới hạn.',
+        customTitle: 'Tài khoản đã hết Credit sử dụng hoặc hết hạn VIP',
+        customDescription: 'Vui lòng nạp thêm Credit hoặc kích hoạt License Key để tiếp tục tạo hình minh họa toán học.',
       });
       return;
     }
@@ -1093,7 +1093,7 @@ function HomeContent() {
         });
         const checkData = await checkRes.json();
         if (!checkRes.ok || !checkData.valid) {
-          throw new Error(checkData.message || 'License key không hợp lệ hoặc đã hết lượt sử dụng.');
+          throw new Error(checkData.message || 'License key không hợp lệ hoặc đã hết Credit sử dụng.');
         }
       }
 
@@ -1446,7 +1446,7 @@ function HomeContent() {
                       {customerName ? `Chào ${customerName} • ` : ''}
                       {licenseStatus.totalCredits === -1
                         ? 'Dùng thử'
-                        : `Còn ${licenseStatus.remainingCredits}/${licenseStatus.totalCredits} lượt`}
+                        : `Còn ${licenseStatus.remainingCredits}/${licenseStatus.totalCredits} Credits`}
                     </span>
                     <span className="text-[10px] text-sky-600/70 dark:text-sky-400/70 group-hover:text-sky-800 dark:group-hover:text-sky-200 transition font-normal ml-0.5">
                       ⚙️ Đổi key
@@ -1475,7 +1475,7 @@ function HomeContent() {
                         {customerName ? `👋 ${customerName}` : 'Chưa liên kết'} •{' '}
                         {licenseStatus.totalCredits === -1
                           ? '∞'
-                          : `Còn ${licenseStatus.remainingCredits} lượt`}
+                          : `Còn ${licenseStatus.remainingCredits} Credits`}
                       </span>
                       <span className="text-[10px] text-amber-700/70 dark:text-amber-400/70 group-hover:text-amber-900 dark:group-hover:text-amber-200 transition font-normal ml-0.5">
                         ⚙️ Đổi key
@@ -1579,7 +1579,7 @@ function HomeContent() {
               <Link
                 href="/register"
                 className="h-10 px-2.5 sm:px-3 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 shadow-xs hover:shadow transition-all cursor-pointer shrink-0"
-                title="Đăng ký tài khoản nhận 10 lượt Trial"
+                title="Đăng ký tài khoản nhận 10 Credits Trial"
               >
                 <UserPlus className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
                 <span className="hidden sm:inline">Đăng ký</span>
@@ -1640,16 +1640,16 @@ function HomeContent() {
                         const r = (currentUser.role || 'user').toLowerCase();
                         const isAdmin = r === 'admin' || r === 'superadmin' || Boolean((currentUser as any)?.is_admin);
 
-                        const subQuota = Number((currentUser as any).subscription_quota ?? (currentUser as any).subscriptionQuota ?? 0);
-                        const subExp = (currentUser as any).subscription_expires_at || (currentUser as any).subscriptionExpiresAt;
-                        const isSubActive = Boolean(subExp && new Date(subExp) > new Date());
-                        const ltQuota = Number((currentUser as any).lifetime_quota ?? (currentUser as any).lifetimeQuota ?? 0);
-                        const hasDualWallet = (currentUser as any).subscription_quota !== undefined || (currentUser as any).lifetime_quota !== undefined;
+                        const monthlyCredits = Number((currentUser as any).monthly_credits ?? (currentUser as any).monthlyCredits ?? (currentUser as any).subscription_quota ?? (currentUser as any).subscriptionQuota ?? 0);
+                        const planExp = (currentUser as any).plan_expires_at || (currentUser as any).planExpiresAt || (currentUser as any).subscription_expires_at || (currentUser as any).subscriptionExpiresAt;
+                        const isPlanActive = Boolean(planExp && new Date(planExp) > new Date());
+                        const lifetimeCredits = Number((currentUser as any).lifetime_credits ?? (currentUser as any).lifetimeCredits ?? (currentUser as any).lifetime_quota ?? (currentUser as any).lifetimeQuota ?? 0);
+                        const hasDualWallet = (currentUser as any).monthly_credits !== undefined || (currentUser as any).lifetime_credits !== undefined || (currentUser as any).subscription_quota !== undefined || (currentUser as any).lifetime_quota !== undefined;
 
                         const isVipFlag = Boolean(currentUser.isVip || (currentUser as any).is_vip);
                         const vipExp = currentUser.vipExpiresAt || (currentUser as any).vip_expires_at;
-                        const isVipExpired = Boolean(vipExp && new Date(vipExp) <= new Date() && !isSubActive);
-                        const isVipActive = (isAdmin || isVipFlag || isSubActive) && !isVipExpired;
+                        const isVipExpired = Boolean(vipExp && new Date(vipExp) <= new Date() && !isPlanActive);
+                        const isVipActive = (isAdmin || isVipFlag || isPlanActive) && !isVipExpired;
 
                         const isUnlimited =
                           isAdmin ||
@@ -1660,7 +1660,7 @@ function HomeContent() {
                           Number((currentUser as any).remaining_quota) >= 999;
 
                         const rawRem = hasDualWallet
-                          ? ((isSubActive ? subQuota : 0) + ltQuota)
+                          ? ((isPlanActive ? monthlyCredits : 0) + lifetimeCredits)
                           : typeof (currentUser as any).remaining_quota === 'number'
                           ? (currentUser as any).remaining_quota
                           : typeof (currentUser as any).remainingQuota === 'number'
@@ -1696,7 +1696,7 @@ function HomeContent() {
                               {isVipActive && (
                                 <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 text-slate-950 border border-amber-300 shadow-xs flex items-center gap-1">
                                   <Crown className="w-3 h-3 text-slate-950 fill-slate-950 shrink-0" />
-                                  <span>⭐ VIP • {isUnlimited ? '∞' : `Còn ${remainingCredits} lượt`}</span>
+                                  <span>⭐ VIP • {isUnlimited ? '∞' : `Còn ${remainingCredits} Credits`}</span>
                                 </span>
                               )}
                             </div>
@@ -1707,7 +1707,7 @@ function HomeContent() {
                           return (
                             <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 text-slate-950 border border-amber-300 shadow-xs flex items-center gap-1 shrink-0">
                               <Crown className="w-3 h-3 text-slate-950 fill-slate-950 shrink-0" />
-                              <span>⭐ VIP • {isUnlimited ? '∞' : `Còn ${remainingCredits} lượt`}</span>
+                              <span>⭐ VIP • {isUnlimited ? '∞' : `Còn ${remainingCredits} Credits`}</span>
                             </span>
                           );
                         }
@@ -1723,14 +1723,14 @@ function HomeContent() {
                         if (remainingCredits > 0) {
                           return (
                             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30 flex items-center gap-1 shrink-0">
-                              <span>Còn {remainingCredits} lượt (Dùng thử)</span>
+                              <span>Còn ${remainingCredits} Credits (Dùng thử)</span>
                             </span>
                           );
                         }
 
                         return (
                           <span className="text-[9px] font-bold px-1.5 py-0.2 rounded uppercase bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-600">
-                            Free • Hết lượt
+                            Free • Hết Credit
                           </span>
                         );
                       })()}
@@ -1752,21 +1752,29 @@ function HomeContent() {
                   const r = (currentUser.role || 'user').toLowerCase();
                   const isAdmin = r === 'admin' || r === 'superadmin' || Boolean((currentUser as any)?.is_admin);
 
-                  const subQuota = Number((currentUser as any).subscription_quota ?? (currentUser as any).subscriptionQuota ?? 0);
-                  const subExp = (currentUser as any).subscription_expires_at || (currentUser as any).subscriptionExpiresAt;
-                  const isSubActive = Boolean(subExp && new Date(subExp) > new Date());
-                  const ltQuota = Number((currentUser as any).lifetime_quota ?? (currentUser as any).lifetimeQuota ?? 0);
-                  const hasDualWallet = (currentUser as any).subscription_quota !== undefined || (currentUser as any).lifetime_quota !== undefined;
+                  const monthlyCredits = Number((currentUser as any).monthly_credits ?? (currentUser as any).monthlyCredits ?? (currentUser as any).subscription_quota ?? (currentUser as any).subscriptionQuota ?? 0);
+                  const monthlyAllowance = Number((currentUser as any).monthly_allowance ?? (currentUser as any).monthlyAllowance ?? 0);
+                  const planExp = (currentUser as any).plan_expires_at || (currentUser as any).planExpiresAt || (currentUser as any).subscription_expires_at || (currentUser as any).subscriptionExpiresAt;
+                  const resetAt = (currentUser as any).next_credit_reset_at || (currentUser as any).nextCreditResetAt;
+                  const isPlanActive = Boolean(planExp && new Date(planExp) > new Date());
+                  const lifetimeCredits = Number((currentUser as any).lifetime_credits ?? (currentUser as any).lifetimeCredits ?? (currentUser as any).lifetime_quota ?? (currentUser as any).lifetimeQuota ?? 0);
+                  const hasDualWallet = (currentUser as any).monthly_credits !== undefined || (currentUser as any).lifetime_credits !== undefined || (currentUser as any).subscription_quota !== undefined || (currentUser as any).lifetime_quota !== undefined;
 
                   const isVipFlag = Boolean(currentUser.isVip || (currentUser as any).is_vip);
                   const vipExp = currentUser.vipExpiresAt || (currentUser as any).vip_expires_at;
-                  const isVipExpired = Boolean(vipExp && new Date(vipExp) <= new Date() && !isSubActive);
-                  const isVipActive = (isAdmin || isVipFlag || isSubActive) && !isVipExpired;
+                  const isVipExpired = Boolean(vipExp && new Date(vipExp) <= new Date() && !isPlanActive);
+                  const isVipActive = (isAdmin || isVipFlag || isPlanActive) && !isVipExpired;
 
                   let subDaysRemaining: number | null = null;
-                  if (subExp) {
-                    const diffTime = new Date(subExp).getTime() - new Date().getTime();
+                  if (planExp) {
+                    const diffTime = new Date(planExp).getTime() - new Date().getTime();
                     subDaysRemaining = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+                  }
+
+                  let resetDaysRemaining: number | null = null;
+                  if (resetAt) {
+                    const diffReset = new Date(resetAt).getTime() - new Date().getTime();
+                    resetDaysRemaining = Math.max(0, Math.ceil(diffReset / (1000 * 60 * 60 * 24)));
                   }
 
                   const isUnlimited =
@@ -1778,7 +1786,7 @@ function HomeContent() {
                     Number((currentUser as any).remaining_quota) >= 999;
 
                   const rawRem = hasDualWallet
-                    ? ((isSubActive ? subQuota : 0) + ltQuota)
+                    ? ((isPlanActive ? monthlyCredits : 0) + lifetimeCredits)
                     : typeof (currentUser as any).remaining_quota === 'number'
                     ? (currentUser as any).remaining_quota
                     : typeof (currentUser as any).remainingQuota === 'number'
@@ -1848,47 +1856,56 @@ function HomeContent() {
                           Tổng hạn mức khả dụng:
                         </span>
                         <span className="font-bold text-xs text-indigo-600 dark:text-indigo-400">
-                          {isUnlimited ? '∞ Không giới hạn' : `${remainingCredits} lượt`}
+                          {isUnlimited ? '∞ Không giới hạn' : `${remainingCredits} Credits`}
                         </span>
                       </div>
 
                       {/* 2 Khối Thẻ Hạn Mức Riêng Biệt */}
                       <div className="mx-2.5 mb-2 flex flex-col gap-2">
-                        {/* Thẻ 1: Gói Thuê Bao */}
+                        {/* Thẻ 1: Credit Thuê Bao */}
                         <div className="p-2.5 rounded-xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-200/70 dark:border-indigo-800/50 flex flex-col gap-1.5">
                           <div className="flex items-center justify-between">
                             <span className="text-[11px] font-bold text-indigo-900 dark:text-indigo-200 flex items-center gap-1.5">
-                              <span className={`w-2 h-2 rounded-full ${isSubActive ? 'bg-emerald-500' : 'bg-slate-400'}`}></span>
-                              Gói Thuê Bao
+                              <span className={`w-2 h-2 rounded-full ${isPlanActive ? 'bg-emerald-500' : 'bg-slate-400'}`}></span>
+                              Credit Thuê Bao
                             </span>
                             <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
-                              isSubActive
+                              isPlanActive
                                 ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
-                                : subExp
+                                : planExp
                                 ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
                                 : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
                             }`}>
-                              {isSubActive ? 'Đang hoạt động' : subExp ? 'Đã hết hạn' : 'Chưa kích hoạt'}
+                              {isPlanActive ? 'Đang hoạt động' : planExp ? 'Đã hết hạn' : 'Chưa kích hoạt'}
                             </span>
                           </div>
 
                           <div className="flex items-baseline justify-between text-xs">
-                            <span className="text-slate-500 dark:text-slate-400 text-[11px]">Số lượt còn lại:</span>
+                            <span className="text-slate-500 dark:text-slate-400 text-[11px]">Khả dụng:</span>
                             <span className="font-bold text-indigo-700 dark:text-indigo-300">
-                              {subQuota} lượt
+                              {monthlyCredits}{monthlyAllowance > 0 ? ` / ${monthlyAllowance}` : ''} Credits
                             </span>
                           </div>
 
+                          {isPlanActive && resetAt && (
+                            <div className="flex items-baseline justify-between text-[11px]">
+                              <span className="text-slate-500 dark:text-slate-400">Làm mới:</span>
+                              <span className="text-right text-indigo-600 dark:text-indigo-400 font-medium">
+                                {resetDaysRemaining !== null ? `Còn ${resetDaysRemaining} ngày` : ''} ({formatDateVN(resetAt)})
+                              </span>
+                            </div>
+                          )}
+
                           <div className="flex items-baseline justify-between text-[11px]">
-                            <span className="text-slate-500 dark:text-slate-400">Hạn dùng:</span>
+                            <span className="text-slate-500 dark:text-slate-400">Hạn gói:</span>
                             <span className="text-right">
-                              {isSubActive && subExp ? (
+                              {isPlanActive && planExp ? (
                                 <span className="font-medium text-slate-700 dark:text-slate-300">
-                                  Còn {subDaysRemaining} ngày • {formatDateVN(subExp)}
+                                  Còn {subDaysRemaining} ngày • {formatDateVN(planExp)}
                                 </span>
-                              ) : subExp ? (
+                              ) : planExp ? (
                                 <span className="text-rose-500 font-medium">
-                                  Hết hạn ({formatDateVN(subExp)})
+                                  Hết hạn ({formatDateVN(planExp)})
                                 </span>
                               ) : (
                                 <span className="text-slate-400 italic">Chưa đăng ký</span>
@@ -1897,23 +1914,23 @@ function HomeContent() {
                           </div>
                         </div>
 
-                        {/* Thẻ 2: Ví Vĩnh Viễn VIP hoặc Ví Dùng Thử */}
+                        {/* Thẻ 2: Credit Trọn Đời VIP hoặc Dùng Thử */}
                         {isVipActive ? (
                           <div className="p-2.5 rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-800/50 flex flex-col gap-1.5">
                             <div className="flex items-center justify-between">
                               <span className="text-[11px] font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
                                 <Crown className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />
-                                Ví Vĩnh Viễn VIP
+                                Credit Trọn Đời (VIP)
                               </span>
                               <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
-                                Trọn đời (∞)
+                                Vĩnh viễn (∞)
                               </span>
                             </div>
 
                             <div className="flex items-baseline justify-between text-xs">
-                              <span className="text-slate-500 dark:text-slate-400 text-[11px]">Lượt tích lũy:</span>
+                              <span className="text-slate-500 dark:text-slate-400 text-[11px]">Khả dụng:</span>
                               <span className="font-bold text-amber-700 dark:text-amber-300">
-                                {ltQuota} lượt
+                                {lifetimeCredits} Credits
                               </span>
                             </div>
 
@@ -1929,17 +1946,17 @@ function HomeContent() {
                             <div className="flex items-center justify-between">
                               <span className="text-[11px] font-bold text-sky-900 dark:text-sky-200 flex items-center gap-1.5">
                                 <Sparkles className="w-3.5 h-3.5 text-sky-500 shrink-0" />
-                                Ví Dùng Thử
+                                Credit Trọn Đời (Trial)
                               </span>
                               <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/30">
-                                Trial
+                                Dùng thử
                               </span>
                             </div>
 
                             <div className="flex items-baseline justify-between text-xs">
-                              <span className="text-slate-500 dark:text-slate-400 text-[11px]">Lượt được cấp:</span>
+                              <span className="text-slate-500 dark:text-slate-400 text-[11px]">Khả dụng:</span>
                               <span className="font-bold text-sky-700 dark:text-sky-300">
-                                {ltQuota} lượt
+                                {lifetimeCredits} Credits
                               </span>
                             </div>
 
@@ -1994,7 +2011,7 @@ function HomeContent() {
                         </div>
                         {licenseInfo.isNearExpiry ? (
                           <span className="ml-2 px-2 py-0.5 text-[10px] font-bold text-slate-950 bg-amber-500 rounded-md whitespace-nowrap shadow-xs">
-                            {licenseInfo.daysRemaining !== null && licenseInfo.daysRemaining <= 3 ? `CÒN ${licenseInfo.daysRemaining} NGÀY` : `CÒN ${licenseInfo.remainingCredits} LƯỢT`}
+                            {licenseInfo.daysRemaining !== null && licenseInfo.daysRemaining <= 3 ? `CÒN ${licenseInfo.daysRemaining} NGÀY` : `CÒN ${licenseInfo.remainingCredits} CREDITS`}
                           </span>
                         ) : licenseInfo.isFullyExpired || !licenseInfo.isVipActive ? (
                           <span className="ml-2 px-2 py-0.5 text-[10px] font-bold text-white bg-rose-600 rounded-md whitespace-nowrap shadow-xs">
@@ -2808,7 +2825,7 @@ function HomeContent() {
                   </button>
                 </div>
                 <p className="text-[11px] text-amber-600 dark:text-amber-400 flex items-center gap-1 mt-1 font-medium">
-                  <span>⚡ Hệ thống sẽ tự động cộng dồn thời hạn sử dụng và số lượt tạo hình vào tài khoản hiện tại của bạn.</span>
+                  <span>⚡ Hệ thống sẽ tự động cộng dồn thời hạn sử dụng và số Credit vào tài khoản hiện tại của bạn.</span>
                 </p>
               </div>
 

@@ -32,13 +32,13 @@ export default function RenewLicenseModal({
   const title = customTitle || (
     isNearExpiry
       ? 'Gia hạn gói VIP Bản quyền ⭐'
-      : 'Tài khoản đã hết lượt sử dụng hoặc hết hạn VIP'
+      : 'Tài khoản đã hết Credit sử dụng hoặc hết hạn VIP'
   );
 
   const description = customDescription || (
     isNearExpiry
-      ? 'Gói bản quyền của bạn sắp hết hạn hoặc sắp hết lượt tạo. Vui lòng nhập License Key mới để gia hạn và cộng dồn thời gian sử dụng liên tục không gián đoạn.'
-      : 'Vui lòng nhập mã License Key mới để tiếp tục tạo hình minh họa toán học và soạn giáo án không giới hạn.'
+      ? 'Gói bản quyền của bạn sắp hết hạn hoặc sắp hết Credit. Vui lòng nhập License Key mới để gia hạn và cộng dồn thời gian sử dụng liên tục không gián đoạn.'
+      : 'Vui lòng nạp thêm Credit hoặc kích hoạt License Key để tiếp tục tạo hình minh họa toán học và soạn giáo án.'
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -93,7 +93,7 @@ export default function RenewLicenseModal({
 
         const data = await res.json();
         if (!res.ok || !data.valid) {
-          throw new Error(data.message || 'Mã License Key không hợp lệ hoặc đã hết lượt.');
+          throw new Error(data.message || 'Mã License Key không hợp lệ hoặc đã hết Credit.');
         }
 
         localStorage.setItem('mathviz_license_key', cleanKey);
@@ -197,7 +197,7 @@ export default function RenewLicenseModal({
               <Sparkles className="w-4 h-4 text-amber-500/60 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
             <p className="text-[11px] text-amber-600 dark:text-amber-400 flex items-center gap-1 mt-1 font-medium">
-              <span>⚡ Hệ thống sẽ tự động cộng dồn thời hạn sử dụng và số lượt tạo hình vào tài khoản hiện tại của bạn.</span>
+              <span>⚡ Hệ thống sẽ tự động cộng dồn thời hạn sử dụng và số Credit vào tài khoản hiện tại của bạn.</span>
             </p>
           </div>
 

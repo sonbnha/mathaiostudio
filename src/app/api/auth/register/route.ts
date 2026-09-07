@@ -84,7 +84,12 @@ export async function POST(req: NextRequest) {
         is_vip,
         is_trial,
         vip_expires_at,
-        avatar
+        avatar,
+        monthly_allowance,
+        monthly_credits,
+        next_credit_reset_at,
+        plan_expires_at,
+        lifetime_credits
       )
       VALUES (
         ${rawEmail}, 
@@ -102,9 +107,16 @@ export async function POST(req: NextRequest) {
         false,
         true,
         NULL,
-        ${rawAvatar}
+        ${rawAvatar},
+        0,
+        0,
+        NULL,
+        NULL,
+        10
       )
-      RETURNING id, email, username, name, avatar, role, status, is_vip, is_trial, vip_expires_at, remaining_quota, max_quota, lifetime_quota, subscription_quota, subscription_expires_at, created_at
+      RETURNING id, email, username, name, avatar, role, status, is_vip, is_trial, vip_expires_at, 
+                remaining_quota, max_quota, lifetime_quota, subscription_quota, subscription_expires_at, 
+                monthly_allowance, monthly_credits, next_credit_reset_at, plan_expires_at, lifetime_credits, created_at
     `;
 
     const user = result[0] as any;
@@ -119,7 +131,7 @@ export async function POST(req: NextRequest) {
 
     const response = NextResponse.json({
       success: true,
-      message: 'Đăng ký tài khoản thành công! Bạn nhận được 10 lượt dùng thử miễn phí.',
+      message: 'Đăng ký tài khoản thành công! Bạn nhận được 10 Credits dùng thử miễn phí.',
       user: {
         id: user.id,
         email: user.email,
@@ -140,10 +152,22 @@ export async function POST(req: NextRequest) {
         subscriptionQuota: 0,
         subscription_expires_at: null,
         subscriptionExpiresAt: null,
+        monthly_allowance: 0,
+        monthlyAllowance: 0,
+        monthly_credits: 0,
+        monthlyCredits: 0,
+        next_credit_reset_at: null,
+        nextCreditResetAt: null,
+        plan_expires_at: null,
+        planExpiresAt: null,
+        lifetime_credits: 10,
+        lifetimeCredits: 10,
         remaining_quota: 10,
         remainingQuota: 10,
         max_quota: 10,
         maxQuota: 10,
+        remaining_credits: 10,
+        remainingCredits: 10,
       },
     });
 

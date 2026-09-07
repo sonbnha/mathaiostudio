@@ -137,7 +137,13 @@ export async function POST(req: NextRequest) {
 
     // 6. Lấy dữ liệu ví hiện tại của tài khoản từ bảng users trên Neon DB
     const userRows = await sql`
-      SELECT id, email, username, name, role, is_vip, vip_expires_at, remaining_quota, max_quota, api_key, lifetime_quota, subscription_quota, subscription_expires_at
+      SELECT id, email, username, name, role, is_vip, vip_expires_at, remaining_quota, max_quota, api_key, 
+             lifetime_quota, subscription_quota, subscription_expires_at,
+             COALESCE(monthly_allowance, 0) AS monthly_allowance,
+             COALESCE(monthly_credits, 0) AS monthly_credits,
+             next_credit_reset_at,
+             plan_expires_at,
+             COALESCE(lifetime_credits, 0) AS lifetime_credits
       FROM users
       WHERE id = ${currentUser.id}::uuid
       LIMIT 1
@@ -146,42 +152,42 @@ export async function POST(req: NextRequest) {
     const dbUser = (userRows && userRows.length > 0 ? userRows[0] : userObj) as any;
 
     const now = new Date();
-    const currentLifetimeQuota = Number(dbUser?.lifetime_quota ?? 0);
-    const currentSubQuota = Number(dbUser?.subscription_quota ?? 0);
-    const currentSubExpiresAt = dbUser?.subscription_expires_at 
-      ? new Date(dbUser.subscription_expires_at) 
-      : (dbUser?.vip_expires_at ? new Date(dbUser.vip_expires_at) : null);
+    const currentLifetimeCredits = Number(dbUser?.lifetime_credits ?? dbUser?.lifetime_quota ?? 0);
+    const currentMonthlyAllowance = Number(dbUser?.monthly_allowance ?? 0);
+    const currentMonthlyCredits = Number(dbUser?.monthly_credits ?? dbUser?.subscription_quota ?? 0);
+    const currentPlanExpiresAt = dbUser?.plan_expires_at 
+      ? new Date(dbUser.plan_expires_at) 
+      : (dbUser?.subscription_expires_at ? new Date(dbUser.subscription_expires_at) : (dbUser?.vip_expires_at ? new Date(dbUser.vip_expires_at) : null));
 
-    let newLifetimeQuota = currentLifetimeQuota;
-    let newSubQuota = currentSubQuota;
-    let newSubExpiresAt: Date | null = currentSubExpiresAt;
+    let newLifetimeCredits = currentLifetimeCredits;
+    let newMonthlyAllowance = currentMonthlyAllowance;
+    let newMonthlyCredits = currentMonthlyCredits;
+    let newPlanExpiresAt: Date | null = currentPlanExpiresAt;
+    let newNextCreditResetAt: Date | null = dbUser?.next_credit_reset_at ? new Date(dbUser.next_credit_reset_at) : null;
 
     if (isLifetimeKey) {
       // 1. Trường hợp nạp Key VĨNH VIỄN:
-      // user.lifetime_quota += key.quota
-      // Giữ nguyên trạng thái và hạn của subscription_expires_at (nếu đang có).
-      newLifetimeQuota = currentLifetimeQuota + (keyQuotaGranted === -1 ? 999999 : keyQuotaGranted);
+      // user.lifetime_credits += key.credits
+      newLifetimeCredits = currentLifetimeCredits + (keyQuotaGranted === -1 ? 999999 : keyQuotaGranted);
     } else {
-      // 2. Trường hợp nạp Key CÓ THỜI HẠN:
-      // Nếu gói thuê bao hiện tại đã hết hạn hoặc chưa từng có:
-      //   user.subscription_quota = key.quota
-      //   user.subscription_expires_at = NOW() + key.duration_days
-      // Nếu gói thuê bao hiện tại vẫn còn hạn:
-      //   user.subscription_quota += key.quota
-      //   user.subscription_expires_at = user.subscription_expires_at + key.duration_days
-      // Tuyệt đối KHÔNG cộng vào lifetime_quota.
-      if (!currentSubExpiresAt || currentSubExpiresAt <= now) {
-        newSubQuota = keyQuotaGranted;
-        newSubExpiresAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
+      // 2. Trường hợp nạp Key THUÊ BAO (30, 90, 365 ngày):
+      // user.monthly_allowance = key.credits
+      // user.monthly_credits = key.credits (Cấp ngay tháng đầu)
+      // user.next_credit_reset_at = NOW() + INTERVAL '30 days'
+      // user.plan_expires_at = (user.plan_expires_at > NOW()) ? user.plan_expires_at + INTERVAL 'key.duration_days days' : NOW() + INTERVAL 'key.duration_days days'
+      newMonthlyAllowance = keyQuotaGranted;
+      newMonthlyCredits = keyQuotaGranted;
+      newNextCreditResetAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      if (!currentPlanExpiresAt || currentPlanExpiresAt <= now) {
+        newPlanExpiresAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
       } else {
-        newSubQuota = currentSubQuota + keyQuotaGranted;
-        newSubExpiresAt = new Date(currentSubExpiresAt.getTime() + durationDays * 24 * 60 * 60 * 1000);
+        newPlanExpiresAt = new Date(currentPlanExpiresAt.getTime() + durationDays * 24 * 60 * 60 * 1000);
       }
     }
 
-    const isSubStillActive = Boolean(newSubExpiresAt && newSubExpiresAt > now);
-    const newRemainingQuota = (isSubStillActive ? newSubQuota : 0) + newLifetimeQuota;
-    const newVipExpiresAt = newLifetimeQuota > 0 ? null : (newSubExpiresAt || null);
+    const isSubStillActive = Boolean(newPlanExpiresAt && newPlanExpiresAt > now);
+    const newRemainingQuota = (isSubStillActive ? newMonthlyCredits : 0) + newLifetimeCredits;
+    const newVipExpiresAt = newLifetimeCredits > 0 ? null : (newPlanExpiresAt || null);
 
     // 3. Đảm bảo tính toàn vẹn dữ liệu (Atomic Transaction):
     // 3.1 Đánh dấu key đó trong bảng license_keys: status = 'used', used_by = user.id, used_at = NOW()
@@ -191,7 +197,7 @@ export async function POST(req: NextRequest) {
         status = 'used',
         used_by = ${currentUser.id}::uuid,
         used_at = CURRENT_TIMESTAMP
-      WHERE UPPER(key) = ${cleanKey}
+      WHERE UPPER(key) = ${cleanKey} OR UPPER(key_code) = ${cleanKey}
     `;
 
     try {
@@ -212,14 +218,21 @@ export async function POST(req: NextRequest) {
         is_vip = TRUE,
         is_trial = FALSE,
         vip_expires_at = ${newVipExpiresAt},
-        subscription_expires_at = ${newSubExpiresAt},
-        subscription_quota = ${newSubQuota},
-        lifetime_quota = ${newLifetimeQuota},
+        plan_expires_at = ${newPlanExpiresAt},
+        subscription_expires_at = ${newPlanExpiresAt},
+        next_credit_reset_at = ${newNextCreditResetAt},
+        monthly_allowance = ${newMonthlyAllowance},
+        monthly_credits = ${newMonthlyCredits},
+        subscription_quota = ${newMonthlyCredits},
+        lifetime_credits = ${newLifetimeCredits},
+        lifetime_quota = ${newLifetimeCredits},
         remaining_quota = ${newRemainingQuota},
         max_quota = GREATEST(COALESCE(max_quota, 0), ${newRemainingQuota}),
         api_key = ${cleanKey}
       WHERE id = ${currentUser.id}::uuid
-      RETURNING id, name, email, username, role, is_vip, is_trial, vip_expires_at, remaining_quota, max_quota, api_key, lifetime_quota, subscription_quota, subscription_expires_at
+      RETURNING id, name, email, username, role, is_vip, is_trial, vip_expires_at, remaining_quota, max_quota, api_key, 
+                lifetime_quota, subscription_quota, subscription_expires_at,
+                monthly_allowance, monthly_credits, next_credit_reset_at, plan_expires_at, lifetime_credits
     `;
 
     const updatedUser = updatedUsers && updatedUsers.length > 0 ? updatedUsers[0] : null;
@@ -246,17 +259,25 @@ export async function POST(req: NextRequest) {
 
     // 4. Trả về thông tin cập nhật cho frontend
     const successMsg = isLifetimeKey
-      ? `Kích hoạt thành công gói Vĩnh viễn (+${keyQuotaGranted === -1 ? '∞' : keyQuotaGranted} lượt trọn đời)!`
-      : `Kích hoạt thành công gói Thuê bao (+${keyQuotaGranted === -1 ? '∞' : keyQuotaGranted} lượt, +${durationDays} ngày)!`;
+      ? `Kích hoạt thành công gói Vĩnh viễn (+${keyQuotaGranted === -1 ? '∞' : keyQuotaGranted} Credits trọn đời)!`
+      : `Kích hoạt thành công gói Thuê bao (${keyQuotaGranted === -1 ? '∞' : keyQuotaGranted} Credits/tháng, +${durationDays} ngày)!`;
+
+    const planExpiresAtIso = newPlanExpiresAt ? newPlanExpiresAt.toISOString() : null;
+    const nextResetIso = newNextCreditResetAt ? newNextCreditResetAt.toISOString() : null;
 
     return NextResponse.json({
       success: true,
       message: successMsg,
-      newExpiresAt: newSubExpiresAt ? newSubExpiresAt.toISOString() : null,
+      newExpiresAt: planExpiresAtIso,
       newRemainingQuota,
-      lifetimeQuota: newLifetimeQuota,
-      subscriptionQuota: newSubQuota,
-      subscriptionExpiresAt: newSubExpiresAt ? newSubExpiresAt.toISOString() : null,
+      lifetimeQuota: newLifetimeCredits,
+      lifetimeCredits: newLifetimeCredits,
+      subscriptionQuota: newMonthlyCredits,
+      monthlyCredits: newMonthlyCredits,
+      monthlyAllowance: newMonthlyAllowance,
+      nextCreditResetAt: nextResetIso,
+      planExpiresAt: planExpiresAtIso,
+      subscriptionExpiresAt: planExpiresAtIso,
       user: {
         ...currentUser,
         id: updatedUser?.id || currentUser.id,
@@ -270,12 +291,22 @@ export async function POST(req: NextRequest) {
         is_trial: false,
         vipExpiresAt: newVipExpiresAt ? newVipExpiresAt.toISOString() : null,
         vip_expires_at: newVipExpiresAt ? newVipExpiresAt.toISOString() : null,
-        subscription_expires_at: newSubExpiresAt ? newSubExpiresAt.toISOString() : null,
-        subscriptionExpiresAt: newSubExpiresAt ? newSubExpiresAt.toISOString() : null,
-        subscription_quota: newSubQuota,
-        subscriptionQuota: newSubQuota,
-        lifetime_quota: newLifetimeQuota,
-        lifetimeQuota: newLifetimeQuota,
+        subscription_expires_at: planExpiresAtIso,
+        subscriptionExpiresAt: planExpiresAtIso,
+        plan_expires_at: planExpiresAtIso,
+        planExpiresAt: planExpiresAtIso,
+        next_credit_reset_at: nextResetIso,
+        nextCreditResetAt: nextResetIso,
+        monthly_allowance: newMonthlyAllowance,
+        monthlyAllowance: newMonthlyAllowance,
+        monthly_credits: newMonthlyCredits,
+        monthlyCredits: newMonthlyCredits,
+        lifetime_credits: newLifetimeCredits,
+        lifetimeCredits: newLifetimeCredits,
+        subscription_quota: newMonthlyCredits,
+        subscriptionQuota: newMonthlyCredits,
+        lifetime_quota: newLifetimeCredits,
+        lifetimeQuota: newLifetimeCredits,
         remaining_quota: newRemainingQuota,
         remainingQuota: newRemainingQuota,
         max_quota: updatedUser?.max_quota || newRemainingQuota,

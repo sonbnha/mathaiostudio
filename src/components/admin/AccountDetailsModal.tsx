@@ -37,6 +37,16 @@ export interface AccountDetailsData {
     subscriptionQuota?: number | null;
     subscription_expires_at?: string | Date | null;
     subscriptionExpiresAt?: string | Date | null;
+    monthly_allowance?: number;
+    monthlyAllowance?: number;
+    monthly_credits?: number;
+    monthlyCredits?: number;
+    next_credit_reset_at?: string | Date | null;
+    nextCreditResetAt?: string | Date | null;
+    plan_expires_at?: string | Date | null;
+    planExpiresAt?: string | Date | null;
+    lifetime_credits?: number;
+    lifetimeCredits?: number;
     status?: string;
     is_active?: boolean;
     isActive?: boolean;
@@ -44,6 +54,7 @@ export interface AccountDetailsData {
   licenseKey?: {
     id?: string;
     key: string;
+    credits?: number;
     totalCredits?: number;
     total_credits?: number;
     maxUsage?: number;
@@ -108,25 +119,31 @@ export default function AccountDetailsModal({ isOpen, onClose, data }: AccountDe
   const isStaff = roleLower === 'staff' || roleLower === 'ctv';
   const isVip = Boolean(user.is_vip ?? user.isVip) || roleLower === 'vip';
 
-  // Dual-wallet quota values
-  const rawLifetimeQuota = user.lifetime_quota ?? user.lifetimeQuota ?? 0;
-  const rawSubQuota = user.subscription_quota ?? user.subscriptionQuota ?? 0;
-  const rawSubExpiresAt = user.subscription_expires_at || user.subscriptionExpiresAt || user.vip_expires_at || user.vipExpiresAt || null;
+  // Dual-wallet credit values
+  const monthlyAllowance = Number(user.monthly_allowance ?? user.monthlyAllowance ?? 0);
+  const monthlyCredits = Number(user.monthly_credits ?? user.monthlyCredits ?? user.subscription_quota ?? user.subscriptionQuota ?? 0);
+  const lifetimeCredits = Number(user.lifetime_credits ?? user.lifetimeCredits ?? user.lifetime_quota ?? user.lifetimeQuota ?? 0);
+  const planExpiresAt = user.plan_expires_at || user.planExpiresAt || user.subscription_expires_at || user.subscriptionExpiresAt || user.vip_expires_at || user.vipExpiresAt || null;
+  const nextCreditResetAt = user.next_credit_reset_at || user.nextCreditResetAt || null;
+
   const now = new Date();
-  const isSubActive = Boolean(rawSubExpiresAt && new Date(rawSubExpiresAt) > now);
+  const isPlanActive = Boolean(planExpiresAt && new Date(planExpiresAt) > now);
 
   // Remaining total
   const remainingQuota = user.remaining_quota ?? user.remainingQuota;
   const isUnlimitedQuota = isAdmin || remainingQuota === null || remainingQuota === -1;
   const totalAvailable = isUnlimitedQuota
     ? '∞'
-    : `${(isSubActive ? rawSubQuota : 0) + rawLifetimeQuota} lượt`;
+    : `${(isPlanActive ? monthlyCredits : 0) + lifetimeCredits} Credits`;
 
   // License Key Details
   const duration = licenseKey?.durationDays ?? licenseKey?.duration_days ?? 30;
-  const durationStr = duration === 0 ? 'Vĩnh viễn' : `+${duration} ngày`;
-  const usage = licenseKey?.maxUsage ?? licenseKey?.max_usage ?? licenseKey?.totalCredits ?? licenseKey?.total_credits ?? 50;
-  const usageStr = usage === -1 ? '+∞ lượt' : `+${usage} lượt`;
+  const isKeyLifetime = duration === 0 || licenseKey?.key?.startsWith('AIO-LT-');
+  const durationStr = isKeyLifetime ? 'Vĩnh viễn (∞)' : `+${duration} ngày`;
+  const usage = licenseKey?.credits ?? licenseKey?.maxUsage ?? licenseKey?.max_usage ?? licenseKey?.totalCredits ?? licenseKey?.total_credits ?? 50;
+  const usageStr = usage === -1 
+    ? '∞ Credits' 
+    : (isKeyLifetime ? `+${usage} Credits trọn đời` : `${usage} Credits/tháng`);
   const activationTime = formatActivationTime(licenseKey?.used_at || licenseKey?.usedAt);
   const creatorName = licenseKey?.createdBy?.name || licenseKey?.createdBy?.username || licenseKey?.created_by?.name || licenseKey?.created_by?.username || licenseKey?.created_by_name || 'Quản trị viên';
 
@@ -202,13 +219,13 @@ export default function AccountDetailsModal({ isOpen, onClose, data }: AccountDe
           </button>
         </div>
 
-        {/* PHẦN 2: Trạng Thái Dịch Vụ & 2 Ví Hạn Mức (Gói Thuê Bao & Kho Vĩnh Viễn) */}
+        {/* PHẦN 2: Trạng Thái Dịch Vụ & 2 Ví Credit (Credit Thuê Bao & Credit Trọn Đời) */}
         <div className="flex flex-col gap-2.5">
           {/* Thanh tổng quan khả dụng */}
           <div className="px-3.5 py-2 rounded-xl bg-slate-100/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between text-xs">
             <span className="text-slate-600 dark:text-slate-400 font-medium flex items-center gap-1.5">
               <Zap className="w-3.5 h-3.5 text-cyan-500" />
-              Tổng lượt khả dụng:
+              Tổng Credit khả dụng:
             </span>
             <span className="font-mono font-bold text-sm text-cyan-600 dark:text-cyan-400">
               {totalAvailable}
@@ -217,53 +234,59 @@ export default function AccountDetailsModal({ isOpen, onClose, data }: AccountDe
 
           {/* Lưới 2 Khối Ví */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-            {/* Khối 1: [Gói Thuê Bao] */}
+            {/* Khối 1: [Credit Thuê Bao] */}
             <div className="p-3.5 rounded-xl bg-blue-50/70 dark:bg-blue-950/20 border border-blue-200/80 dark:border-blue-900/40 flex flex-col gap-1.5">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] text-blue-700 dark:text-blue-300 flex items-center gap-1 font-bold">
                   <Calendar className="w-3.5 h-3.5 text-blue-500" />
-                  Gói Thuê Bao:
+                  Credit Thuê Bao:
                 </span>
                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
                   isAdmin
                     ? 'bg-blue-500/20 text-blue-700 dark:text-blue-300'
-                    : isSubActive
+                    : isPlanActive
                     ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
                     : 'bg-slate-200/80 dark:bg-slate-800 text-slate-500'
                 }`}>
-                  {isAdmin ? 'Vô hạn' : isSubActive ? 'Còn hạn' : (rawSubExpiresAt ? 'Hết hạn' : 'Chưa có')}
+                  {isAdmin ? 'Vô hạn' : isPlanActive ? 'Còn hạn' : (planExpiresAt ? 'Hết hạn' : 'Chưa có')}
                 </span>
               </div>
               <div className="flex items-baseline justify-between mt-0.5">
-                <span className="text-xs text-slate-500 dark:text-slate-400">Số lượt:</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400">Khả dụng / Định mức:</span>
                 <span className="text-sm font-bold font-mono text-blue-700 dark:text-blue-400">
-                  {isAdmin ? '∞' : `${rawSubQuota} lượt`}
+                  {isAdmin ? '∞' : `${monthlyCredits} / ${monthlyAllowance} Credits`}
                 </span>
               </div>
               <div className="flex items-center justify-between text-[11px] pt-1 border-t border-blue-200/50 dark:border-blue-900/30 text-slate-500 dark:text-slate-400">
-                <span>Hạn dùng:</span>
+                <span>Làm mới chu kỳ:</span>
                 <span className="font-mono font-medium text-slate-700 dark:text-slate-300">
-                  {isAdmin ? '∞' : (rawSubExpiresAt ? formatDateVN(rawSubExpiresAt) : 'Chưa kích hoạt')}
+                  {isAdmin ? '∞' : (nextCreditResetAt ? formatDateVN(nextCreditResetAt) : 'Chưa kích hoạt')}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                <span>Hạn gói:</span>
+                <span className="font-mono font-medium text-slate-700 dark:text-slate-300">
+                  {isAdmin ? '∞' : (planExpiresAt ? formatDateVN(planExpiresAt) : 'Chưa kích hoạt')}
                 </span>
               </div>
             </div>
 
-            {/* Khối 2: [Kho Vĩnh Viễn VIP / Ví Dùng Thử] */}
+            {/* Khối 2: [Credit Trọn Đời VIP / Ví Dùng Thử] */}
             {isVip || isAdmin ? (
               <div className="p-3.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-900/40 flex flex-col gap-1.5">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] text-amber-700 dark:text-amber-300 flex items-center gap-1 font-bold">
                     <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                    Kho Vĩnh Viễn:
+                    Credit Trọn Đời:
                   </span>
                   <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
                     Trọn đời (∞)
                   </span>
                 </div>
                 <div className="flex items-baseline justify-between mt-0.5">
-                  <span className="text-xs text-slate-500 dark:text-slate-400">Tích lũy:</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">Số dư tích lũy:</span>
                   <span className="text-sm font-bold font-mono text-amber-700 dark:text-amber-400">
-                    {isAdmin ? '∞' : `${rawLifetimeQuota} lượt`}
+                    {isAdmin ? '∞' : `${lifetimeCredits} Credits`}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-[11px] pt-1 border-t border-amber-200/50 dark:border-amber-900/30 text-slate-500 dark:text-slate-400">
@@ -278,16 +301,16 @@ export default function AccountDetailsModal({ isOpen, onClose, data }: AccountDe
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] text-sky-700 dark:text-sky-300 flex items-center gap-1 font-bold">
                     <Sparkles className="w-3.5 h-3.5 text-sky-500" />
-                    Ví Dùng Thử:
+                    Credit Dùng Thử:
                   </span>
                   <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/30">
                     Dùng thử (Trial)
                   </span>
                 </div>
                 <div className="flex items-baseline justify-between mt-0.5">
-                  <span className="text-xs text-slate-500 dark:text-slate-400">Lượt dùng thử được cấp:</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">Được cấp:</span>
                   <span className="text-sm font-bold font-mono text-sky-700 dark:text-sky-400">
-                    {rawLifetimeQuota} lượt
+                    {lifetimeCredits} Credits
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-[11px] pt-1 border-t border-sky-200/50 dark:border-sky-900/30 text-slate-500 dark:text-slate-400">

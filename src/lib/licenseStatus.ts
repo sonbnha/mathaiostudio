@@ -71,13 +71,21 @@ export function computeLicenseStatus({
   // 1. Trường hợp người dùng đã đăng nhập (currentUser)
   if (user) {
     const isVipUser = Boolean(user.is_vip || user.isVip);
-    const rawLifetimeQuota = typeof user.lifetime_quota === 'number'
-      ? user.lifetime_quota
-      : (typeof user.lifetimeQuota === 'number' ? user.lifetimeQuota : 0);
-    const rawSubscriptionQuota = typeof user.subscription_quota === 'number'
-      ? user.subscription_quota
-      : (typeof user.subscriptionQuota === 'number' ? user.subscriptionQuota : 0);
-    const rawSubExpiresAt = user.subscription_expires_at || user.subscriptionExpiresAt || user.vip_expires_at || user.vipExpiresAt || null;
+    const rawLifetimeQuota = typeof user.lifetime_credits === 'number'
+      ? user.lifetime_credits
+      : (typeof user.lifetimeCredits === 'number'
+        ? user.lifetimeCredits
+        : (typeof user.lifetime_quota === 'number'
+          ? user.lifetime_quota
+          : (typeof user.lifetimeQuota === 'number' ? user.lifetimeQuota : 0)));
+    const rawSubscriptionQuota = typeof user.monthly_credits === 'number'
+      ? user.monthly_credits
+      : (typeof user.monthlyCredits === 'number'
+        ? user.monthlyCredits
+        : (typeof user.subscription_quota === 'number'
+          ? user.subscription_quota
+          : (typeof user.subscriptionQuota === 'number' ? user.subscriptionQuota : 0)));
+    const rawSubExpiresAt = user.plan_expires_at || user.planExpiresAt || user.subscription_expires_at || user.subscriptionExpiresAt || user.vip_expires_at || user.vipExpiresAt || null;
     const subExpireTime = rawSubExpiresAt ? new Date(rawSubExpiresAt).getTime() : null;
     const isSubActive = Boolean(subExpireTime && subExpireTime > now);
 

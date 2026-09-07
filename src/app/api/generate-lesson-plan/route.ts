@@ -41,64 +41,22 @@ export async function POST(req: NextRequest) {
 
     // Kiểm tra tài khoản đã đăng nhập (không phải admin)
     if (currentUser && (currentUser.role || '').toLowerCase() !== 'admin') {
+      const { deductUserCredit, syncUserCredits } = await import('@/lib/credits');
       const { getDb } = await import('@/lib/db');
       const sql = getDb();
-      const userRows = await sql`
-        SELECT id, role, subscription_quota, subscription_expires_at, lifetime_quota, remaining_quota
-        FROM users
-        WHERE id = ${currentUser.id}::uuid
-        LIMIT 1;
-      `;
 
-      const u = userRows && userRows.length > 0 ? userRows[0] : (currentUser as any);
-      const now = new Date();
-      const subActive = Boolean(u.subscription_expires_at && new Date(u.subscription_expires_at) > now);
-      const subQuota = Number(u.subscription_quota || 0);
-      const lifeQuota = Number(u.lifetime_quota || 0);
-
-      // Cả 2 ví đều không đủ điều kiện
-      if ((!subActive || subQuota <= 0) && lifeQuota <= 0) {
+      const userState = await syncUserCredits(currentUser.id, sql);
+      if (!userState || userState.totalAvailableCredits <= 0) {
         return new Response(
-          JSON.stringify({ error: 'Bạn đã hết lượt sử dụng. Vui lòng nạp thêm License Key để tiếp tục.' }),
+          JSON.stringify({ error: 'Tài khoản của bạn đã hết Credit. Vui lòng nạp thêm để tiếp tục.' }),
           { status: 403, headers: { 'Content-Type': 'application/json' } }
         );
       }
 
-      // Trừ lượt trong nền (ưu tiên 1: gói thuê bao -> ưu tiên 2: ví vĩnh viễn)
+      // Trừ 1 credit khi không phải chế độ viết tiếp (continue)
       if (!isContinue) {
-        try {
-          if (subActive && subQuota > 0) {
-            const newSub = subQuota - 1;
-            const newTotal = newSub + lifeQuota;
-            await sql`
-              UPDATE users
-              SET 
-                subscription_quota = ${newSub},
-                remaining_quota = ${newTotal}
-              WHERE id = ${currentUser.id}::uuid;
-            `;
-          } else if (lifeQuota > 0) {
-            const newLife = lifeQuota - 1;
-            const newTotal = (subActive ? subQuota : 0) + newLife;
-            await sql`
-              UPDATE users
-              SET 
-                lifetime_quota = ${newLife},
-                remaining_quota = ${newTotal}
-              WHERE id = ${currentUser.id}::uuid;
-            `;
-          }
-
-          const userKey = (currentUser as any).apiKey || (currentUser as any).api_key;
-          if (userKey) {
-            await sql`
-              UPDATE license_keys
-              SET used_credits = used_credits + 1
-              WHERE (UPPER(key) = ${userKey.toUpperCase()} OR UPPER(key_code) = ${userKey.toUpperCase()})
-                AND (total_credits = -1 OR used_credits < total_credits);
-            `;
-          }
-        } catch {}
+        const userKey = (currentUser as any).apiKey || (currentUser as any).api_key;
+        await deductUserCredit(currentUser.id, sql, { apiKey: userKey, actionName: 'generate_lesson_plan' });
       }
     }
 

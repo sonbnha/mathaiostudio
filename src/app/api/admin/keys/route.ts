@@ -63,7 +63,12 @@ export async function GET(req: NextRequest) {
           used_user.max_quota AS used_user_max_quota,
           COALESCE(used_user.lifetime_quota, 0) AS used_user_lifetime_quota,
           COALESCE(used_user.subscription_quota, 0) AS used_user_subscription_quota,
-          used_user.subscription_expires_at AS used_user_subscription_expires_at
+          used_user.subscription_expires_at AS used_user_subscription_expires_at,
+          COALESCE(used_user.monthly_allowance, 0) AS used_user_monthly_allowance,
+          COALESCE(used_user.monthly_credits, 0) AS used_user_monthly_credits,
+          used_user.next_credit_reset_at AS used_user_next_credit_reset_at,
+          used_user.plan_expires_at AS used_user_plan_expires_at,
+          COALESCE(used_user.lifetime_credits, 0) AS used_user_lifetime_credits
         FROM license_keys lk
         LEFT JOIN users creator ON creator.id = lk.created_by
         LEFT JOIN users used_user ON used_user.id = lk.used_by
@@ -103,7 +108,12 @@ export async function GET(req: NextRequest) {
           used_user.max_quota AS used_user_max_quota,
           COALESCE(used_user.lifetime_quota, 0) AS used_user_lifetime_quota,
           COALESCE(used_user.subscription_quota, 0) AS used_user_subscription_quota,
-          used_user.subscription_expires_at AS used_user_subscription_expires_at
+          used_user.subscription_expires_at AS used_user_subscription_expires_at,
+          COALESCE(used_user.monthly_allowance, 0) AS used_user_monthly_allowance,
+          COALESCE(used_user.monthly_credits, 0) AS used_user_monthly_credits,
+          used_user.next_credit_reset_at AS used_user_next_credit_reset_at,
+          used_user.plan_expires_at AS used_user_plan_expires_at,
+          COALESCE(used_user.lifetime_credits, 0) AS used_user_lifetime_credits
         FROM license_keys lk
         LEFT JOIN users creator ON creator.id = lk.created_by
         LEFT JOIN users used_user ON used_user.id = lk.used_by
@@ -111,61 +121,82 @@ export async function GET(req: NextRequest) {
       `;
     }
 
-    let enhancedKeys = rows.map((k: any) => ({
-      id: k.id,
-      key: k.key || k.key_code,
-      keyCode: k.key_code || k.key,
-      key_code: k.key_code || k.key,
-      customerName: null,
-      customer_name: null,
-      totalCredits: typeof k.total_credits === 'number' ? k.total_credits : (typeof k.max_usage === 'number' ? k.max_usage : 50),
-      total_credits: typeof k.total_credits === 'number' ? k.total_credits : (typeof k.max_usage === 'number' ? k.max_usage : 50),
-      maxUsage: typeof k.max_usage === 'number' ? k.max_usage : (typeof k.total_credits === 'number' ? k.total_credits : 100),
-      max_usage: typeof k.max_usage === 'number' ? k.max_usage : (typeof k.total_credits === 'number' ? k.total_credits : 100),
-      usedCredits: typeof k.used_credits === 'number' ? k.used_credits : 0,
-      used_credits: typeof k.used_credits === 'number' ? k.used_credits : 0,
-      durationDays: typeof k.duration_days === 'number' ? k.duration_days : 30,
-      duration_days: typeof k.duration_days === 'number' ? k.duration_days : 30,
-      expiresAt: k.expires_at,
-      expires_at: k.expires_at,
-      status: k.status || (k.used_by ? 'used' : 'active'),
-      isActive: Boolean(k.is_active ?? true),
-      is_active: Boolean(k.is_active ?? true),
-      createdAt: k.created_at,
-      created_at: k.created_at,
-      createdById: k.created_by,
-      created_by: k.created_by,
-      createdBy: k.creator_id ? {
-        id: k.creator_id,
-        username: k.creator_username,
-        name: k.creator_name,
-        role: k.creator_role,
-      } : null,
-      usedBy: k.used_user_id ? {
-        id: k.used_user_id,
-        name: k.used_user_name,
-        username: k.used_user_username,
-        email: k.used_user_email,
-        role: k.used_user_role,
-        is_vip: Boolean(k.used_user_is_vip),
-        isVip: Boolean(k.used_user_is_vip),
-        vip_expires_at: k.used_user_vip_expires_at,
-        vipExpiresAt: k.used_user_vip_expires_at,
-        remaining_quota: k.used_user_remaining_quota,
-        remainingQuota: k.used_user_remaining_quota,
-        max_quota: k.used_user_max_quota,
-        maxQuota: k.used_user_max_quota,
-        lifetime_quota: Number(k.used_user_lifetime_quota ?? 0),
-        lifetimeQuota: Number(k.used_user_lifetime_quota ?? 0),
-        subscription_quota: Number(k.used_user_subscription_quota ?? 0),
-        subscriptionQuota: Number(k.used_user_subscription_quota ?? 0),
-        subscription_expires_at: k.used_user_subscription_expires_at || null,
-        subscriptionExpiresAt: k.used_user_subscription_expires_at || null,
-      } : null,
-      used_by: k.used_by,
-      usedAt: k.used_at,
-      used_at: k.used_at,
-    }));
+    const parseNum = (v: any, fallback = 0) => {
+      const n = Number(v);
+      return isNaN(n) ? fallback : n;
+    };
+
+    let enhancedKeys = rows.map((k: any) => {
+      const creditsVal = typeof k.total_credits === 'number' ? k.total_credits : (typeof k.max_usage === 'number' ? k.max_usage : 50);
+      const durationVal = typeof k.duration_days === 'number' ? k.duration_days : 30;
+      const keyCodeVal = k.key_code || k.key || '';
+      return {
+        id: k.id,
+        key: k.key || keyCodeVal,
+        keyCode: keyCodeVal,
+        key_code: keyCodeVal,
+        customerName: null,
+        customer_name: null,
+        credits: creditsVal,
+        totalCredits: creditsVal,
+        total_credits: creditsVal,
+        maxUsage: creditsVal,
+        max_usage: creditsVal,
+        usedCredits: typeof k.used_credits === 'number' ? k.used_credits : 0,
+        used_credits: typeof k.used_credits === 'number' ? k.used_credits : 0,
+        durationDays: durationVal,
+        duration_days: durationVal,
+        expiresAt: k.expires_at,
+        expires_at: k.expires_at,
+        status: k.status || (k.used_by ? 'used' : 'active'),
+        isActive: Boolean(k.is_active ?? true),
+        is_active: Boolean(k.is_active ?? true),
+        createdAt: k.created_at,
+        created_at: k.created_at,
+        createdById: k.created_by,
+        created_by: k.created_by,
+        createdBy: k.creator_id ? {
+          id: k.creator_id,
+          username: k.creator_username,
+          name: k.creator_name,
+          role: k.creator_role,
+        } : null,
+        usedBy: k.used_user_id ? {
+          id: k.used_user_id,
+          name: k.used_user_name,
+          username: k.used_user_username,
+          email: k.used_user_email,
+          role: k.used_user_role,
+          is_vip: Boolean(k.used_user_is_vip),
+          isVip: Boolean(k.used_user_is_vip),
+          vip_expires_at: k.used_user_plan_expires_at || k.used_user_vip_expires_at,
+          vipExpiresAt: k.used_user_plan_expires_at || k.used_user_vip_expires_at,
+          remaining_quota: k.used_user_remaining_quota,
+          remainingQuota: k.used_user_remaining_quota,
+          max_quota: k.used_user_max_quota,
+          maxQuota: k.used_user_max_quota,
+          lifetime_quota: parseNum(k.used_user_lifetime_credits, parseNum(k.used_user_lifetime_quota, 0)),
+          lifetimeQuota: parseNum(k.used_user_lifetime_credits, parseNum(k.used_user_lifetime_quota, 0)),
+          subscription_quota: parseNum(k.used_user_monthly_credits, parseNum(k.used_user_subscription_quota, 0)),
+          subscriptionQuota: parseNum(k.used_user_monthly_credits, parseNum(k.used_user_subscription_quota, 0)),
+          subscription_expires_at: k.used_user_plan_expires_at || k.used_user_subscription_expires_at || null,
+          subscriptionExpiresAt: k.used_user_plan_expires_at || k.used_user_subscription_expires_at || null,
+          monthly_allowance: parseNum(k.used_user_monthly_allowance, 0),
+          monthlyAllowance: parseNum(k.used_user_monthly_allowance, 0),
+          monthly_credits: parseNum(k.used_user_monthly_credits, 0),
+          monthlyCredits: parseNum(k.used_user_monthly_credits, 0),
+          next_credit_reset_at: k.used_user_next_credit_reset_at || null,
+          nextCreditResetAt: k.used_user_next_credit_reset_at || null,
+          plan_expires_at: k.used_user_plan_expires_at || null,
+          planExpiresAt: k.used_user_plan_expires_at || null,
+          lifetime_credits: parseNum(k.used_user_lifetime_credits, 0),
+          lifetimeCredits: parseNum(k.used_user_lifetime_credits, 0),
+        } : null,
+        used_by: k.used_by,
+        usedAt: k.used_at,
+        used_at: k.used_at,
+      };
+    });
 
     if (search) {
       enhancedKeys = enhancedKeys.filter((k: any) =>
@@ -211,6 +242,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
     const {
+      credits,
       totalCredits,
       total_credits,
       maxUsage,
@@ -387,6 +419,7 @@ export async function POST(req: NextRequest) {
       key_code: newKeyRow.key_code || newKeyRow.key,
       customerName: null,
       customer_name: null,
+      credits: newKeyRow.total_credits,
       totalCredits: newKeyRow.total_credits,
       total_credits: newKeyRow.total_credits,
       maxUsage: newKeyRow.max_usage,

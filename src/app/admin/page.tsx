@@ -81,7 +81,11 @@ interface AuthUser {
 interface LicenseKeyItem {
   id: string;
   key: string;
+  keyCode?: string;
+  key_code?: string;
   customerName: string | null;
+  customer_name?: string | null;
+  credits?: number;
   totalCredits: number;
   total_credits?: number;
   usedCredits: number;
@@ -118,6 +122,16 @@ interface LicenseKeyItem {
     subscriptionQuota?: number | null;
     subscription_expires_at?: string | null;
     subscriptionExpiresAt?: string | null;
+    monthly_allowance?: number;
+    monthlyAllowance?: number;
+    monthly_credits?: number;
+    monthlyCredits?: number;
+    next_credit_reset_at?: string | null;
+    nextCreditResetAt?: string | null;
+    plan_expires_at?: string | null;
+    planExpiresAt?: string | null;
+    lifetime_credits?: number;
+    lifetimeCredits?: number;
   } | null;
   createdAt: string;
   createdById?: string | null;
@@ -155,9 +169,20 @@ interface UserAccountItem {
   subscriptionQuota?: number | null;
   subscription_expires_at?: string | null;
   subscriptionExpiresAt?: string | null;
+  monthly_allowance?: number;
+  monthlyAllowance?: number;
+  monthly_credits?: number;
+  monthlyCredits?: number;
+  next_credit_reset_at?: string | null;
+  nextCreditResetAt?: string | null;
+  plan_expires_at?: string | null;
+  planExpiresAt?: string | null;
+  lifetime_credits?: number;
+  lifetimeCredits?: number;
   last_activated_key?: {
     key: string;
     used_at?: string | null;
+    usedAt?: string | null;
   } | null;
   lastActivatedKey?: {
     key: string;
@@ -587,20 +612,24 @@ export default function UnifiedAdminPage() {
         ? window.location.origin
         : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
-    const creditsStr =
-      newlyCreatedKey.totalCredits === -1
-        ? '∞'
-        : `${newlyCreatedKey.totalCredits} lượt`;
+    const durDays = newlyCreatedKey.durationDays ?? newlyCreatedKey.duration_days ?? 30;
+    const isLifetime = durDays === 0 || newlyCreatedKey.key?.startsWith('AIO-LT-');
+    const creditsCount = newlyCreatedKey.credits ?? newlyCreatedKey.totalCredits ?? 50;
+    const creditsStr = creditsCount === -1 
+      ? '∞ Credits' 
+      : (isLifetime ? `${creditsCount} Credits trọn đời` : `${creditsCount} Credits/tháng`);
 
-    const expireStr = newlyCreatedKey.expiresAt
+    const expireStr = isLifetime
+      ? 'Vĩnh viễn (∞)'
+      : newlyCreatedKey.expiresAt
       ? new Date(newlyCreatedKey.expiresAt).toLocaleDateString('vi-VN')
-      : '∞';
+      : `+${durDays} ngày`;
 
     const message = `🎉 KÍCH HOẠT BẢN QUYỀN MATHAIO
 - Mã License Key: ${newlyCreatedKey.key}
-- Số lượt sử dụng: ${creditsStr}
-- Hạn sử dụng: ${expireStr}
-👉 Truy cập và sử dụng tại: ${appUrl}`;
+- Định mức Credit: ${creditsStr}
+- Thời hạn gói: ${expireStr}
+👉 Kích hoạt key tại: ${appUrl}/settings`;
 
     navigator.clipboard.writeText(message);
     setCopiedCustomerMessage(true);
@@ -615,20 +644,24 @@ export default function UnifiedAdminPage() {
         ? window.location.origin
         : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
-    const creditsStr =
-      keyItem.totalCredits === -1
-        ? '∞'
-        : `${keyItem.totalCredits} lượt`;
+    const durDays = keyItem.durationDays ?? keyItem.duration_days ?? 30;
+    const isLifetime = durDays === 0 || keyItem.key?.startsWith('AIO-LT-');
+    const creditsCount = keyItem.credits ?? keyItem.totalCredits ?? 50;
+    const creditsStr = creditsCount === -1 
+      ? '∞ Credits' 
+      : (isLifetime ? `${creditsCount} Credits trọn đời` : `${creditsCount} Credits/tháng`);
 
-    const expireStr = keyItem.expiresAt
+    const expireStr = isLifetime
+      ? 'Vĩnh viễn (∞)'
+      : keyItem.expiresAt
       ? new Date(keyItem.expiresAt).toLocaleDateString('vi-VN')
-      : '∞';
+      : `+${durDays} ngày`;
 
     const message = `🎉 KÍCH HOẠT BẢN QUYỀN MATHAIO
 - Mã License Key: ${keyItem.key}
-- Số lượt sử dụng: ${creditsStr}
-- Hạn sử dụng: ${expireStr}
-👉 Truy cập và sử dụng tại: ${appUrl}`;
+- Định mức Credit: ${creditsStr}
+- Thời hạn gói: ${expireStr}
+👉 Kích hoạt key tại: ${appUrl}/settings`;
 
     navigator.clipboard.writeText(message);
     setCopiedCustomerKeyId(keyItem.id);
@@ -1029,7 +1062,7 @@ export default function UnifiedAdminPage() {
     }
     if (k.totalCredits !== -1 && k.usedCredits >= k.totalCredits) {
       return {
-        label: 'Hết Lượt',
+        label: 'Hết Credit',
         className: 'bg-rose-500/10 border-rose-500/30 text-rose-600 dark:text-rose-400',
         dotClass: 'bg-rose-500',
       };
@@ -1649,7 +1682,7 @@ export default function UnifiedAdminPage() {
                     <Sparkles className="w-6 h-6" />
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Lượt Đã Tạo Hình</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Credit Đã Dùng</p>
                     <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{totalGenerations}</p>
                   </div>
                 </div>
@@ -1767,7 +1800,7 @@ export default function UnifiedAdminPage() {
                     <thead>
                       <tr className="bg-slate-50 dark:bg-slate-950/70 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold">
                         <th className="py-2.5 px-4">License Key</th>
-                        <th className="py-2.5 px-4">Lượt Tạo</th>
+                        <th className="py-2.5 px-4">Credit Đã Dùng</th>
                         <th className="py-2.5 px-4">Hạn Dùng</th>
                         <th className="py-2.5 px-4">Trạng Thái</th>
                       </tr>
@@ -1858,7 +1891,7 @@ export default function UnifiedAdminPage() {
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                         <CreditCard className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
-                        <span>Số Lượt Tạo Hình</span>
+                        <span>Số Lượng Credit</span>
                       </label>
 
                       {/* Toggle Switch Không giới hạn */}
@@ -1886,6 +1919,12 @@ export default function UnifiedAdminPage() {
                       </label>
                     </div>
 
+                    <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                      {Number(durationDays) === 0
+                        ? '⚡ Credit nạp trọn đời (Lifetime Credits - Không hết hạn)'
+                        : '🔄 Credit cấp mỗi tháng (Monthly Allowance - Làm mới mỗi 30 ngày)'}
+                    </div>
+
                     {isUnlimitedCredits ? (
                       <div className="h-10 px-3.5 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-700 dark:text-purple-300 font-semibold text-xs flex items-center justify-between">
                         <span className="flex items-center gap-1.5">
@@ -1904,7 +1943,7 @@ export default function UnifiedAdminPage() {
                           max={99999}
                           value={customCreditCount}
                           onChange={(e) => setCustomCreditCount(Math.max(1, Number(e.target.value)))}
-                          placeholder="Nhập số lượt (vd: 30, 50, 100...)"
+                          placeholder="Nhập số Credit (vd: 30, 50, 100...)"
                           className="w-full h-10 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-cyan-500 rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-slate-200 outline-none transition font-medium"
                           required
                         />
@@ -1925,7 +1964,7 @@ export default function UnifiedAdminPage() {
                                   : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700'
                               }`}
                             >
-                              {count} lượt
+                              {count} Credits
                             </button>
                           ))}
                         </div>
@@ -1937,7 +1976,7 @@ export default function UnifiedAdminPage() {
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                       <Clock className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-                      <span>Thời Hạn Sử Dụng</span>
+                      <span>Thời Hạn Gói</span>
                     </label>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {[
@@ -2070,7 +2109,7 @@ export default function UnifiedAdminPage() {
                         <th className="py-3 px-4 w-[205px] min-w-[195px] whitespace-nowrap">Mã Key</th>
                         <th className="py-3 px-4 min-w-[180px] whitespace-nowrap">Người Tạo</th>
                         <th className="py-3 px-4 min-w-[170px] whitespace-nowrap">Người Kích Hoạt</th>
-                        <th className="py-3 px-5 min-w-[190px] whitespace-nowrap">Lượt Dùng & Hạn</th>
+                        <th className="py-3 px-5 min-w-[190px] whitespace-nowrap">CREDIT & THỜI HẠN</th>
                         <th className="py-3 px-3 text-center sticky right-0 z-30 bg-slate-100 dark:bg-[#182030] shadow-[-4px_0_8px_-2px_rgba(0,0,0,0.08)] w-[105px] min-w-[105px] whitespace-nowrap">
                           Thao Tác
                         </th>
@@ -2148,13 +2187,14 @@ export default function UnifiedAdminPage() {
                                       licenseKey: {
                                         id: k.id,
                                         key: k.key,
+                                        totalCredits: k.totalCredits,
+                                        credits: k.credits ?? k.totalCredits,
                                         durationDays: k.durationDays,
                                         duration_days: k.duration_days,
                                         maxUsage: k.maxUsage,
                                         max_usage: k.max_usage,
-                                        totalCredits: k.totalCredits,
-                                        usedAt: k.usedAt,
-                                        used_at: k.used_at,
+                                        usedAt: k.usedAt || k.used_at,
+                                        used_at: k.used_at || k.usedAt,
                                         createdBy: k.createdBy,
                                       },
                                     });
@@ -2173,14 +2213,26 @@ export default function UnifiedAdminPage() {
                               )}
                             </td>
 
-                            {/* 4. Lượt Dùng & Hạn */}
-                            <td className="px-5 py-3 pr-6 align-middle whitespace-nowrap min-w-[170px]">
+                            {/* 4. CREDIT & THỜI HẠN */}
+                            <td className="px-5 py-3 pr-6 align-middle whitespace-nowrap min-w-[190px]">
                               <div className="flex flex-col justify-center">
                                 <div className="text-xs font-semibold text-slate-800 dark:text-slate-200 font-mono">
-                                  {k.totalCredits === -1 ? '∞ Lượt' : `${k.usedCredits || 0} / ${k.totalCredits} lượt`}
+                                  {(() => {
+                                    const creditsCount = k.credits ?? k.totalCredits ?? k.maxUsage ?? 50;
+                                    const durDays = k.durationDays ?? k.duration_days ?? 30;
+                                    const isLifetime = durDays === 0 || k.key?.startsWith('AIO-LT-');
+                                    if (creditsCount === -1) {
+                                      return isLifetime ? '∞ Credits' : '∞ Credits/tháng';
+                                    }
+                                    return isLifetime ? `${creditsCount} Credits` : `${creditsCount} Credits/tháng`;
+                                  })()}
                                 </div>
                                 <div className="text-[11px] text-slate-500 dark:text-slate-400 font-normal mt-0.5">
-                                  Hạn: {k.expiresAt ? formatDateVN(k.expiresAt) : 'Vĩnh viễn (∞)'}
+                                  {(() => {
+                                    const durDays = k.durationDays ?? k.duration_days ?? 30;
+                                    const isLifetime = durDays === 0 || k.key?.startsWith('AIO-LT-');
+                                    return isLifetime ? 'Vĩnh viễn (∞)' : `Hạn: ${durDays} ngày`;
+                                  })()}
                                 </div>
                               </div>
                             </td>
@@ -2444,19 +2496,19 @@ export default function UnifiedAdminPage() {
                               <div className="flex flex-col gap-1 items-start py-0.5">
                                 {/* Thuê bao badge */}
                                 {(() => {
-                                  const subQuota = u.subscription_quota ?? u.subscriptionQuota ?? 0;
-                                  const subExp = u.subscription_expires_at ?? u.subscriptionExpiresAt;
+                                  const subQuota = u.monthly_credits ?? u.monthlyCredits ?? u.subscription_quota ?? u.subscriptionQuota ?? 0;
+                                  const subExp = u.plan_expires_at ?? u.planExpiresAt ?? u.subscription_expires_at ?? u.subscriptionExpiresAt;
                                   const isSubActive = !!subExp && new Date(subExp) > new Date();
                                   if (isSubActive) {
                                     return (
                                       <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20 font-medium text-[11px] whitespace-nowrap">
-                                        Thuê bao: {subQuota} lượt (Hạn: {formatDateVN(subExp)})
+                                        Thuê bao: {subQuota} Credits (Hạn: {formatDateVN(subExp)})
                                       </span>
                                     );
                                   } else if (subExp) {
                                     return (
                                       <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 font-medium text-[11px] whitespace-nowrap">
-                                        Thuê bao: Hết hạn (0 lượt)
+                                        Thuê bao: Hết hạn (0 Credits)
                                       </span>
                                     );
                                   }
@@ -2465,18 +2517,18 @@ export default function UnifiedAdminPage() {
 
                                 {/* Vĩnh viễn / Dùng thử badge */}
                                 {(() => {
-                                  const ltQuota = u.lifetime_quota ?? u.lifetimeQuota ?? 0;
+                                  const ltQuota = u.lifetime_credits ?? u.lifetimeCredits ?? u.lifetime_quota ?? u.lifetimeQuota ?? 0;
                                   if (ltQuota > 0) {
                                     if (isUVip) {
                                       return (
                                         <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 font-medium text-[11px] whitespace-nowrap">
-                                          👑 VIP Vĩnh viễn: {ltQuota} lượt
+                                          👑 VIP Vĩnh viễn: {ltQuota} Credits
                                         </span>
                                       );
                                     } else {
                                       return (
                                         <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/20 font-medium text-[11px] whitespace-nowrap">
-                                          Dùng thử: {ltQuota} lượt
+                                          Dùng thử: {ltQuota} Credits
                                         </span>
                                       );
                                     }
@@ -2774,10 +2826,10 @@ export default function UnifiedAdminPage() {
             {/* Danh Sách Thông Tin Chi Tiết (List Info) */}
             <div className="flex flex-col gap-2.5 text-xs bg-slate-50/90 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 transition-colors">
 
-              {/* ⚡ Số lượt dùng */}
+              {/* ⚡ Định mức Credit */}
               <div className="flex items-center justify-between py-1 border-b border-slate-200/60 dark:border-slate-800/60">
                 <span className="text-slate-500 dark:text-slate-400 flex items-center gap-2">
-                  <Zap className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" /> Số lượt sử dụng:
+                  <Zap className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" /> Định mức Credit:
                 </span>
                 <span
                   className={`px-2.5 py-0.5 rounded-full font-bold text-[11px] border ${
@@ -2786,21 +2838,30 @@ export default function UnifiedAdminPage() {
                       : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20'
                   }`}
                 >
-                  {newlyCreatedKey.totalCredits === -1
-                    ? '∞'
-                    : `${newlyCreatedKey.totalCredits} lượt`}
+                  {(() => {
+                    const durDays = newlyCreatedKey.durationDays ?? newlyCreatedKey.duration_days ?? 30;
+                    const isLifetime = durDays === 0 || newlyCreatedKey.key?.startsWith('AIO-LT-');
+                    const creditsCount = newlyCreatedKey.credits ?? newlyCreatedKey.totalCredits ?? 50;
+                    if (creditsCount === -1) return '∞ Credits';
+                    return isLifetime ? `${creditsCount} Credits trọn đời` : `${creditsCount} Credits/tháng`;
+                  })()}
                 </span>
               </div>
 
-              {/* ⏳ Hạn sử dụng */}
+              {/* ⏳ Thời hạn gói */}
               <div className="flex items-center justify-between py-1 border-b border-slate-200/60 dark:border-slate-800/60">
                 <span className="text-slate-500 dark:text-slate-400 flex items-center gap-2">
-                  <Clock className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" /> Hạn sử dụng:
+                  <Clock className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" /> Thời hạn gói:
                 </span>
                 <span className="font-semibold text-slate-800 dark:text-slate-200">
-                  {newlyCreatedKey.expiresAt
-                    ? new Date(newlyCreatedKey.expiresAt).toLocaleDateString('vi-VN')
-                    : '∞'}
+                  {(() => {
+                    const durDays = newlyCreatedKey.durationDays ?? newlyCreatedKey.duration_days ?? 30;
+                    const isLifetime = durDays === 0 || newlyCreatedKey.key?.startsWith('AIO-LT-');
+                    if (isLifetime) return 'Vĩnh viễn (∞)';
+                    return newlyCreatedKey.expiresAt
+                      ? new Date(newlyCreatedKey.expiresAt).toLocaleDateString('vi-VN')
+                      : `${durDays} ngày`;
+                  })()}
                 </span>
               </div>
 

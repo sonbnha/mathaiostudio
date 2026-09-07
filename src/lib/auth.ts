@@ -48,23 +48,50 @@ export async function getCurrentUserFromRequest(req: NextRequest) {
     const { getDb } = await import('./db');
     const sql = getDb();
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(payload.userId);
+    const selectCols = sql`
+      SELECT id, email, username, name, role, status, is_active, api_key, cuid, key_quota, 
+             is_vip, is_trial, vip_expires_at, remaining_quota, max_quota, lifetime_quota, 
+             subscription_quota, subscription_expires_at, created_at, avatar,
+             COALESCE(monthly_allowance, 0) AS monthly_allowance,
+             COALESCE(monthly_credits, 0) AS monthly_credits,
+             next_credit_reset_at,
+             plan_expires_at,
+             COALESCE(lifetime_credits, 0) AS lifetime_credits
+      FROM users
+    `;
     const rows = isUuid
       ? await sql`
-          SELECT id, email, username, name, role, status, is_active, api_key, cuid, key_quota, is_vip, is_trial, vip_expires_at, remaining_quota, max_quota, lifetime_quota, subscription_quota, subscription_expires_at, created_at, avatar
-          FROM users
+          ${selectCols}
           WHERE id = ${payload.userId}::uuid
         `
       : await sql`
-          SELECT id, email, username, name, role, status, is_active, api_key, cuid, key_quota, is_vip, is_trial, vip_expires_at, remaining_quota, max_quota, lifetime_quota, subscription_quota, subscription_expires_at, created_at, avatar
-          FROM users
+          ${selectCols}
           WHERE cuid = ${payload.userId} OR username = ${payload.userId}
         `;
 
     if (rows && rows.length > 0) {
-      const u = rows[0] as any;
+      let u = rows[0] as any;
       if (u.status === 'banned' || u.is_active === false) {
         return null;
       }
+
+      // Lazy refresh chu kỳ tháng nếu cần
+      try {
+        const { syncUserCredits } = await import('./credits');
+        const refreshed = await syncUserCredits(u.id, sql);
+        if (refreshed) {
+          u.monthly_allowance = refreshed.monthlyAllowance;
+          u.monthly_credits = refreshed.monthlyCredits;
+          u.next_credit_reset_at = refreshed.nextCreditResetAt;
+          u.plan_expires_at = refreshed.planExpiresAt;
+          u.lifetime_credits = refreshed.lifetimeCredits;
+          u.subscription_quota = refreshed.monthlyCredits;
+          u.remaining_quota = refreshed.totalAvailableCredits;
+        }
+      } catch {}
+
+      const totalCredits = (u.plan_expires_at && new Date(u.plan_expires_at) > new Date() ? Number(u.monthly_credits || 0) : 0) + Number(u.lifetime_credits || 0);
+
       return {
         id: u.id,
         email: u.email,
@@ -80,18 +107,30 @@ export async function getCurrentUserFromRequest(req: NextRequest) {
         is_vip: Boolean(u.is_vip),
         isTrial: Boolean(u.is_trial ?? !u.is_vip),
         is_trial: Boolean(u.is_trial ?? !u.is_vip),
-        vipExpiresAt: u.vip_expires_at,
-        vip_expires_at: u.vip_expires_at,
-        remaining_quota: typeof u.remaining_quota === 'number' ? u.remaining_quota : 0,
-        remainingQuota: typeof u.remaining_quota === 'number' ? u.remaining_quota : 0,
-        max_quota: typeof u.max_quota === 'number' ? u.max_quota : 0,
-        maxQuota: typeof u.max_quota === 'number' ? u.max_quota : 0,
-        lifetime_quota: typeof u.lifetime_quota === 'number' ? u.lifetime_quota : 0,
-        lifetimeQuota: typeof u.lifetime_quota === 'number' ? u.lifetime_quota : 0,
-        subscription_quota: typeof u.subscription_quota === 'number' ? u.subscription_quota : 0,
-        subscriptionQuota: typeof u.subscription_quota === 'number' ? u.subscription_quota : 0,
-        subscription_expires_at: u.subscription_expires_at || null,
-        subscriptionExpiresAt: u.subscription_expires_at || null,
+        vipExpiresAt: u.plan_expires_at || u.vip_expires_at,
+        vip_expires_at: u.plan_expires_at || u.vip_expires_at,
+        remaining_quota: totalCredits,
+        remainingQuota: totalCredits,
+        max_quota: typeof u.max_quota === 'number' ? u.max_quota : totalCredits,
+        maxQuota: typeof u.max_quota === 'number' ? u.max_quota : totalCredits,
+        lifetime_quota: typeof u.lifetime_credits === 'number' ? u.lifetime_credits : (typeof u.lifetime_quota === 'number' ? u.lifetime_quota : 0),
+        lifetimeQuota: typeof u.lifetime_credits === 'number' ? u.lifetime_credits : (typeof u.lifetime_quota === 'number' ? u.lifetime_quota : 0),
+        subscription_quota: typeof u.monthly_credits === 'number' ? u.monthly_credits : (typeof u.subscription_quota === 'number' ? u.subscription_quota : 0),
+        subscriptionQuota: typeof u.monthly_credits === 'number' ? u.monthly_credits : (typeof u.subscription_quota === 'number' ? u.subscription_quota : 0),
+        subscription_expires_at: u.plan_expires_at || u.subscription_expires_at || null,
+        subscriptionExpiresAt: u.plan_expires_at || u.subscription_expires_at || null,
+        monthly_allowance: Number(u.monthly_allowance || 0),
+        monthlyAllowance: Number(u.monthly_allowance || 0),
+        monthly_credits: Number(u.monthly_credits || 0),
+        monthlyCredits: Number(u.monthly_credits || 0),
+        next_credit_reset_at: u.next_credit_reset_at || null,
+        nextCreditResetAt: u.next_credit_reset_at || null,
+        plan_expires_at: u.plan_expires_at || null,
+        planExpiresAt: u.plan_expires_at || null,
+        lifetime_credits: Number(u.lifetime_credits || 0),
+        lifetimeCredits: Number(u.lifetime_credits || 0),
+        total_credits: totalCredits,
+        totalCredits: totalCredits,
         createdAt: u.created_at,
       };
     }

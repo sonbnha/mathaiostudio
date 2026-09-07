@@ -44,6 +44,11 @@ export async function initDb(): Promise<void> {
       await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_expires_at TIMESTAMP WITH TIME ZONE;`;
       await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_trial BOOLEAN DEFAULT TRUE;`;
       await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar VARCHAR(255) DEFAULT '/avatars/avatar-1.svg';`;
+      await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS monthly_allowance INT NOT NULL DEFAULT 0;`;
+      await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS monthly_credits INT NOT NULL DEFAULT 0;`;
+      await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS next_credit_reset_at TIMESTAMP WITH TIME ZONE;`;
+      await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_expires_at TIMESTAMP WITH TIME ZONE;`;
+      await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS lifetime_credits INT NOT NULL DEFAULT 0;`;
       await sql`ALTER TABLE users ALTER COLUMN lifetime_quota SET DEFAULT 10;`;
       await sql`ALTER TABLE users ALTER COLUMN remaining_quota SET DEFAULT 10;`;
       await sql`ALTER TABLE users ALTER COLUMN max_quota SET DEFAULT 10;`;
@@ -64,8 +69,11 @@ export async function initDb(): Promise<void> {
         CREATE TABLE IF NOT EXISTS license_keys (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
           key VARCHAR(100) UNIQUE NOT NULL,
+          key_code VARCHAR(100),
           total_credits INT DEFAULT 50,
+          max_usage INT DEFAULT 50,
           used_credits INT DEFAULT 0,
+          duration_days INT DEFAULT 30,
           status VARCHAR(50) DEFAULT 'active',
           is_active BOOLEAN DEFAULT TRUE,
           expires_at TIMESTAMP WITH TIME ZONE,
@@ -74,6 +82,13 @@ export async function initDb(): Promise<void> {
           created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
         );
       `;
+      await sql`ALTER TABLE license_keys ADD COLUMN IF NOT EXISTS key_code VARCHAR(100);`;
+      await sql`ALTER TABLE license_keys ADD COLUMN IF NOT EXISTS max_usage INT DEFAULT 50;`;
+      await sql`ALTER TABLE license_keys ADD COLUMN IF NOT EXISTS duration_days INT DEFAULT 30;`;
+      await sql`ALTER TABLE license_keys ADD COLUMN IF NOT EXISTS total_credits INT DEFAULT 50;`;
+      await sql`ALTER TABLE license_keys ADD COLUMN IF NOT EXISTS used_credits INT DEFAULT 0;`;
+      await sql`ALTER TABLE license_keys ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'active';`;
+      await sql`ALTER TABLE license_keys ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;`;
       await sql`ALTER TABLE license_keys ADD COLUMN IF NOT EXISTS used_by UUID REFERENCES users(id);`;
       await sql`ALTER TABLE license_keys ADD COLUMN IF NOT EXISTS used_at TIMESTAMP WITH TIME ZONE;`;
     } catch {}

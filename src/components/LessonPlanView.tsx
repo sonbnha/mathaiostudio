@@ -143,8 +143,8 @@ export default function LessonPlanView({ licenseKey: parentKey = '' }: LessonPla
     if (licenseInfo.isFullyExpired || licenseInfo.turnsLeft <= 0 || licenseInfo.isExpiredOrDepleted) {
       openRenewModal({
         isNearExpiry: false,
-        customTitle: 'Hết hạn hoặc hết lượt soạn giáo án',
-        customDescription: 'Vui lòng nhập mã License Key mới để tiếp tục soạn giáo án theo chuẩn Công văn 5512.',
+        customTitle: 'Tài khoản đã hết Credit hoặc hết hạn VIP',
+        customDescription: 'Vui lòng nạp thêm Credit hoặc kích hoạt License Key để tiếp tục soạn giáo án theo chuẩn Công văn 5512.',
       });
       return;
     }
@@ -255,8 +255,8 @@ export default function LessonPlanView({ licenseKey: parentKey = '' }: LessonPla
     if (licenseInfo.isFullyExpired || licenseInfo.turnsLeft <= 0 || licenseInfo.isExpiredOrDepleted) {
       openRenewModal({
         isNearExpiry: false,
-        customTitle: 'Hết hạn hoặc hết lượt soạn giáo án',
-        customDescription: 'Vui lòng nhập mã License Key mới để tiếp tục soạn giáo án theo chuẩn Công văn 5512.',
+        customTitle: 'Tài khoản đã hết Credit hoặc hết hạn VIP',
+        customDescription: 'Vui lòng nạp thêm Credit hoặc kích hoạt License Key để tiếp tục soạn giáo án theo chuẩn Công văn 5512.',
       });
       return;
     }

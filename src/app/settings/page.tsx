@@ -299,15 +299,25 @@ export default function SettingsPage() {
   // Quota computations
   const role = (currentUser?.role || 'user').toLowerCase();
   const isAdmin = role === 'admin' || role === 'superadmin';
-  const subQuota = Number(currentUser?.subscription_quota ?? 0);
-  const subExp = currentUser?.subscription_expires_at || null;
-  const isSubActive = Boolean(subExp && new Date(subExp) > new Date());
-  const ltQuota = Number(currentUser?.lifetime_quota ?? 0);
-  const isVip = Boolean(currentUser?.is_vip || currentUser?.isVip || isSubActive || isAdmin);
+  const monthlyCredits = Number(currentUser?.monthly_credits ?? currentUser?.subscription_quota ?? 0);
+  const monthlyAllowance = Number(currentUser?.monthly_allowance ?? 0);
+  const planExp = currentUser?.plan_expires_at || currentUser?.subscription_expires_at || null;
+  const resetAt = currentUser?.next_credit_reset_at || null;
+  const isPlanActive = Boolean(planExp && new Date(planExp) > new Date());
+  const lifetimeCredits = Number(currentUser?.lifetime_credits ?? currentUser?.lifetime_quota ?? 0);
+  const isVip = Boolean(currentUser?.is_vip || currentUser?.isVip || isPlanActive || isAdmin);
   const isTrial = Boolean(currentUser?.is_trial && !isVip);
 
-  const formattedSubExp = subExp
-    ? new Date(subExp).toLocaleDateString('vi-VN', {
+  const formattedPlanExp = planExp
+    ? new Date(planExp).toLocaleDateString('vi-VN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      })
+    : null;
+
+  const formattedResetAt = resetAt
+    ? new Date(resetAt).toLocaleDateString('vi-VN', {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
@@ -551,7 +561,7 @@ export default function SettingsPage() {
                     Hạn mức tài khoản & Gói dịch vụ
                   </h2>
                   <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
-                    Mô hình 2 ví độc lập: Ví Thuê Bao (có hạn dùng) và Ví Vĩnh Viễn (không hết hạn)
+                    Mô hình 2 ví Credit độc lập: Credit Thuê Bao (reset 30 ngày) và Credit Trọn Đời (tích lũy vĩnh viễn)
                   </p>
                 </div>
               </div>
@@ -581,52 +591,73 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            {/* 2 Khối Thẻ Hạn Mức */}
+            {/* 2 Khối Thẻ Hạn Mức Credit */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-              {/* Card Ví 1: Gói Thuê Bao (Subscription Quota) */}
+              {/* Card Ví 1: Credit Thuê Bao */}
               <div className="p-4 rounded-2xl bg-indigo-50/60 dark:bg-indigo-950/25 border border-indigo-200/80 dark:border-indigo-800/60 flex flex-col justify-between gap-3">
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <Clock className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                       <span className="text-xs font-bold text-indigo-950 dark:text-indigo-200">
-                        Ví Gói Thuê Bao
+                        Credit Thuê Bao (Monthly)
                       </span>
                     </div>
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-200/60 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-300">
-                      Có hạn dùng
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                      isPlanActive
+                        ? 'bg-emerald-200/60 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300'
+                        : planExp
+                        ? 'bg-rose-200/60 dark:bg-rose-900/60 text-rose-800 dark:text-rose-300'
+                        : 'bg-indigo-200/60 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-300'
+                    }`}>
+                      {isPlanActive ? 'Đang hoạt động' : planExp ? 'Đã hết hạn' : 'Chưa kích hoạt'}
                     </span>
                   </div>
 
                   <div className="text-2xl font-black text-indigo-600 dark:text-indigo-400">
-                    {subQuota} <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">lượt</span>
+                    {monthlyCredits}{monthlyAllowance > 0 ? ` / ${monthlyAllowance}` : ''}{' '}
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Credits</span>
                   </div>
+
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                    Credit tháng sẽ tự động reset về định mức ban đầu mỗi chu kỳ 30 ngày (không cộng dồn qua tháng).
+                  </p>
                 </div>
 
-                <div className="pt-2.5 border-t border-indigo-200/60 dark:border-indigo-800/50 flex items-center justify-between text-xs">
-                  <span className="text-slate-500 dark:text-slate-400">Thời hạn sử dụng:</span>
-                  <span className="font-semibold text-indigo-900 dark:text-indigo-200">
-                    {formattedSubExp ? (
-                      isSubActive ? (
-                        `Hết hạn: ${formattedSubExp}`
+                <div className="pt-2.5 border-t border-indigo-200/60 dark:border-indigo-800/50 flex flex-col gap-1 text-xs">
+                  {formattedResetAt && isPlanActive && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-500 dark:text-slate-400">Làm mới định mức:</span>
+                      <span className="font-semibold text-indigo-900 dark:text-indigo-200">
+                        {formattedResetAt}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500 dark:text-slate-400">Hạn sử dụng gói:</span>
+                    <span className="font-semibold text-indigo-900 dark:text-indigo-200">
+                      {formattedPlanExp ? (
+                        isPlanActive ? (
+                          `Hết hạn: ${formattedPlanExp}`
+                        ) : (
+                          <span className="text-rose-500">Đã hết hạn ({formattedPlanExp})</span>
+                        )
                       ) : (
-                        <span className="text-rose-500">Đã hết hạn ({formattedSubExp})</span>
-                      )
-                    ) : (
-                      <span className="text-slate-400 italic">Chưa kích hoạt gói</span>
-                    )}
-                  </span>
+                        <span className="text-slate-400 italic">Chưa kích hoạt gói</span>
+                      )}
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              {/* Card Ví 2: Ví Vĩnh Viễn (Lifetime Quota) */}
+              {/* Card Ví 2: Credit Trọn Đời */}
               <div className="p-4 rounded-2xl bg-amber-50/60 dark:bg-amber-950/25 border border-amber-200/80 dark:border-amber-800/60 flex flex-col justify-between gap-3">
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <InfinityIcon className="w-4 h-4 text-amber-600 dark:amber-400" />
+                      <InfinityIcon className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                       <span className="text-xs font-bold text-amber-950 dark:text-amber-200">
-                        Ví Vĩnh Viễn (Tích Lũy)
+                        Credit Trọn Đời (Lifetime)
                       </span>
                     </div>
                     <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-200/60 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300">
@@ -635,8 +666,13 @@ export default function SettingsPage() {
                   </div>
 
                   <div className="text-2xl font-black text-amber-600 dark:text-amber-400">
-                    {ltQuota} <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">lượt</span>
+                    {lifetimeCredits}{' '}
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Credits</span>
                   </div>
+
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                    Tích lũy vĩnh viễn từ trial và key trọn đời. Chỉ tiêu hao khi Credit thuê bao đã hết.
+                  </p>
                 </div>
 
                 <div className="pt-2.5 border-t border-amber-200/60 dark:border-amber-800/50 flex items-center justify-between text-xs">
@@ -659,7 +695,7 @@ export default function SettingsPage() {
                     Kích hoạt bản quyền License Key
                   </h3>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                    Nhập mã License Key để nạp lượt hoặc gia hạn gói VIP ngay lập tức (không cần tải lại trang).
+                    Nhập mã License Key để nạp thêm Credit hoặc kích hoạt / gia hạn gói VIP ngay lập tức.
                   </p>
                 </div>
               </div>

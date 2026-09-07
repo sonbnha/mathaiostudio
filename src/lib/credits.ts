@@ -15,6 +15,9 @@ export interface UserCreditsState {
   lifetime_credits?: number;
   totalAvailableCredits: number;
   isPlanActive: boolean;
+  isVip?: boolean;
+  is_vip?: boolean;
+  isFreeAccount?: boolean;
 }
 
 /**
@@ -50,6 +53,8 @@ export async function syncUserCredits(userId: string, sqlClient?: any): Promise<
   if (!userRows || userRows.length === 0) return null;
 
   const u = userRows[0];
+  const userRole = (u.role || 'user').toLowerCase();
+  const isAdmin = userRole === 'admin' || userRole === 'superadmin';
   let monthlyAllowance = Number(u.monthly_allowance || 0);
   let monthlyCredits = Number(u.monthly_credits || 0);
   let nextCreditResetAt = u.next_credit_reset_at ? new Date(u.next_credit_reset_at) : null;
@@ -82,6 +87,16 @@ export async function syncUserCredits(userId: string, sqlClient?: any): Promise<
   const isPlanActive = Boolean(planExpiresAt && planExpiresAt > now);
   const totalAvailableCredits = (isPlanActive ? monthlyCredits : 0) + lifetimeCredits;
 
+  // Kiểm tra toàn diện điều kiện Gói Free:
+  // Nếu monthly_credits === 0 VÀ lifetime_credits === 0 VÀ user không phải là Admin:
+  // Gán/nhận diện trạng thái tài khoản là is_vip = false.
+  const isFreeAccount = !isAdmin && !isPlanActive && monthlyCredits <= 0 && lifetimeCredits <= 0;
+  const targetIsVip = isAdmin ? true : (!isFreeAccount && isPlanActive);
+
+  if (Boolean(u.is_vip) !== targetIsVip) {
+    needUpdate = true;
+  }
+
   if (needUpdate) {
     try {
       await sql`
@@ -94,7 +109,7 @@ export async function syncUserCredits(userId: string, sqlClient?: any): Promise<
           subscription_quota = ${monthlyCredits},
           subscription_expires_at = ${planExpiresAt},
           remaining_quota = ${totalAvailableCredits},
-          is_vip = ${isPlanActive || lifetimeCredits > 0}
+          is_vip = ${targetIsVip}
         WHERE id = ${userId}::uuid;
       `;
     } catch (updateErr) {
@@ -117,6 +132,9 @@ export async function syncUserCredits(userId: string, sqlClient?: any): Promise<
     lifetime_credits: lifetimeCredits,
     totalAvailableCredits,
     isPlanActive,
+    isVip: targetIsVip,
+    is_vip: targetIsVip,
+    isFreeAccount,
   };
 }
 
@@ -208,6 +226,7 @@ export async function deductUserCredit(
   }
 
   const totalAvailable = (state.isPlanActive ? newMonthly : 0) + newLifetime;
+  const isVipAfterDeduct = state.role === 'admin' ? true : (state.isPlanActive && newMonthly > 0);
 
   // Cập nhật database Neon
   await sql`
@@ -217,7 +236,8 @@ export async function deductUserCredit(
       lifetime_credits = ${newLifetime},
       remaining_quota = ${totalAvailable},
       subscription_quota = ${newMonthly},
-      lifetime_quota = ${newLifetime}
+      lifetime_quota = ${newLifetime},
+      is_vip = ${isVipAfterDeduct}
     WHERE id = ${userId}::uuid;
   `;
 

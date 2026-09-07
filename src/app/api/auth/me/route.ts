@@ -131,8 +131,11 @@ export async function GET(req: NextRequest) {
     const nextCreditResetAtIso = nextCreditResetAt ? new Date(nextCreditResetAt).toISOString() : null;
 
     const isPlanActive = Boolean(planExpiresAt && new Date(planExpiresAt) > now);
-    const finalIsVip = Boolean(isAdmin || isVip || isPlanActive);
-    const finalIsTrial = Boolean(!finalIsVip && (user as any).is_trial !== false && lifetimeCredits > 0);
+    const isFreeAccount = !isAdmin && !isPlanActive && monthlyCredits <= 0 && lifetimeCredits <= 0;
+    const finalIsVip = Boolean(isAdmin || (!isFreeAccount && (isPlanActive || (isVip && lifetimeCredits > 0))));
+    const finalIsTrial = Boolean(!isAdmin && !finalIsVip && !isFreeAccount && lifetimeCredits > 0);
+    const finalIsUnlimited = isFreeAccount ? false : isUnlimited;
+    const finalRemainingQuota = isFreeAccount ? 0 : remainingQuota;
 
     return NextResponse.json({
       user: {
@@ -143,10 +146,12 @@ export async function GET(req: NextRequest) {
         isVip: finalIsVip,
         is_trial: finalIsTrial,
         isTrial: finalIsTrial,
-        is_unlimited: isUnlimited,
-        isUnlimited: isUnlimited,
-        vip_expires_at: (finalIsVip && lifetimeCredits > 0 && !isPlanActive) ? null : (planExpiresAtIso || vipExpiresAtIso),
-        vipExpiresAt: (finalIsVip && lifetimeCredits > 0 && !isPlanActive) ? null : (planExpiresAtIso || vipExpiresAtIso),
+        is_unlimited: finalIsUnlimited,
+        isUnlimited: finalIsUnlimited,
+        is_free_account: isFreeAccount,
+        isFreeAccount,
+        vip_expires_at: (isFreeAccount || (finalIsVip && lifetimeCredits > 0 && !isPlanActive)) ? null : (planExpiresAtIso || vipExpiresAtIso),
+        vipExpiresAt: (isFreeAccount || (finalIsVip && lifetimeCredits > 0 && !isPlanActive)) ? null : (planExpiresAtIso || vipExpiresAtIso),
         subscription_expires_at: planExpiresAtIso,
         subscriptionExpiresAt: planExpiresAtIso,
         subscription_quota: monthlyCredits,

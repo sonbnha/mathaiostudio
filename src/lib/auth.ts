@@ -87,10 +87,15 @@ export async function getCurrentUserFromRequest(req: NextRequest) {
           u.lifetime_credits = refreshed.lifetimeCredits;
           u.subscription_quota = refreshed.monthlyCredits;
           u.remaining_quota = refreshed.totalAvailableCredits;
+          u.is_vip = refreshed.isVip;
         }
       } catch {}
 
-      const totalCredits = (u.plan_expires_at && new Date(u.plan_expires_at) > new Date() ? Number(u.monthly_credits || 0) : 0) + Number(u.lifetime_credits || 0);
+      const isAdmin = (u.role || '').toLowerCase() === 'admin' || (u.role || '').toLowerCase() === 'superadmin';
+      const isPlanActive = Boolean(u.plan_expires_at && new Date(u.plan_expires_at) > new Date());
+      const totalCredits = (isPlanActive ? Number(u.monthly_credits || 0) : 0) + Number(u.lifetime_credits || 0);
+      const isFreeAccount = !isAdmin && !isPlanActive && Number(u.monthly_credits || 0) <= 0 && Number(u.lifetime_credits || 0) <= 0;
+      const isVipFinal = isAdmin || (!isFreeAccount && isPlanActive);
 
       return {
         id: u.id,
@@ -103,12 +108,14 @@ export async function getCurrentUserFromRequest(req: NextRequest) {
         apiKey: u.api_key,
         cuid: u.cuid,
         keyQuota: u.key_quota,
-        isVip: Boolean(u.is_vip),
-        is_vip: Boolean(u.is_vip),
-        isTrial: Boolean(u.is_trial ?? !u.is_vip),
-        is_trial: Boolean(u.is_trial ?? !u.is_vip),
-        vipExpiresAt: u.plan_expires_at || u.vip_expires_at,
-        vip_expires_at: u.plan_expires_at || u.vip_expires_at,
+        isVip: isVipFinal,
+        is_vip: isVipFinal,
+        isTrial: Boolean(!isVipFinal && !isFreeAccount && totalCredits > 0),
+        is_trial: Boolean(!isVipFinal && !isFreeAccount && totalCredits > 0),
+        isFreeAccount,
+        is_free_account: isFreeAccount,
+        vipExpiresAt: isFreeAccount ? null : (u.plan_expires_at || u.vip_expires_at),
+        vip_expires_at: isFreeAccount ? null : (u.plan_expires_at || u.vip_expires_at),
         remaining_quota: totalCredits,
         remainingQuota: totalCredits,
         max_quota: typeof u.max_quota === 'number' ? u.max_quota : totalCredits,

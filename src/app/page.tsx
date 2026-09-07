@@ -1601,19 +1601,26 @@ function HomeContent() {
                   const hasDualWallet = (currentUser as any).monthly_credits !== undefined || (currentUser as any).lifetime_credits !== undefined || (currentUser as any).subscription_quota !== undefined || (currentUser as any).lifetime_quota !== undefined;
                   const planExp = (currentUser as any).plan_expires_at || (currentUser as any).planExpiresAt || (currentUser as any).subscription_expires_at || (currentUser as any).subscriptionExpiresAt;
                   const isPlanActive = Boolean(planExp && new Date(planExp) > new Date());
-                  const hasUnlimitedTime = isAdmin || !planExp;
+                  const isFreeAccount = 
+                    !isAdmin && 
+                    (!planExp || new Date(planExp) <= new Date()) && 
+                    monthlyCredits <= 0 && 
+                    lifetimeCredits <= 0;
+
+                  const hasUnlimitedTime = isAdmin || (!isFreeAccount && !planExp);
 
                   const hasUnlimitedCredits =
-                    isAdmin ||
-                    Boolean((currentUser as any).is_unlimited) ||
-                    Boolean((currentUser as any).isUnlimited) ||
-                    (currentUser as any).monthly_credits === -1 ||
-                    (currentUser as any).monthlyCredits === -1 ||
-                    (currentUser as any).remaining_quota === -1 ||
-                    (currentUser as any).remainingQuota === -1 ||
-                    (currentUser as any).remaining_credits === -1 ||
-                    Number((currentUser as any).remaining_quota) >= 999 ||
-                    ((currentUser as any).remaining_quota === null && !hasDualWallet);
+                    !isFreeAccount && (
+                      isAdmin ||
+                      Boolean((currentUser as any).is_unlimited) ||
+                      Boolean((currentUser as any).isUnlimited) ||
+                      (currentUser as any).monthly_credits === -1 ||
+                      (currentUser as any).monthlyCredits === -1 ||
+                      (currentUser as any).remaining_quota === -1 ||
+                      (currentUser as any).remainingQuota === -1 ||
+                      (currentUser as any).remaining_credits === -1 ||
+                      Number((currentUser as any).remaining_quota) >= 999
+                    );
 
                   const isVipFlag = Boolean(currentUser.isVip || (currentUser as any).is_vip);
                   const vipExp = currentUser.vipExpiresAt || (currentUser as any).vip_expires_at;
@@ -1623,7 +1630,7 @@ function HomeContent() {
                   );
 
                   // 1. Nhận diện Thành Viên VIP trực tiếp trên Tên Người Dùng:
-                  const isVip = (
+                  const isVip = !isFreeAccount && (
                     isAdmin ||
                     isVipFlag ||
                     monthlyCredits > 0 ||
@@ -1631,7 +1638,9 @@ function HomeContent() {
                     hasUnlimitedCredits
                   ) && !isVipExpired;
 
-                  const totalCredits = hasDualWallet
+                  const totalCredits = isFreeAccount
+                    ? 0
+                    : hasDualWallet
                     ? ((isPlanActive ? monthlyCredits : 0) + lifetimeCredits)
                     : typeof (currentUser as any).remaining_quota === 'number'
                     ? (currentUser as any).remaining_quota
@@ -1641,7 +1650,7 @@ function HomeContent() {
                     ? currentUser.remainingCredits
                     : 10;
 
-                  const isUnlimitedActive = hasUnlimitedCredits && (hasUnlimitedTime || isPlanActive);
+                  const isUnlimitedActive = !isFreeAccount && hasUnlimitedCredits && (hasUnlimitedTime || isPlanActive);
 
                   return (
                     <button
@@ -1652,7 +1661,7 @@ function HomeContent() {
                       {/* Avatar viền vàng (nếu VIP) */}
                       <div
                         className={`w-7 h-7 rounded-xl overflow-hidden flex items-center justify-center shrink-0 ${
-                          isVip
+                          !isFreeAccount && isVip
                             ? 'ring-2 ring-amber-400 shadow-amber-500/25 shadow-sm'
                             : 'ring-1 ring-slate-200 dark:ring-slate-700'
                         }`}
@@ -1666,7 +1675,7 @@ function HomeContent() {
                         ) : (
                           <div
                             className={`w-full h-full ${
-                              isVip
+                              !isFreeAccount && isVip
                                 ? 'bg-gradient-to-tr from-amber-400 via-amber-500 to-yellow-500 text-slate-950 font-black'
                                 : (currentUser.role || '').toLowerCase() === 'ctv'
                                 ? 'bg-gradient-to-tr from-blue-500 to-cyan-600'
@@ -1682,12 +1691,14 @@ function HomeContent() {
                       <div className="hidden sm:flex flex-col text-left">
                         <div
                           className={`text-xs font-semibold flex items-center gap-1.5 leading-tight ${
-                            isVip
+                            isFreeAccount
+                              ? 'text-slate-700 dark:text-slate-200'
+                              : isVip
                               ? 'text-amber-600 dark:text-amber-400'
                               : 'text-slate-800 dark:text-slate-200'
                           }`}
                         >
-                          {isVip && (
+                          {!isFreeAccount && isVip && (
                             <Crown className="w-3.5 h-3.5 text-amber-500 fill-amber-400 shrink-0" />
                           )}
                           <span className="max-w-[100px] truncate">
@@ -1700,7 +1711,11 @@ function HomeContent() {
                       </div>
 
                       {/* Badge: Thẻ Hiển Thị Số Lượng Credit */}
-                      {isUnlimitedActive ? (
+                      {isFreeAccount ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 shrink-0">
+                          0 Credit
+                        </span>
+                      ) : isUnlimitedActive ? (
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60 shrink-0">
                           ∞ Credit
                         </span>
@@ -1743,24 +1758,31 @@ function HomeContent() {
                   const lifetimeCredits = Number((currentUser as any).lifetime_credits ?? (currentUser as any).lifetimeCredits ?? (currentUser as any).lifetime_quota ?? (currentUser as any).lifetimeQuota ?? 0);
                   const hasDualWallet = (currentUser as any).monthly_credits !== undefined || (currentUser as any).lifetime_credits !== undefined || (currentUser as any).subscription_quota !== undefined || (currentUser as any).lifetime_quota !== undefined;
 
+                  const isFreeAccount = 
+                    !isAdmin && 
+                    (!planExp || new Date(planExp) <= new Date()) && 
+                    monthlyCredits <= 0 && 
+                    lifetimeCredits <= 0;
+
                   // 1. Phân biệt rõ các cờ trạng thái:
                   // Kiểm tra vô hạn số lượng Credit:
                   const hasUnlimitedCredits =
-                    isAdmin ||
-                    Boolean((currentUser as any).is_unlimited) ||
-                    Boolean((currentUser as any).isUnlimited) ||
-                    (currentUser as any).monthly_credits === -1 ||
-                    (currentUser as any).monthlyCredits === -1 ||
-                    (currentUser as any).remaining_quota === -1 ||
-                    (currentUser as any).remainingQuota === -1 ||
-                    (currentUser as any).remaining_credits === -1 ||
-                    Number((currentUser as any).remaining_quota) >= 999 ||
-                    ((currentUser as any).remaining_quota === null && !hasDualWallet);
+                    !isFreeAccount && (
+                      isAdmin ||
+                      Boolean((currentUser as any).is_unlimited) ||
+                      Boolean((currentUser as any).isUnlimited) ||
+                      (currentUser as any).monthly_credits === -1 ||
+                      (currentUser as any).monthlyCredits === -1 ||
+                      (currentUser as any).remaining_quota === -1 ||
+                      (currentUser as any).remainingQuota === -1 ||
+                      (currentUser as any).remaining_credits === -1 ||
+                      Number((currentUser as any).remaining_quota) >= 999
+                    );
 
                   // Kiểm tra vô hạn Thời Gian (Chỉ Admin hoặc gói vĩnh viễn không có planExp):
                   const hasUnlimitedTime =
                     isAdmin ||
-                    !planExp;
+                    (!isFreeAccount && !planExp);
 
                   let subDaysRemaining: number | null = null;
                   if (planExp) {
@@ -1780,7 +1802,7 @@ function HomeContent() {
                     (!hasUnlimitedTime && planExp && !isPlanActive) ||
                     (vipExp && new Date(vipExp) <= new Date() && !isPlanActive && !hasUnlimitedTime)
                   );
-                  const isVipActive = (isAdmin || hasUnlimitedTime || isPlanActive || isVipFlag) && !isVipExpired;
+                  const isVipActive = !isFreeAccount && (isAdmin || hasUnlimitedTime || isPlanActive || isVipFlag) && !isVipExpired;
 
                   const rawRem = hasDualWallet
                     ? ((isPlanActive ? monthlyCredits : 0) + lifetimeCredits)
@@ -1792,8 +1814,8 @@ function HomeContent() {
                     ? currentUser.remainingCredits
                     : 10;
 
-                  const remainingCredits = hasUnlimitedCredits ? -1 : rawRem;
-                  const isTrial = !isVipActive && !isVipExpired && !hasUnlimitedCredits && remainingCredits > 0;
+                  const remainingCredits = isFreeAccount ? 0 : (hasUnlimitedCredits ? -1 : rawRem);
+                  const isTrial = !isFreeAccount && !isVipActive && !isVipExpired && !hasUnlimitedCredits && remainingCredits > 0;
 
                   return (
                     <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
@@ -1818,6 +1840,8 @@ function HomeContent() {
                                     ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
                                     : r === 'ctv'
                                     ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30'
+                                    : isFreeAccount
+                                    ? 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-600'
                                     : isVipActive
                                     ? 'bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 font-extrabold border border-amber-400/40 shadow-xs'
                                     : isTrial
@@ -1831,6 +1855,8 @@ function HomeContent() {
                                   ? 'ADMIN'
                                   : r === 'ctv'
                                   ? 'CTV'
+                                  : isFreeAccount
+                                  ? 'GÓI FREE'
                                   : isVipActive
                                   ? '⭐ VIP'
                                   : isTrial
@@ -1848,12 +1874,22 @@ function HomeContent() {
                       </div>
 
                       {/* Tổng hạn mức khả dụng banner */}
-                      <div className="mx-2.5 my-2 px-3 py-2 rounded-xl bg-gradient-to-r from-indigo-500/10 via-cyan-500/10 to-emerald-500/10 border border-indigo-500/20 flex items-center justify-between">
+                      <div className={`mx-2.5 my-2 px-3 py-2 rounded-xl flex items-center justify-between ${
+                        isFreeAccount
+                          ? 'bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700'
+                          : 'bg-gradient-to-r from-indigo-500/10 via-cyan-500/10 to-emerald-500/10 border border-indigo-500/20'
+                      }`}>
                         <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-                          Tổng hạn mức khả dụng:
+                          {isFreeAccount ? 'Tài Khoản Miễn Phí (Gói Free):' : 'Tổng hạn mức khả dụng:'}
                         </span>
-                        <span className="font-bold text-xs text-indigo-600 dark:text-indigo-400">
-                          {isAdmin || (hasUnlimitedCredits && isPlanActive) || (hasUnlimitedCredits && hasUnlimitedTime)
+                        <span className={`font-bold text-xs ${
+                          isFreeAccount
+                            ? 'text-rose-600 dark:text-rose-400 font-semibold'
+                            : 'text-indigo-600 dark:text-indigo-400'
+                        }`}>
+                          {isFreeAccount
+                            ? '0 Credit (Hạn mức đã hết)'
+                            : isAdmin || (hasUnlimitedCredits && isPlanActive) || (hasUnlimitedCredits && hasUnlimitedTime)
                             ? '∞ Không giới hạn'
                             : `${remainingCredits} Credits`}
                         </span>
@@ -1865,6 +1901,8 @@ function HomeContent() {
                         <div className={`p-2.5 rounded-xl border flex flex-col gap-1.5 ${
                           isAdmin
                             ? 'bg-rose-50/60 dark:bg-rose-950/20 border-rose-200/70 dark:border-rose-900/40'
+                            : isFreeAccount
+                            ? 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/60'
                             : (hasUnlimitedCredits && isPlanActive)
                             ? 'bg-amber-50/60 dark:bg-amber-950/25 border-amber-200/80 dark:border-amber-800/60'
                             : 'bg-indigo-50/50 dark:bg-indigo-950/20 border-indigo-200/70 dark:border-indigo-800/50'
@@ -1873,6 +1911,8 @@ function HomeContent() {
                             <span className={`text-[11px] font-bold flex items-center gap-1.5 ${
                               isAdmin
                                 ? 'text-rose-900 dark:text-rose-200'
+                                : isFreeAccount
+                                ? 'text-slate-700 dark:text-slate-300'
                                 : (hasUnlimitedCredits && isPlanActive)
                                 ? 'text-amber-900 dark:text-amber-200'
                                 : 'text-indigo-900 dark:text-indigo-200'
@@ -1882,11 +1922,13 @@ function HomeContent() {
                               ) : (hasUnlimitedCredits && isPlanActive) ? (
                                 <Crown className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />
                               ) : (
-                                <span className={`w-2 h-2 rounded-full ${isPlanActive ? 'bg-emerald-500' : 'bg-slate-400'}`}></span>
+                                <span className={`w-2 h-2 rounded-full ${!isFreeAccount && isPlanActive ? 'bg-emerald-500' : 'bg-slate-400'}`}></span>
                               )}
                               <span>
                                 {isAdmin 
                                   ? 'Gói Quản Trị Viên (Super Admin)' 
+                                  : isFreeAccount
+                                  ? 'Gói Thuê Bao (Chưa kích hoạt / Đã hết hạn)'
                                   : hasUnlimitedCredits 
                                   ? 'Gói VIP Unlimited' 
                                   : 'Credit Thuê Bao'}
@@ -1895,6 +1937,8 @@ function HomeContent() {
                             <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
                               isAdmin
                                 ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
+                                : isFreeAccount
+                                ? 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
                                 : (hasUnlimitedCredits && isPlanActive)
                                 ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30'
                                 : isPlanActive
@@ -1905,6 +1949,8 @@ function HomeContent() {
                             }`}>
                               {isAdmin
                                 ? 'Super Admin'
+                                : isFreeAccount
+                                ? 'Đã hết hạn'
                                 : (hasUnlimitedCredits && isPlanActive)
                                 ? 'VIP Unlimited'
                                 : isPlanActive
@@ -1920,19 +1966,23 @@ function HomeContent() {
                             <span className={`font-bold ${
                               isAdmin
                                 ? 'text-rose-600 dark:text-rose-400 font-extrabold'
+                                : isFreeAccount
+                                ? 'text-slate-600 dark:text-slate-400'
                                 : (hasUnlimitedCredits && isPlanActive)
                                 ? 'text-amber-600 dark:text-amber-400 font-extrabold'
                                 : 'text-indigo-700 dark:text-indigo-300'
                             }`}>
                               {isAdmin
                                 ? '∞ Không giới hạn'
+                                : isFreeAccount
+                                ? '0 Credit'
                                 : hasUnlimitedCredits
                                 ? (isPlanActive ? '∞ Không giới hạn' : '0 Credit')
                                 : `${monthlyCredits}${monthlyAllowance > 0 ? ` / ${monthlyAllowance}` : ''} Credits`}
                             </span>
                           </div>
 
-                          {isPlanActive && resetAt && !hasUnlimitedCredits && !isAdmin && (
+                          {!isFreeAccount && isPlanActive && resetAt && !hasUnlimitedCredits && !isAdmin && (
                             <div className="flex items-baseline justify-between text-[11px]">
                               <span className="text-slate-500 dark:text-slate-400">Làm mới:</span>
                               <span className="text-right text-indigo-600 dark:text-indigo-400 font-medium">
@@ -1947,6 +1997,10 @@ function HomeContent() {
                               {isAdmin ? (
                                 <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
                                   Vô thời hạn (Trọn đời)
+                                </span>
+                              ) : isFreeAccount ? (
+                                <span className="text-slate-400 italic">
+                                  {planExp ? `Đã hết hạn (${formatDateVN(planExp)})` : 'Chưa đăng ký'}
                                 </span>
                               ) : isPlanActive && planExp ? (
                                 <span className={hasUnlimitedCredits ? 'text-amber-600 dark:text-amber-400 font-semibold' : 'text-slate-700 dark:text-slate-300'}>
@@ -1964,33 +2018,59 @@ function HomeContent() {
                         </div>
 
                         {/* CARD 2: VÍ VĨNH VIỄN VIP (Lifetime Credits) - LUÔN LUÔN HIỆN */}
-                        <div className="p-2.5 rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-800/50 flex flex-col gap-1.5">
+                        <div className={`p-2.5 rounded-xl border flex flex-col gap-1.5 ${
+                          isFreeAccount
+                            ? 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/60'
+                            : 'bg-amber-50/50 dark:bg-amber-950/20 border-amber-200/70 dark:border-amber-800/50'
+                        }`}>
                           <div className="flex items-center justify-between">
-                            <span className="text-[11px] font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
-                              <Crown className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />
+                            <span className={`text-[11px] font-bold flex items-center gap-1.5 ${
+                              isFreeAccount
+                                ? 'text-slate-700 dark:text-slate-300'
+                                : 'text-amber-900 dark:text-amber-200'
+                            }`}>
+                              <Crown className={`w-3.5 h-3.5 shrink-0 ${
+                                isFreeAccount
+                                  ? 'text-slate-400 fill-slate-300 dark:fill-slate-600'
+                                  : 'text-amber-500 fill-amber-500'
+                              }`} />
                               <span>Ví Vĩnh Viễn VIP</span>
                             </span>
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
-                              {isAdmin ? 'Vĩnh viễn (∞)' : (isVipActive ? 'Trọn đời' : 'Trial')}
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
+                              isAdmin
+                                ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30'
+                                : isFreeAccount
+                                ? 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
+                                : 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30'
+                            }`}>
+                              {isAdmin ? 'Vĩnh viễn (∞)' : isFreeAccount ? 'Đã hết' : (isVipActive ? 'Trọn đời' : 'Trial')}
                             </span>
                           </div>
 
                           <div className="flex items-baseline justify-between text-xs">
                             <span className="text-slate-500 dark:text-slate-400 text-[11px]">Tích lũy:</span>
-                            <span className="font-bold text-amber-700 dark:text-amber-300">
-                              {isAdmin ? '∞ Không giới hạn' : `${lifetimeCredits} Credits`}
+                            <span className={`font-bold ${
+                              isFreeAccount
+                                ? 'text-slate-600 dark:text-slate-400'
+                                : 'text-amber-700 dark:text-amber-300'
+                            }`}>
+                              {isAdmin ? '∞ Không giới hạn' : isFreeAccount ? '0 Credit' : `${lifetimeCredits} Credits`}
                             </span>
                           </div>
 
                           <div className="flex items-baseline justify-between text-[11px]">
                             <span className="text-slate-500 dark:text-slate-400">Hạn dùng:</span>
-                            <span className="font-medium text-emerald-600 dark:text-emerald-400">
-                              {isAdmin ? 'Vĩnh viễn' : 'Không bao giờ hết hạn'}
+                            <span className={`font-medium ${
+                              isFreeAccount
+                                ? 'text-rose-500 dark:text-rose-400'
+                                : 'text-emerald-600 dark:text-emerald-400'
+                            }`}>
+                              {isAdmin ? 'Vĩnh viễn' : isFreeAccount ? 'Đã dùng hết' : 'Không bao giờ hết hạn'}
                             </span>
                           </div>
 
                           {/* Ghi chú phụ nếu đang có gói thuê bao active */}
-                          {isPlanActive && !isAdmin && (
+                          {!isFreeAccount && isPlanActive && !isAdmin && (
                             <div className="pt-1 border-t border-amber-200/50 dark:border-amber-900/30 text-[9.5px] text-amber-700/80 dark:text-amber-400/80 italic">
                               (Dự phòng sử dụng khi hết hạn gói thuê bao)
                             </div>
@@ -2026,12 +2106,14 @@ function HomeContent() {
                       {/* Mục nạp Credit & Nâng cấp VIP (Tự động chuyển nhãn dựa trên trạng thái VIP) */}
                       {(() => {
                         const isVipAccount =
-                          isAdmin ||
-                          Boolean((currentUser as any)?.is_vip || currentUser.isVip) ||
-                          (typeof (currentUser as any)?.monthly_credits === 'number' && (currentUser as any).monthly_credits > 0) ||
-                          (typeof (currentUser as any)?.monthlyCredits === 'number' && (currentUser as any).monthlyCredits > 0) ||
-                          Boolean((currentUser as any)?.is_unlimited || (currentUser as any).isUnlimited) ||
-                          Boolean(planExp && new Date(planExp) > new Date());
+                          !isFreeAccount && (
+                            isAdmin ||
+                            Boolean((currentUser as any)?.is_vip || currentUser.isVip) ||
+                            (typeof (currentUser as any)?.monthly_credits === 'number' && (currentUser as any).monthly_credits > 0) ||
+                            (typeof (currentUser as any)?.monthlyCredits === 'number' && (currentUser as any).monthlyCredits > 0) ||
+                            Boolean((currentUser as any)?.is_unlimited || (currentUser as any).isUnlimited) ||
+                            Boolean(planExp && new Date(planExp) > new Date())
+                          );
 
                         return (
                           <Link

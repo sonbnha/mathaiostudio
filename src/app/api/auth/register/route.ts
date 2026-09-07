@@ -131,7 +131,7 @@ export async function POST(req: NextRequest) {
 
     const response = NextResponse.json({
       success: true,
-      message: 'Đăng ký tài khoản thành công! Bạn nhận được 10 Credits dùng thử miễn phí.',
+      message: 'Đăng ký tài khoản thành công! Bạn nhận được 10 Ω dùng thử miễn phí.',
       user: {
         id: user.id,
         email: user.email,

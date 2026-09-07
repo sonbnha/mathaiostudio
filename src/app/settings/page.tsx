@@ -603,7 +603,7 @@ export default function SettingsPage() {
                     Hạn mức tài khoản & Gói dịch vụ
                   </h2>
                   <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
-                    Mô hình 2 ví Credit độc lập: Credit Thuê Bao (reset 30 ngày) và Credit Vô Hạn (tích lũy vô hạn)
+                    Mô hình 2 ví Ω độc lập: Thuê Bao Ω (reset 30 ngày) và Ω Vô Hạn (tích lũy vô hạn)
                   </p>
                 </div>
               </div>
@@ -637,7 +637,7 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            {/* Khối Thẻ Hạn Mức Credit hoặc Đặc Quyền Quản Trị Viên */}
+            {/* Khối Thẻ Hạn Mức Ω hoặc Đặc Quyền Quản Trị Viên */}
             {isAdmin ? (
               <div className="p-5 rounded-2xl bg-gradient-to-r from-rose-500/10 via-amber-500/10 to-indigo-500/10 border border-rose-500/30 flex flex-col gap-3 mb-6 shadow-xs">
                 <div className="flex items-center justify-between">
@@ -663,7 +663,7 @@ export default function SettingsPage() {
                   <span className="text-2xl sm:text-3xl font-black text-rose-600 dark:text-rose-400">
                     ∞ Vô hạn
                   </span>
-                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Credits</span>
+                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Ω</span>
                 </div>
 
                 <div className="pt-3 border-t border-rose-200/60 dark:border-rose-900/40 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
@@ -674,7 +674,7 @@ export default function SettingsPage() {
                     </span>
                   </div>
                   <div className="text-[11px] text-slate-500 dark:text-slate-400 italic">
-                    Tài khoản Admin không bị trừ bất kỳ Credit nào khi thực hiện tác vụ.
+                    Tài khoản Admin không bị trừ bất kỳ Ω nào khi thực hiện tác vụ.
                   </div>
                 </div>
               </div>
@@ -703,7 +703,7 @@ export default function SettingsPage() {
                   <span className="text-2xl sm:text-3xl font-black text-amber-600 dark:text-amber-400">
                     ∞ Vô hạn
                   </span>
-                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Credits</span>
+                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Ω</span>
                 </div>
 
                 <div className="pt-3 border-t border-amber-200/60 dark:border-amber-900/40 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
@@ -714,14 +714,14 @@ export default function SettingsPage() {
                     </span>
                   </div>
                   <div className="text-[11px] text-slate-500 dark:text-slate-400 italic">
-                    Tài khoản được miễn phí vô hạn số lượng Credit.
+                    Tài khoản được miễn phí vô hạn số lượng Ω.
                   </div>
                 </div>
               </div>
             ) : (
-              /* 2 Khối Thẻ Hạn Mức Credit (LUÔN HIỆN CẢ 2 VÍ) */
+              /* 2 Khối Thẻ Hạn Mức Ω (LUÔN HIỆN CẢ 2 VÍ) */
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                {/* Card Ví 1: Credit Thuê Bao */}
+                {/* Card Ví 1: Thuê Bao Ω */}
                 <div className="p-4 rounded-2xl bg-indigo-50/60 dark:bg-indigo-950/25 border border-indigo-200/80 dark:border-indigo-800/60 flex flex-col justify-between gap-3">
                   <div>
                     <div className="flex items-center justify-between mb-2">
@@ -732,7 +732,7 @@ export default function SettingsPage() {
                           <Clock className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                         )}
                         <span className="text-xs font-bold text-indigo-950 dark:text-indigo-200">
-                          {hasUnlimitedCredits ? 'Gói VIP Vô Hạn (Monthly Pass)' : 'Credit Thuê Bao (Monthly)'}
+                          {hasUnlimitedCredits ? 'Gói VIP Vô Hạn (Monthly Pass)' : 'Thuê Bao Ω (Monthly)'}
                         </span>
                       </div>
                       <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
@@ -762,13 +762,13 @@ export default function SettingsPage() {
                       {hasUnlimitedCredits
                         ? (isPlanActive ? '∞ Vô hạn' : '0')
                         : `${monthlyCredits}${monthlyAllowance > 0 ? ` / ${monthlyAllowance}` : ''}`}{' '}
-                      <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Credits</span>
+                      <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Ω</span>
                     </div>
 
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
                       {hasUnlimitedCredits
                         ? 'Đặc quyền VIP vô hạn lượt tạo hình và soạn giáo án trong thời hạn sử dụng.'
-                        : 'Credit tháng sẽ tự động reset về định mức ban đầu mỗi chu kỳ 30 ngày (không cộng dồn qua tháng).'}
+                        : 'Ω tháng sẽ tự động reset về định mức ban đầu mỗi chu kỳ 30 ngày (không cộng dồn qua tháng).'}
                     </p>
                   </div>
 
@@ -798,14 +798,14 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                {/* Card Ví 2: Credit Vô Hạn */}
+                {/* Card Ví 2: Ω Vô Hạn */}
                 <div className="p-4 rounded-2xl bg-amber-50/60 dark:bg-amber-950/25 border border-amber-200/80 dark:border-amber-800/60 flex flex-col justify-between gap-3">
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <InfinityIcon className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                         <span className="text-xs font-bold text-amber-950 dark:text-amber-200">
-                          Credit Vô Hạn
+                          Ω Vô Hạn
                         </span>
                       </div>
                       <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-200/60 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300">
@@ -815,13 +815,13 @@ export default function SettingsPage() {
 
                     <div className="text-2xl font-black text-amber-600 dark:text-amber-400">
                       {lifetimeCredits}{' '}
-                      <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Credits</span>
+                      <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Ω</span>
                     </div>
 
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
                       {isPlanActive
                         ? 'Tích lũy vô hạn từ trial và key vô hạn (Dự phòng sử dụng khi hết hạn gói thuê bao).'
-                        : 'Tích lũy vô hạn từ trial và key vô hạn. Chỉ tiêu hao khi Credit thuê bao đã hết.'}
+                        : 'Tích lũy vô hạn từ trial và key vô hạn. Chỉ tiêu hao khi Thuê Bao Ω đã hết.'}
                     </p>
                   </div>
 
@@ -846,7 +846,7 @@ export default function SettingsPage() {
                     Kích hoạt bản quyền License Key
                   </h3>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                    Nhập mã License Key để nạp thêm Credit hoặc kích hoạt / gia hạn gói VIP ngay lập tức.
+                    Nhập mã License Key để nạp thêm Ω hoặc kích hoạt / gia hạn gói VIP ngay lập tức.
                   </p>
                 </div>
               </div>

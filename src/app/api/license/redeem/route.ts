@@ -259,8 +259,8 @@ export async function POST(req: NextRequest) {
 
     // 4. Trả về thông tin cập nhật cho frontend
     const successMsg = isLifetimeKey
-      ? `Kích hoạt thành công gói Vô Hạn (+${keyQuotaGranted === -1 ? '∞' : keyQuotaGranted} Credits vô hạn)!`
-      : `Kích hoạt thành công gói Thuê bao (${keyQuotaGranted === -1 ? '∞' : keyQuotaGranted} Credits/tháng, +${durationDays} ngày)!`;
+      ? `Kích hoạt thành công gói Vô Hạn (+${keyQuotaGranted === -1 ? '∞' : keyQuotaGranted} Ω vô hạn)!`
+      : `Kích hoạt thành công gói Thuê bao (${keyQuotaGranted === -1 ? '∞' : keyQuotaGranted} Ω/tháng, +${durationDays} ngày)!`;
 
     const planExpiresAtIso = newPlanExpiresAt ? newPlanExpiresAt.toISOString() : null;
     const nextResetIso = newNextCreditResetAt ? newNextCreditResetAt.toISOString() : null;

@@ -229,7 +229,7 @@ export async function deductUserCredit(
   else {
     return {
       success: false,
-      error: 'Tài khoản của bạn đã hết Credit. Vui lòng nạp thêm để tiếp tục.',
+      error: 'Tài khoản của bạn đã hết Ω. Vui lòng nạp thêm để tiếp tục.',
     };
   }
 

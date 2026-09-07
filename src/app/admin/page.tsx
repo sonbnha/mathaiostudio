@@ -616,8 +616,8 @@ export default function UnifiedAdminPage() {
     const isLifetime = durDays === 0 || newlyCreatedKey.key?.startsWith('AIO-LT-');
     const creditsCount = newlyCreatedKey.credits ?? newlyCreatedKey.totalCredits ?? 50;
     const creditsStr = creditsCount === -1 
-      ? '∞ Credits' 
-      : (isLifetime ? `${creditsCount} Credits vô hạn` : `${creditsCount} Credits/tháng`);
+      ? '∞ Ω' 
+      : (isLifetime ? `${creditsCount} Ω vô hạn` : `${creditsCount} Ω/tháng`);
 
     const expireStr = isLifetime
       ? 'Vô hạn (∞)'
@@ -627,7 +627,7 @@ export default function UnifiedAdminPage() {
 
     const message = `🎉 KÍCH HOẠT BẢN QUYỀN MATHAIO
 - Mã License Key: ${newlyCreatedKey.key}
-- Định mức Credit: ${creditsStr}
+- Định mức Ω: ${creditsStr}
 - Thời hạn gói: ${expireStr}
 👉 Kích hoạt key tại: ${appUrl}/settings`;
 
@@ -648,8 +648,8 @@ export default function UnifiedAdminPage() {
     const isLifetime = durDays === 0 || keyItem.key?.startsWith('AIO-LT-');
     const creditsCount = keyItem.credits ?? keyItem.totalCredits ?? 50;
     const creditsStr = creditsCount === -1 
-      ? '∞ Credits' 
-      : (isLifetime ? `${creditsCount} Credits vô hạn` : `${creditsCount} Credits/tháng`);
+      ? '∞ Ω' 
+      : (isLifetime ? `${creditsCount} Ω vô hạn` : `${creditsCount} Ω/tháng`);
 
     const expireStr = isLifetime
       ? 'Vô hạn (∞)'
@@ -659,7 +659,7 @@ export default function UnifiedAdminPage() {
 
     const message = `🎉 KÍCH HOẠT BẢN QUYỀN MATHAIO
 - Mã License Key: ${keyItem.key}
-- Định mức Credit: ${creditsStr}
+- Định mức Ω: ${creditsStr}
 - Thời hạn gói: ${expireStr}
 👉 Kích hoạt key tại: ${appUrl}/settings`;
 
@@ -1062,7 +1062,7 @@ export default function UnifiedAdminPage() {
     }
     if (k.totalCredits !== -1 && k.usedCredits >= k.totalCredits) {
       return {
-        label: 'Hết Credit',
+        label: 'Hết Ω',
         className: 'bg-rose-500/10 border-rose-500/30 text-rose-600 dark:text-rose-400',
         dotClass: 'bg-rose-500',
       };
@@ -1682,7 +1682,7 @@ export default function UnifiedAdminPage() {
                     <Sparkles className="w-6 h-6" />
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Credit Đã Dùng</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Ω Đã Dùng</p>
                     <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{totalGenerations}</p>
                   </div>
                 </div>
@@ -1800,7 +1800,7 @@ export default function UnifiedAdminPage() {
                     <thead>
                       <tr className="bg-slate-50 dark:bg-slate-950/70 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold">
                         <th className="py-2.5 px-4">License Key</th>
-                        <th className="py-2.5 px-4">Credit Đã Dùng</th>
+                        <th className="py-2.5 px-4">Ω Đã Dùng</th>
                         <th className="py-2.5 px-4">Hạn Dùng</th>
                         <th className="py-2.5 px-4">Trạng Thái</th>
                       </tr>
@@ -1891,7 +1891,7 @@ export default function UnifiedAdminPage() {
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                         <CreditCard className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
-                        <span>Số Lượng Credit</span>
+                        <span>Số Lượng Ω</span>
                       </label>
 
                       {/* Toggle Switch Không giới hạn */}
@@ -1921,8 +1921,8 @@ export default function UnifiedAdminPage() {
 
                     <div className="text-[11px] text-slate-500 dark:text-slate-400">
                       {Number(durationDays) === 0
-                        ? '⚡ Credit nạp vô hạn (Credit Vô Hạn)'
-                        : '🔄 Credit cấp mỗi tháng (Monthly Allowance - Làm mới mỗi 30 ngày)'}
+                        ? '⚡ Ω nạp vô hạn (Ω Vô Hạn)'
+                        : '🔄 Ω cấp mỗi tháng (Monthly Allowance - Làm mới mỗi 30 ngày)'}
                     </div>
 
                     {isUnlimitedCredits ? (
@@ -1943,7 +1943,7 @@ export default function UnifiedAdminPage() {
                           max={99999}
                           value={customCreditCount}
                           onChange={(e) => setCustomCreditCount(Math.max(1, Number(e.target.value)))}
-                          placeholder="Nhập số Credit (vd: 30, 50, 100...)"
+                          placeholder="Nhập số Ω (vd: 30, 50, 100...)"
                           className="w-full h-10 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-cyan-500 rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-slate-200 outline-none transition font-medium"
                           required
                         />
@@ -1964,7 +1964,7 @@ export default function UnifiedAdminPage() {
                                   : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700'
                               }`}
                             >
-                              {count} Credits
+                              {count} Ω
                             </button>
                           ))}
                         </div>
@@ -2109,7 +2109,7 @@ export default function UnifiedAdminPage() {
                         <th className="py-3 px-4 w-[205px] min-w-[195px] whitespace-nowrap">Mã Key</th>
                         <th className="py-3 px-4 min-w-[180px] whitespace-nowrap">Người Tạo</th>
                         <th className="py-3 px-4 min-w-[170px] whitespace-nowrap">Người Kích Hoạt</th>
-                        <th className="py-3 px-5 min-w-[190px] whitespace-nowrap">CREDIT & THỜI HẠN</th>
+                        <th className="py-3 px-5 min-w-[190px] whitespace-nowrap">ĐỊNH MỨC Ω & THỜI HẠN</th>
                         <th className="py-3 px-3 text-center sticky right-0 z-30 bg-slate-100 dark:bg-[#182030] shadow-[-4px_0_8px_-2px_rgba(0,0,0,0.08)] w-[105px] min-w-[105px] whitespace-nowrap">
                           Thao Tác
                         </th>
@@ -2158,17 +2158,21 @@ export default function UnifiedAdminPage() {
                             <td className="px-4 py-3 text-slate-600 dark:text-slate-400 align-middle whitespace-nowrap min-w-[180px]">
                               {k.createdBy ? (
                                 <span
-                                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium whitespace-nowrap border ${
-                                    (k.createdBy.role || '').toLowerCase() === 'admin'
-                                      ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
-                                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                                    k.createdBy.role === 'admin'
+                                      ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                                      : 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20'
                                   }`}
-                                  title={k.createdBy.name || k.createdBy.username}
                                 >
-                                  {k.createdBy.name || k.createdBy.username}
+                                  {k.createdBy.role === 'admin' ? (
+                                    <Shield className="w-3 h-3 text-rose-500" />
+                                  ) : (
+                                    <User className="w-3 h-3 text-cyan-500" />
+                                  )}
+                                  <span className="truncate max-w-[140px]">{k.createdBy.name || k.createdBy.username}</span>
                                 </span>
                               ) : (
-                                <span className="text-[11px] text-slate-400 italic">Hệ thống</span>
+                                <span className="text-slate-400 italic">Hệ thống</span>
                               )}
                             </td>
 
@@ -2213,7 +2217,7 @@ export default function UnifiedAdminPage() {
                               )}
                             </td>
 
-                            {/* 4. CREDIT & THỜI HẠN */}
+                            {/* 4. ĐỊNH MỨC Ω & THỜI HẠN */}
                             <td className="px-5 py-3 pr-6 align-middle whitespace-nowrap min-w-[190px]">
                               <div className="flex flex-col justify-center">
                                 <div className="text-xs font-semibold text-slate-800 dark:text-slate-200 font-mono">
@@ -2222,9 +2226,9 @@ export default function UnifiedAdminPage() {
                                     const durDays = k.durationDays ?? k.duration_days ?? 30;
                                     const isLifetime = durDays === 0 || k.key?.startsWith('AIO-LT-');
                                     if (creditsCount === -1) {
-                                      return isLifetime ? '∞ Credits' : '∞ Credits/tháng';
+                                      return isLifetime ? '∞ Ω' : '∞ Ω/tháng';
                                     }
-                                    return isLifetime ? `${creditsCount} Credits` : `${creditsCount} Credits/tháng`;
+                                    return isLifetime ? `${creditsCount} Ω` : `${creditsCount} Ω/tháng`;
                                   })()}
                                 </div>
                                 <div className="text-[11px] text-slate-500 dark:text-slate-400 font-normal mt-0.5">
@@ -2502,13 +2506,13 @@ export default function UnifiedAdminPage() {
                                   if (isSubActive) {
                                     return (
                                       <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20 font-medium text-[11px] whitespace-nowrap">
-                                        Thuê bao: {subQuota} Credits (Hạn: {formatDateVN(subExp)})
+                                        Thuê bao: {subQuota} Ω (Hạn: {formatDateVN(subExp)})
                                       </span>
                                     );
                                   } else if (subExp) {
                                     return (
                                       <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 font-medium text-[11px] whitespace-nowrap">
-                                        Thuê bao: Hết hạn (0 Credits)
+                                        Thuê bao: Hết hạn (0 Ω)
                                       </span>
                                     );
                                   }
@@ -2522,13 +2526,13 @@ export default function UnifiedAdminPage() {
                                     if (isUVip) {
                                       return (
                                         <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 font-medium text-[11px] whitespace-nowrap">
-                                          👑 VIP Vô hạn: {ltQuota} Credits
+                                          👑 VIP Vô hạn: {ltQuota} Ω
                                         </span>
                                       );
                                     } else {
                                       return (
                                         <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/20 font-medium text-[11px] whitespace-nowrap">
-                                          Dùng thử: {ltQuota} Credits
+                                          Dùng thử: {ltQuota} Ω
                                         </span>
                                       );
                                     }
@@ -2826,10 +2830,10 @@ export default function UnifiedAdminPage() {
             {/* Danh Sách Thông Tin Chi Tiết (List Info) */}
             <div className="flex flex-col gap-2.5 text-xs bg-slate-50/90 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 transition-colors">
 
-              {/* ⚡ Định mức Credit */}
+              {/* ⚡ Định mức Ω */}
               <div className="flex items-center justify-between py-1 border-b border-slate-200/60 dark:border-slate-800/60">
                 <span className="text-slate-500 dark:text-slate-400 flex items-center gap-2">
-                  <Zap className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" /> Định mức Credit:
+                  <Zap className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" /> Định mức Ω:
                 </span>
                 <span
                   className={`px-2.5 py-0.5 rounded-full font-bold text-[11px] border ${
@@ -2842,8 +2846,8 @@ export default function UnifiedAdminPage() {
                     const durDays = newlyCreatedKey.durationDays ?? newlyCreatedKey.duration_days ?? 30;
                     const isLifetime = durDays === 0 || newlyCreatedKey.key?.startsWith('AIO-LT-');
                     const creditsCount = newlyCreatedKey.credits ?? newlyCreatedKey.totalCredits ?? 50;
-                    if (creditsCount === -1) return '∞ Credits';
-                    return isLifetime ? `${creditsCount} Credits vô hạn` : `${creditsCount} Credits/tháng`;
+                    if (creditsCount === -1) return '∞ Ω';
+                    return isLifetime ? `${creditsCount} Ω vô hạn` : `${creditsCount} Ω/tháng`;
                   })()}
                 </span>
               </div>

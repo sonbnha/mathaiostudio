@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
 
     if (keyRecord.totalCredits !== -1 && keyRecord.usedCredits >= keyRecord.totalCredits) {
       return NextResponse.json(
-        { error: 'License key đã hết Credit sử dụng.' },
+        { error: 'License key đã hết Ω sử dụng.' },
         { status: 403 }
       );
     }

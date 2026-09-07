@@ -27,8 +27,8 @@ export async function POST(req: NextRequest) {
           return NextResponse.json(
             {
               success: false,
-              error: deductResult.error || 'Tài khoản của bạn đã hết Credit. Vui lòng nạp thêm để tiếp tục.',
-              message: deductResult.error || 'Tài khoản của bạn đã hết Credit. Vui lòng nạp thêm để tiếp tục.',
+              error: deductResult.error || 'Tài khoản của bạn đã hết Ω. Vui lòng nạp thêm để tiếp tục.',
+              message: deductResult.error || 'Tài khoản của bạn đã hết Ω. Vui lòng nạp thêm để tiếp tục.',
             },
             { status: 403 }
           );

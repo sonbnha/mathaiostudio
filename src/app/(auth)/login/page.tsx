@@ -197,7 +197,7 @@ function LoginForm() {
       <div className="mt-6 p-3 rounded-2xl bg-gradient-to-r from-amber-500/10 via-yellow-500/10 to-amber-500/5 border border-amber-500/20 text-xs text-slate-700 dark:text-slate-300 flex items-center gap-2.5">
         <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
         <p className="text-[11px] text-slate-600 dark:text-slate-400">
-          Chưa có tài khoản? Đăng ký ngay để nhận <span className="font-bold text-amber-600 dark:text-amber-400">10 Credits miễn phí vô hạn (Trial)</span>.
+          Chưa có tài khoản? Đăng ký ngay để nhận <span className="font-bold text-amber-600 dark:text-amber-400">10 Ω miễn phí vô hạn (Trial)</span>.
         </p>
       </div>
 

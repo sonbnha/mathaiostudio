@@ -941,7 +941,7 @@ function HomeContent() {
 
         const checkData = await checkRes.json();
         if (!checkRes.ok || !checkData.valid) {
-          throw new Error(checkData.message || 'Mã License Key không hợp lệ hoặc đã hết Credit sử dụng.');
+          throw new Error(checkData.message || 'Mã License Key không hợp lệ hoặc đã hết Ω sử dụng.');
         }
 
         // 2. Lưu key vào localStorage như cơ chế cũ để mở khóa sử dụng trên trình duyệt hiện tại
@@ -1068,12 +1068,12 @@ function HomeContent() {
       return;
     }
 
-    // Chặn và mở Popup Gia hạn ngay lập tức khi tài khoản hết hạn hoặc hết Credit
+    // Chặn và mở Popup Gia hạn ngay lập tức khi tài khoản hết hạn hoặc hết Ω
     if (licenseInfo.isFullyExpired || licenseInfo.turnsLeft <= 0 || licenseInfo.isExpiredOrDepleted) {
       openRenewModal({
         isNearExpiry: false,
-        customTitle: 'Tài khoản đã hết Credit sử dụng hoặc hết hạn VIP',
-        customDescription: 'Vui lòng nạp thêm Credit hoặc kích hoạt License Key để tiếp tục tạo hình minh họa toán học.',
+        customTitle: 'Tài khoản đã hết Ω sử dụng hoặc hết hạn VIP',
+        customDescription: 'Vui lòng nạp thêm Ω hoặc kích hoạt License Key để tiếp tục tạo hình minh họa toán học.',
       });
       return;
     }
@@ -1095,7 +1095,7 @@ function HomeContent() {
         });
         const checkData = await checkRes.json();
         if (!checkRes.ok || !checkData.valid) {
-          throw new Error(checkData.message || 'License key không hợp lệ hoặc đã hết Credit sử dụng.');
+          throw new Error(checkData.message || 'License key không hợp lệ hoặc đã hết Ω sử dụng.');
         }
       }
 
@@ -1448,7 +1448,7 @@ function HomeContent() {
                       {customerName ? `Chào ${customerName} • ` : ''}
                       {licenseStatus.totalCredits === -1
                         ? 'Dùng thử'
-                        : `Còn ${licenseStatus.remainingCredits}/${licenseStatus.totalCredits} Credits`}
+                        : `Còn ${licenseStatus.remainingCredits}/${licenseStatus.totalCredits} Ω`}
                     </span>
                     <span className="text-[10px] text-sky-600/70 dark:text-sky-400/70 group-hover:text-sky-800 dark:group-hover:text-sky-200 transition font-normal ml-0.5">
                       ⚙️ Đổi key
@@ -1476,8 +1476,8 @@ function HomeContent() {
                       <span className="text-[10px] px-2 py-0.5 rounded-md bg-amber-200/60 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 font-medium">
                         {customerName ? `👋 ${customerName}` : 'Chưa liên kết'} •{' '}
                         {licenseStatus.totalCredits === -1
-                          ? '∞'
-                          : `Còn ${licenseStatus.remainingCredits} Credits`}
+                          ? '∞ Ω'
+                          : `Còn ${licenseStatus.remainingCredits} Ω`}
                       </span>
                       <span className="text-[10px] text-amber-700/70 dark:text-amber-400/70 group-hover:text-amber-900 dark:group-hover:text-amber-200 transition font-normal ml-0.5">
                         ⚙️ Đổi key
@@ -1581,7 +1581,7 @@ function HomeContent() {
               <Link
                 href="/register"
                 className="h-10 px-2.5 sm:px-3 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 shadow-xs hover:shadow transition-all cursor-pointer shrink-0"
-                title="Đăng ký tài khoản nhận 10 Credits Trial"
+                title="Đăng ký tài khoản nhận 10 Ω Trial"
               >
                 <UserPlus className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
                 <span className="hidden sm:inline">Đăng ký</span>
@@ -1730,11 +1730,11 @@ function HomeContent() {
                       {/* Badge: Thẻ Hiển Thị Số Lượng Credit */}
                       {isFreeAccount ? (
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 shrink-0">
-                          0 Credit
+                          0 Ω
                         </span>
                       ) : isUnlimitedActive ? (
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60 shrink-0">
-                          ∞ Credit
+                          ∞ Ω
                         </span>
                       ) : isVipExpired && totalCredits <= 0 ? (
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200/80 dark:border-rose-800/60 shrink-0">
@@ -1748,7 +1748,7 @@ function HomeContent() {
                               : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
                           }`}
                         >
-                          {totalCredits > 0 ? `${totalCredits} Credit` : '0 Credit'}
+                          {totalCredits > 0 ? `${totalCredits} Ω` : '0 Ω'}
                         </span>
                       )}
 
@@ -1925,10 +1925,10 @@ function HomeContent() {
                             : 'text-indigo-600 dark:text-indigo-400'
                         }`}>
                           {isFreeAccount
-                            ? '0 Credit (Hạn mức đã hết)'
+                            ? '0 Ω (Hạn mức đã hết)'
                             : isAdmin || (hasUnlimitedCredits && isPlanActive) || (hasUnlimitedCredits && hasUnlimitedTime)
-                            ? '∞ Vô hạn'
-                            : `${remainingCredits} Credits`}
+                            ? '∞ Ω'
+                            : `${remainingCredits} Ω`}
                         </span>
                       </div>
 
@@ -1957,12 +1957,12 @@ function HomeContent() {
                                 {isAdmin 
                                   ? 'Gói Quản Trị Viên (Super Admin)' 
                                   : isFreeAccount
-                                  ? 'Gói Thuê Bao (Chưa kích hoạt / Đã hết hạn)'
+                                  ? 'Thuê Bao Ω (Chưa kích hoạt / Đã hết hạn)'
                                   : isTrial
-                                  ? 'Gói Thuê Bao (Chưa kích hoạt)'
+                                  ? 'Thuê Bao Ω (Chưa kích hoạt)'
                                   : hasUnlimitedCredits 
                                   ? 'Gói VIP Vô Hạn' 
-                                  : 'Credit Thuê Bao'}
+                                  : 'Thuê Bao Ω'}
                               </span>
                             </span>
                             <span className={`${badgeBase} ${
@@ -2005,12 +2005,12 @@ function HomeContent() {
                                   : 'text-indigo-700 dark:text-indigo-300'
                               }`}>
                                 {isAdmin
-                                  ? '∞ Vô hạn'
+                                  ? '∞ Ω'
                                   : (isFreeAccount || isTrial)
-                                  ? '0 Credit'
+                                  ? '0 Ω'
                                   : hasUnlimitedCredits
-                                  ? (isPlanActive ? '∞ Vô hạn' : '0 Credit')
-                                  : `${monthlyCredits}${monthlyAllowance > 0 ? ` / ${monthlyAllowance}` : ''} Credits`}
+                                  ? (isPlanActive ? '∞ Ω' : '0 Ω')
+                                  : `${monthlyCredits}${monthlyAllowance > 0 ? ` / ${monthlyAllowance}` : ''} Ω`}
                               </span>
                             </div>
 
@@ -2052,7 +2052,7 @@ function HomeContent() {
                           </div>
                         </div>
 
-                        {/* CARD 2: CREDIT VÔ HẠN / CREDIT DÙNG THỬ (TRIAL) - LUÔN LUÔN HIỆN */}
+                        {/* CARD 2: Ω VÔ HẠN / Ω DÙNG THỬ (TRIAL) - LUÔN LUÔN HIỆN */}
                         <div className={`p-3 rounded-xl border flex flex-col gap-2 ${
                           isFreeAccount
                             ? 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/60'
@@ -2069,7 +2069,7 @@ function HomeContent() {
                               ) : (
                                 <Crown className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />
                               )}
-                              <span>{isTrial ? 'Credit Dùng Thử (Trial)' : 'Credit Vô Hạn'}</span>
+                              <span>{isTrial ? 'Ω Dùng Thử (Trial)' : 'Ω Vô Hạn'}</span>
                             </span>
                           </div>
 
@@ -2083,7 +2083,7 @@ function HomeContent() {
                                   ? 'text-sky-700 dark:text-sky-300'
                                   : 'text-amber-700 dark:text-amber-300'
                               }`}>
-                                {isAdmin ? '∞ Vô hạn' : isFreeAccount ? '0 Credit' : `${lifetimeCredits} Credits`}
+                                {isAdmin ? '∞ Ω' : isFreeAccount ? '0 Ω' : `${lifetimeCredits} Ω`}
                               </span>
                             </div>
 
@@ -2135,7 +2135,7 @@ function HomeContent() {
                           </span>
                         </button>
 
-                        {/* Mục 2: Nạp Credit & Nâng cấp VIP */}
+                        {/* Mục 2: Nạp Ω & Nâng cấp VIP */}
                         {(() => {
                           const isVipAccount =
                             !isFreeAccount &&
@@ -2161,7 +2161,7 @@ function HomeContent() {
                                   <Crown className="w-4 h-4 shrink-0 text-amber-500" />
                                 )}
                                 <span>
-                                  {isVipAccount ? 'Nạp thêm Credit / Gia hạn' : 'Nâng cấp VIP / Nạp Credit'}
+                                  {isVipAccount ? 'Nạp thêm Ω / Gia hạn' : 'Nâng cấp VIP / Nạp Ω'}
                                 </span>
                               </div>
 
@@ -2980,7 +2980,7 @@ function HomeContent() {
                   </button>
                 </div>
                 <p className="text-[11px] text-amber-600 dark:text-amber-400 flex items-center gap-1 mt-1 font-medium">
-                  <span>⚡ Hệ thống sẽ tự động cộng dồn thời hạn sử dụng và số Credit vào tài khoản hiện tại của bạn.</span>
+                  <span>⚡ Hệ thống sẽ tự động cộng dồn thời hạn sử dụng và số Ω vào tài khoản hiện tại của bạn.</span>
                 </p>
               </div>
 

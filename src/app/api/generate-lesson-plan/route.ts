@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
       const userState = await syncUserCredits(currentUser.id, sql);
       if (!userState || userState.totalAvailableCredits <= 0) {
         return new Response(
-          JSON.stringify({ error: 'Tài khoản của bạn đã hết Credit. Vui lòng nạp thêm để tiếp tục.' }),
+          JSON.stringify({ error: 'Tài khoản của bạn đã hết Ω. Vui lòng nạp thêm để tiếp tục.' }),
           { status: 403, headers: { 'Content-Type': 'application/json' } }
         );
       }
@@ -115,7 +115,7 @@ export async function POST(req: NextRequest) {
 
       if (keyRecord.totalCredits !== -1 && keyRecord.usedCredits >= keyRecord.totalCredits) {
         return new Response(
-          JSON.stringify({ error: 'License key này đã sử dụng hết số lượt (Credits) khả dụng.' }),
+          JSON.stringify({ error: 'License key này đã sử dụng hết số lượt (Ω) khả dụng.' }),
           { status: 403, headers: { 'Content-Type': 'application/json' } }
         );
       }

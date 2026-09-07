@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
 
     if (keyRecord.totalCredits !== -1 && keyRecord.usedCredits >= keyRecord.totalCredits) {
       return NextResponse.json(
-        { valid: false, message: 'Key đã sử dụng hết Credit.' },
+        { valid: false, message: 'Key đã sử dụng hết Ω.' },
         { status: 403 }
       );
     }

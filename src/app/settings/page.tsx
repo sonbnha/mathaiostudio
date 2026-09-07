@@ -68,6 +68,19 @@ export default function SettingsPage() {
   // Tab Navigation State
   const [activeTab, setActiveTab] = useState<'profile' | 'quota' | 'security'>('profile');
 
+  // Handle URL query parameter ?tab=credits or ?tab=quota
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get('tab');
+      if (tab === 'credits' || tab === 'quota') {
+        setActiveTab('quota');
+      } else if (tab === 'security') {
+        setActiveTab('security');
+      }
+    }
+  }, []);
+
   // Form 3: License Key Redemption State
   const [redeemKeyInput, setRedeemKeyInput] = useState('');
   const [redeeming, setRedeeming] = useState(false);

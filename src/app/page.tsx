@@ -34,6 +34,7 @@ import {
   UserPlus,
   Settings,
   Zap,
+  Coins,
 } from 'lucide-react';
 import Link from 'next/link';
 import { APP_VERSION, formatDateVN } from '@/config/version';
@@ -2022,30 +2023,39 @@ function HomeContent() {
                         </span>
                       </button>
 
-                      {/* Mục nạp Credit / Kích hoạt Key */}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setIsUserDropdownOpen(false);
-                          openRenewModal();
-                        }}
-                        className="w-full flex items-center justify-between px-3.5 py-2.5 text-xs rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-colors border-t border-slate-100 dark:border-slate-800/60 cursor-pointer font-bold"
-                      >
-                        <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-medium">
-                          <Zap className="w-4 h-4 text-amber-500 fill-amber-500 shrink-0" />
-                          <span>Nạp Credit / Kích hoạt Key</span>
-                        </div>
-                        {isAdmin || (hasUnlimitedCredits && hasUnlimitedTime) ? (
-                          <span className="ml-2 px-2 py-0.5 text-[11px] font-semibold rounded bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60 whitespace-nowrap">
-                            + KEY
-                          </span>
-                        ) : (
-                          <span className="ml-2 px-2 py-0.5 text-[11px] font-semibold rounded bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60 whitespace-nowrap">
-                            NẠP NGAY
-                          </span>
-                        )}
-                      </button>
+                      {/* Mục nạp Credit & Nâng cấp VIP (Tự động chuyển nhãn dựa trên trạng thái VIP) */}
+                      {(() => {
+                        const isVipAccount =
+                          isAdmin ||
+                          Boolean((currentUser as any)?.is_vip || currentUser.isVip) ||
+                          (typeof (currentUser as any)?.monthly_credits === 'number' && (currentUser as any).monthly_credits > 0) ||
+                          (typeof (currentUser as any)?.monthlyCredits === 'number' && (currentUser as any).monthlyCredits > 0) ||
+                          Boolean((currentUser as any)?.is_unlimited || (currentUser as any).isUnlimited) ||
+                          Boolean(planExp && new Date(planExp) > new Date());
+
+                        return (
+                          <Link
+                            href="/settings?tab=credits"
+                            onClick={() => setIsUserDropdownOpen(false)}
+                            className="flex items-center justify-between px-3.5 py-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors border-t border-slate-100 dark:border-slate-800/60 group cursor-pointer"
+                          >
+                            <div className="flex items-center gap-2.5">
+                              {isVipAccount ? (
+                                <Coins className="w-4 h-4 text-amber-500 shrink-0" />
+                              ) : (
+                                <Crown className="w-4 h-4 text-amber-500 shrink-0" />
+                              )}
+                              <span className="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
+                                {isVipAccount ? 'Nạp thêm Credit / Gia hạn' : 'Nâng cấp VIP / Nạp Credit'}
+                              </span>
+                            </div>
+
+                            <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 tracking-wide border border-amber-200/80 dark:border-amber-800/60">
+                              {isVipAccount ? 'NẠP THÊM' : 'NÂNG CẤP'}
+                            </span>
+                          </Link>
+                        );
+                      })()}
 
                       {/* Mục 3: ⚙️ Quản trị hệ thống (Admin Panel) - Chỉ hiện nếu role === 'admin' */}
                       {isAdmin && (

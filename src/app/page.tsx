@@ -2071,17 +2071,6 @@ function HomeContent() {
                               )}
                               <span>{isTrial ? 'Credit Dùng Thử (Trial)' : 'Credit Trọn Đời'}</span>
                             </span>
-                            <span className={`${badgeBase} ${
-                              isAdmin
-                                ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 font-semibold'
-                                : isFreeAccount
-                                ? 'bg-slate-100 text-slate-500 border border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'
-                                : isTrial
-                                ? 'bg-sky-50 text-sky-700 border border-sky-200/80 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-800/60'
-                                : 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 font-semibold'
-                            }`}>
-                              {isAdmin ? 'Vĩnh viễn (∞)' : isFreeAccount ? 'Đã hết' : isTrial ? 'Dùng thử' : (isVipActive ? 'Trọn đời' : 'Trial')}
-                            </span>
                           </div>
 
                           <div className="flex flex-col gap-1.5">

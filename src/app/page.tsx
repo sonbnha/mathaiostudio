@@ -1590,186 +1590,143 @@ function HomeContent() {
               {/* TRƯỜNG HỢP 2: ĐÃ ĐĂNG NHẬP (currentUser) */}
               {/* User Avatar + Name + VIP Badge + Dropdown Menu */}
               <div ref={userDropdownRef} className="relative">
-                <button
-                  type="button"
-                  onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
-                  className="h-10 flex items-center gap-2 bg-slate-100/90 hover:bg-slate-200/80 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-700/80 rounded-2xl pl-1.5 pr-2.5 py-1 shadow-xs transition-all cursor-pointer"
-                >
-                  {/* Avatar (Hiển thị preset SVG hoặc chữ cái đầu, viền nổi bật nếu VIP) */}
-                  <div
-                    className={`w-7 h-7 rounded-xl overflow-hidden flex items-center justify-center shrink-0 ${
-                      (currentUser.isVip || (currentUser as any).is_vip)
-                        ? 'ring-2 ring-amber-400 shadow-amber-500/25 shadow-sm'
-                        : (currentUser.role || '').toLowerCase() === 'admin'
-                        ? 'ring-1 ring-rose-500/60'
-                        : 'ring-1 ring-slate-200 dark:ring-slate-700'
-                    }`}
-                  >
-                    {currentUser.avatar ? (
-                      <img
-                        src={currentUser.avatar}
-                        alt={currentUser.name || 'Avatar'}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
+                {(() => {
+                  const r = (currentUser.role || 'user').toLowerCase();
+                  const isAdmin = r === 'admin' || r === 'superadmin' || Boolean((currentUser as any)?.is_admin);
+
+                  const monthlyCredits = Number((currentUser as any).monthly_credits ?? (currentUser as any).monthlyCredits ?? (currentUser as any).subscription_quota ?? (currentUser as any).subscriptionQuota ?? 0);
+                  const lifetimeCredits = Number((currentUser as any).lifetime_credits ?? (currentUser as any).lifetimeCredits ?? (currentUser as any).lifetime_quota ?? (currentUser as any).lifetimeQuota ?? 0);
+                  const hasDualWallet = (currentUser as any).monthly_credits !== undefined || (currentUser as any).lifetime_credits !== undefined || (currentUser as any).subscription_quota !== undefined || (currentUser as any).lifetime_quota !== undefined;
+                  const planExp = (currentUser as any).plan_expires_at || (currentUser as any).planExpiresAt || (currentUser as any).subscription_expires_at || (currentUser as any).subscriptionExpiresAt;
+                  const isPlanActive = Boolean(planExp && new Date(planExp) > new Date());
+                  const hasUnlimitedTime = isAdmin || !planExp;
+
+                  const hasUnlimitedCredits =
+                    isAdmin ||
+                    Boolean((currentUser as any).is_unlimited) ||
+                    Boolean((currentUser as any).isUnlimited) ||
+                    (currentUser as any).monthly_credits === -1 ||
+                    (currentUser as any).monthlyCredits === -1 ||
+                    (currentUser as any).remaining_quota === -1 ||
+                    (currentUser as any).remainingQuota === -1 ||
+                    (currentUser as any).remaining_credits === -1 ||
+                    Number((currentUser as any).remaining_quota) >= 999 ||
+                    ((currentUser as any).remaining_quota === null && !hasDualWallet);
+
+                  const isVipFlag = Boolean(currentUser.isVip || (currentUser as any).is_vip);
+                  const vipExp = currentUser.vipExpiresAt || (currentUser as any).vip_expires_at;
+                  const isVipExpired = Boolean(
+                    (!hasUnlimitedTime && planExp && !isPlanActive) ||
+                    (vipExp && new Date(vipExp) <= new Date() && !isPlanActive && !hasUnlimitedTime)
+                  );
+
+                  // 1. Nhận diện Thành Viên VIP trực tiếp trên Tên Người Dùng:
+                  const isVip = (
+                    isAdmin ||
+                    isVipFlag ||
+                    monthlyCredits > 0 ||
+                    Boolean((currentUser as any).is_unlimited || (currentUser as any).isUnlimited) ||
+                    hasUnlimitedCredits
+                  ) && !isVipExpired;
+
+                  const totalCredits = hasDualWallet
+                    ? ((isPlanActive ? monthlyCredits : 0) + lifetimeCredits)
+                    : typeof (currentUser as any).remaining_quota === 'number'
+                    ? (currentUser as any).remaining_quota
+                    : typeof (currentUser as any).remainingQuota === 'number'
+                    ? (currentUser as any).remainingQuota
+                    : typeof currentUser.remainingCredits === 'number'
+                    ? currentUser.remainingCredits
+                    : 10;
+
+                  const isUnlimitedActive = hasUnlimitedCredits && (hasUnlimitedTime || isPlanActive);
+
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+                      className="h-10 flex items-center gap-2 bg-slate-100/90 hover:bg-slate-200/80 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-700/80 rounded-2xl pl-1.5 pr-2.5 py-1 shadow-xs transition-all cursor-pointer"
+                    >
+                      {/* Avatar viền vàng (nếu VIP) */}
                       <div
-                        className={`w-full h-full ${
-                          (currentUser.role || '').toLowerCase() === 'admin'
-                            ? 'bg-gradient-to-tr from-rose-500 to-red-600'
-                            : (currentUser.role || '').toLowerCase() === 'ctv'
-                            ? 'bg-gradient-to-tr from-blue-500 to-cyan-600'
-                            : (currentUser.isVip || (currentUser as any).is_vip)
-                            ? 'bg-gradient-to-tr from-amber-400 via-amber-500 to-yellow-500 text-slate-950 font-black'
-                            : 'bg-gradient-to-tr from-slate-600 to-slate-800'
-                        } text-white font-bold text-xs flex items-center justify-center`}
+                        className={`w-7 h-7 rounded-xl overflow-hidden flex items-center justify-center shrink-0 ${
+                          isVip
+                            ? 'ring-2 ring-amber-400 shadow-amber-500/25 shadow-sm'
+                            : 'ring-1 ring-slate-200 dark:ring-slate-700'
+                        }`}
                       >
-                        {(currentUser.name || currentUser.email || 'U').charAt(0).toUpperCase()}
+                        {currentUser.avatar ? (
+                          <img
+                            src={currentUser.avatar}
+                            alt={currentUser.name || 'Avatar'}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div
+                            className={`w-full h-full ${
+                              isVip
+                                ? 'bg-gradient-to-tr from-amber-400 via-amber-500 to-yellow-500 text-slate-950 font-black'
+                                : (currentUser.role || '').toLowerCase() === 'ctv'
+                                ? 'bg-gradient-to-tr from-blue-500 to-cyan-600'
+                                : 'bg-gradient-to-tr from-slate-600 to-slate-800'
+                            } text-white font-bold text-xs flex items-center justify-center`}
+                          >
+                            {(currentUser.name || currentUser.email || 'U').charAt(0).toUpperCase()}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
 
-                  {/* Name + VIP / Role Badge */}
-                  <div className="hidden sm:flex flex-col text-left">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 max-w-[95px] truncate leading-tight">
-                        {currentUser.name || currentUser.email.split('@')[0]}
-                      </span>
-
-                      {/* Badge vai trò & Badge ⭐ VIP nổi bật cạnh tên */}
-                      {(() => {
-                        const r = (currentUser.role || 'user').toLowerCase();
-                        const isAdmin = r === 'admin' || r === 'superadmin' || Boolean((currentUser as any)?.is_admin);
-
-                        const monthlyCredits = Number((currentUser as any).monthly_credits ?? (currentUser as any).monthlyCredits ?? (currentUser as any).subscription_quota ?? (currentUser as any).subscriptionQuota ?? 0);
-                        const planExp = (currentUser as any).plan_expires_at || (currentUser as any).planExpiresAt || (currentUser as any).subscription_expires_at || (currentUser as any).subscriptionExpiresAt;
-                        const isPlanActive = Boolean(planExp && new Date(planExp) > new Date());
-                        const lifetimeCredits = Number((currentUser as any).lifetime_credits ?? (currentUser as any).lifetimeCredits ?? (currentUser as any).lifetime_quota ?? (currentUser as any).lifetimeQuota ?? 0);
-                        const hasDualWallet = (currentUser as any).monthly_credits !== undefined || (currentUser as any).lifetime_credits !== undefined || (currentUser as any).subscription_quota !== undefined || (currentUser as any).lifetime_quota !== undefined;
-
-                        // 1. Phân biệt rõ các cờ trạng thái:
-                        const hasUnlimitedCredits =
-                          isAdmin ||
-                          Boolean((currentUser as any).is_unlimited) ||
-                          Boolean((currentUser as any).isUnlimited) ||
-                          (currentUser as any).monthly_credits === -1 ||
-                          (currentUser as any).monthlyCredits === -1 ||
-                          (currentUser as any).remaining_quota === -1 ||
-                          (currentUser as any).remainingQuota === -1 ||
-                          (currentUser as any).remaining_credits === -1 ||
-                          Number((currentUser as any).remaining_quota) >= 999 ||
-                          ((currentUser as any).remaining_quota === null && !hasDualWallet);
-
-                        const hasUnlimitedTime = isAdmin || !planExp;
-
-                        const isVipFlag = Boolean(currentUser.isVip || (currentUser as any).is_vip);
-                        const vipExp = currentUser.vipExpiresAt || (currentUser as any).vip_expires_at;
-                        const isVipExpired = Boolean(
-                          (!hasUnlimitedTime && planExp && !isPlanActive) ||
-                          (vipExp && new Date(vipExp) <= new Date() && !isPlanActive && !hasUnlimitedTime)
-                        );
-                        const isVipActive = (isAdmin || hasUnlimitedTime || isPlanActive || isVipFlag) && !isVipExpired;
-
-                        const rawRem = hasDualWallet
-                          ? ((isPlanActive ? monthlyCredits : 0) + lifetimeCredits)
-                          : typeof (currentUser as any).remaining_quota === 'number'
-                          ? (currentUser as any).remaining_quota
-                          : typeof (currentUser as any).remainingQuota === 'number'
-                          ? (currentUser as any).remainingQuota
-                          : typeof currentUser.remainingCredits === 'number'
-                          ? currentUser.remainingCredits
-                          : 10;
-
-                        const remainingCredits = hasUnlimitedCredits ? -1 : rawRem;
-
-                        if (isAdmin) {
-                          return (
-                            <div className="flex items-center gap-1 shrink-0">
-                              <span className="text-[9px] font-bold px-1.5 py-0.2 rounded uppercase bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30">
-                                Admin
-                              </span>
-                              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 text-slate-950 border border-amber-300 shadow-xs flex items-center gap-1">
-                                <Crown className="w-3 h-3 text-slate-950 fill-slate-950 shrink-0" />
-                                <span>⭐ VIP • ∞</span>
-                              </span>
-                            </div>
-                          );
-                        }
-
-                        if (hasUnlimitedCredits) {
-                          if (!hasUnlimitedTime && !isPlanActive) {
-                            return (
-                              <span className="text-[9px] font-bold px-1.5 py-0.2 rounded uppercase bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30">
-                                Hết hạn VIP
-                              </span>
-                            );
-                          }
-                          return (
-                            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 text-slate-950 border border-amber-300 shadow-xs flex items-center gap-1 shrink-0">
-                              <Crown className="w-3 h-3 text-slate-950 fill-slate-950 shrink-0" />
-                              <span>⭐ VIP • ∞</span>
-                            </span>
-                          );
-                        }
-
-                        if (r === 'ctv') {
-                          return (
-                            <div className="flex items-center gap-1 shrink-0">
-                              <span className="text-[9px] font-bold px-1.5 py-0.2 rounded uppercase bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30">
-                                CTV
-                              </span>
-                              {isVipActive && (
-                                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 text-slate-950 border border-amber-300 shadow-xs flex items-center gap-1">
-                                  <Crown className="w-3 h-3 text-slate-950 fill-slate-950 shrink-0" />
-                                  <span>⭐ VIP • {hasUnlimitedCredits ? '∞' : `Còn ${remainingCredits} Credits`}</span>
-                                </span>
-                              )}
-                            </div>
-                          );
-                        }
-
-                        if (isVipActive) {
-                          return (
-                            <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 text-slate-950 border border-amber-300 shadow-xs flex items-center gap-1 shrink-0">
-                              <Crown className="w-3 h-3 text-slate-950 fill-slate-950 shrink-0" />
-                              <span>⭐ VIP • {hasUnlimitedCredits ? '∞' : `Còn ${remainingCredits} Credits`}</span>
-                            </span>
-                          );
-                        }
-
-                        if (isVipExpired) {
-                          return (
-                            <span className="text-[9px] font-bold px-1.5 py-0.2 rounded uppercase bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30">
-                              Hết hạn VIP
-                            </span>
-                          );
-                        }
-
-                        if (remainingCredits > 0) {
-                          return (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30 flex items-center gap-1 shrink-0">
-                              <span>Còn ${remainingCredits} Credits (Dùng thử)</span>
-                            </span>
-                          );
-                        }
-
-                        return (
-                          <span className="text-[9px] font-bold px-1.5 py-0.2 rounded uppercase bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-600">
-                            Free • Hết Credit
+                      {/* (👑 Tên màu vàng) / (Email phụ bên dưới) */}
+                      <div className="hidden sm:flex flex-col text-left">
+                        <div
+                          className={`text-xs font-semibold flex items-center gap-1.5 leading-tight ${
+                            isVip
+                              ? 'text-amber-600 dark:text-amber-400'
+                              : 'text-slate-800 dark:text-slate-200'
+                          }`}
+                        >
+                          {isVip && (
+                            <Crown className="w-3.5 h-3.5 text-amber-500 fill-amber-400 shrink-0" />
+                          )}
+                          <span className="max-w-[100px] truncate">
+                            {currentUser.name || currentUser.email.split('@')[0]}
                           </span>
-                        );
-                      })()}
-                    </div>
-                    <span className="text-[9px] text-slate-400 dark:text-slate-500 max-w-[95px] truncate leading-tight">
-                      {currentUser.email}
-                    </span>
-                  </div>
+                        </div>
+                        <span className="text-[9px] text-slate-400 dark:text-slate-500 max-w-[100px] truncate leading-tight">
+                          {currentUser.email}
+                        </span>
+                      </div>
 
-                  <ChevronDown
-                    className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
-                      isUserDropdownOpen ? 'rotate-180' : ''
-                    }`}
-                  />
-                </button>
+                      {/* Badge: Thẻ Hiển Thị Số Lượng Credit */}
+                      {isUnlimitedActive ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60 shrink-0">
+                          ∞ Credit
+                        </span>
+                      ) : isVipExpired && totalCredits <= 0 ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200/80 dark:border-rose-800/60 shrink-0">
+                          Hết hạn
+                        </span>
+                      ) : (
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${
+                            isVip
+                              ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                          }`}
+                        >
+                          {totalCredits > 0 ? `${totalCredits} Credit` : '0 Credit'}
+                        </span>
+                      )}
+
+                      {/* Icon mũi tên v */}
+                      <ChevronDown
+                        className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
+                          isUserDropdownOpen ? 'rotate-180' : ''
+                        }`}
+                      />
+                    </button>
+                  );
+                })()}
 
                 {/* Dropdown Menu */}
                 {isUserDropdownOpen && (() => {

@@ -33,6 +33,7 @@ import {
   Crown,
   UserPlus,
   Settings,
+  Zap,
 } from 'lucide-react';
 import Link from 'next/link';
 import { APP_VERSION, formatDateVN } from '@/config/version';
@@ -2021,7 +2022,7 @@ function HomeContent() {
                         </span>
                       </button>
 
-                      {/* Mục kích hoạt / Gia hạn License Key duy nhất trong Menu */}
+                      {/* Mục nạp Credit / Kích hoạt Key */}
                       <button
                         type="button"
                         onClick={(e) => {
@@ -2032,38 +2033,16 @@ function HomeContent() {
                         className="w-full flex items-center justify-between px-3.5 py-2.5 text-xs rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-colors border-t border-slate-100 dark:border-slate-800/60 cursor-pointer font-bold"
                       >
                         <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-medium">
-                          <span>🔑</span>
-                          <span>Gia hạn / Nâng cấp VIP</span>
+                          <Zap className="w-4 h-4 text-amber-500 fill-amber-500 shrink-0" />
+                          <span>Nạp Credit / Kích hoạt Key</span>
                         </div>
                         {isAdmin || (hasUnlimitedCredits && hasUnlimitedTime) ? (
-                          <span className="ml-2 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 rounded-md whitespace-nowrap">
-                            VÔ HẠN (∞)
-                          </span>
-                        ) : hasUnlimitedCredits && !hasUnlimitedTime ? (
-                          !isPlanActive ? (
-                            <span className="ml-2 px-2 py-0.5 text-[10px] font-bold text-white bg-rose-600 rounded-md whitespace-nowrap shadow-xs">
-                              GIA HẠN NGAY
-                            </span>
-                          ) : subDaysRemaining !== null && subDaysRemaining <= 3 ? (
-                            <span className="ml-2 px-2 py-0.5 text-[10px] font-bold text-slate-950 bg-amber-500 rounded-md whitespace-nowrap shadow-xs">
-                              CÒN {subDaysRemaining} NGÀY
-                            </span>
-                          ) : (
-                            <span className="ml-2 px-2 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 rounded-md whitespace-nowrap">
-                              {subDaysRemaining !== null ? `CÒN ${subDaysRemaining} NGÀY` : 'VIP (∞)'}
-                            </span>
-                          )
-                        ) : licenseInfo.isNearExpiry ? (
-                          <span className="ml-2 px-2 py-0.5 text-[10px] font-bold text-slate-950 bg-amber-500 rounded-md whitespace-nowrap shadow-xs">
-                            {licenseInfo.daysRemaining !== null && licenseInfo.daysRemaining <= 3 ? `CÒN ${licenseInfo.daysRemaining} NGÀY` : `CÒN ${licenseInfo.remainingCredits} CREDITS`}
-                          </span>
-                        ) : licenseInfo.isFullyExpired || !licenseInfo.isVipActive ? (
-                          <span className="ml-2 px-2 py-0.5 text-[10px] font-bold text-white bg-rose-600 rounded-md whitespace-nowrap shadow-xs">
-                            GIA HẠN NGAY
+                          <span className="ml-2 px-2 py-0.5 text-[11px] font-semibold rounded bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60 whitespace-nowrap">
+                            + KEY
                           </span>
                         ) : (
-                          <span className="ml-2 px-2 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 rounded-md whitespace-nowrap">
-                            CỘNG DỒN
+                          <span className="ml-2 px-2 py-0.5 text-[11px] font-semibold rounded bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60 whitespace-nowrap">
+                            NẠP NGAY
                           </span>
                         )}
                       </button>

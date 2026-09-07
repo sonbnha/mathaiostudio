@@ -2052,7 +2052,7 @@ function HomeContent() {
                           </div>
                         </div>
 
-                        {/* CARD 2: VÍ VĨNH VIỄN VIP / CREDIT DÙNG THỬ (TRIAL) - LUÔN LUÔN HIỆN */}
+                        {/* CARD 2: CREDIT TRỌN ĐỜI / CREDIT DÙNG THỬ (TRIAL) - LUÔN LUÔN HIỆN */}
                         <div className={`p-3 rounded-xl border flex flex-col gap-2 ${
                           isFreeAccount
                             ? 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/60'
@@ -2069,7 +2069,7 @@ function HomeContent() {
                               ) : (
                                 <Crown className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />
                               )}
-                              <span>{isTrial ? 'Credit Dùng Thử (Trial)' : 'Ví Vĩnh Viễn VIP'}</span>
+                              <span>{isTrial ? 'Credit Dùng Thử (Trial)' : 'Credit Trọn Đời'}</span>
                             </span>
                             <span className={`${badgeBase} ${
                               isAdmin

@@ -658,57 +658,7 @@ export default function SettingsPage() {
                   </div>
                 </div>
               </div>
-            ) : (hasUnlimitedCredits && !hasUnlimitedTime) ? (
-              <div className="p-5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-yellow-500/10 to-indigo-500/10 border border-amber-500/30 flex flex-col gap-3 mb-6 shadow-xs">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-                      <Crown className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm sm:text-base font-bold text-amber-950 dark:text-amber-200">
-                        Gói VIP Không Giới Hạn (Có Thời Hạn)
-                      </h3>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                        Đặc quyền VIP không giới hạn lượt tạo hình và soạn giáo án toán học (∞) trong thời hạn sử dụng
-                      </p>
-                    </div>
-                  </div>
-                  <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                    isPlanActive
-                      ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30'
-                      : 'bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-500/30'
-                  }`}>
-                    {isPlanActive ? 'VIP Unlimited' : 'Đã hết hạn'}
-                  </span>
-                </div>
-
-                <div className="flex items-baseline gap-2 pt-1">
-                  <span className="text-2xl sm:text-3xl font-black text-amber-600 dark:text-amber-400">
-                    ∞ Không giới hạn
-                  </span>
-                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Credits</span>
-                </div>
-
-                <div className="pt-3 border-t border-amber-200/60 dark:border-amber-900/40 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-                  <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
-                    <span>Thời hạn sử dụng:</span>
-                    <span className={`font-bold ${isPlanActive ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                      {isPlanActive && planExp ? (
-                        <>Còn {subDaysRemaining} ngày • {formattedPlanExp}</>
-                      ) : formattedPlanExp ? (
-                        <>Đã hết hạn ({formattedPlanExp})</>
-                      ) : (
-                        <>Có thời hạn</>
-                      )}
-                    </span>
-                  </div>
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400 italic">
-                    Gói VIP Unlimited không bị trừ Credit trong suốt thời gian hiệu lực.
-                  </div>
-                </div>
-              </div>
-            ) : (hasUnlimitedCredits && hasUnlimitedTime) ? (
+            ) : (hasUnlimitedCredits && hasUnlimitedTime && !isAdmin) ? (
               <div className="p-5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-yellow-500/10 to-indigo-500/10 border border-amber-500/30 flex flex-col gap-3 mb-6 shadow-xs">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
@@ -749,41 +699,61 @@ export default function SettingsPage() {
                 </div>
               </div>
             ) : (
-              /* 2 Khối Thẻ Hạn Mức Credit */
+              /* 2 Khối Thẻ Hạn Mức Credit (LUÔN HIỆN CẢ 2 VÍ) */
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                 {/* Card Ví 1: Credit Thuê Bao */}
                 <div className="p-4 rounded-2xl bg-indigo-50/60 dark:bg-indigo-950/25 border border-indigo-200/80 dark:border-indigo-800/60 flex flex-col justify-between gap-3">
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                        {hasUnlimitedCredits ? (
+                          <Crown className="w-4 h-4 text-amber-500 fill-amber-500" />
+                        ) : (
+                          <Clock className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                        )}
                         <span className="text-xs font-bold text-indigo-950 dark:text-indigo-200">
-                          Credit Thuê Bao (Monthly)
+                          {hasUnlimitedCredits ? 'Gói VIP Unlimited (Monthly Pass)' : 'Credit Thuê Bao (Monthly)'}
                         </span>
                       </div>
                       <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                        isPlanActive
+                        hasUnlimitedCredits && isPlanActive
+                          ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30'
+                          : isPlanActive
                           ? 'bg-emerald-200/60 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300'
                           : planExp
                           ? 'bg-rose-200/60 dark:bg-rose-900/60 text-rose-800 dark:text-rose-300'
                           : 'bg-indigo-200/60 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-300'
                       }`}>
-                        {isPlanActive ? 'Đang hoạt động' : planExp ? 'Đã hết hạn' : 'Chưa kích hoạt'}
+                        {hasUnlimitedCredits && isPlanActive
+                          ? 'VIP Unlimited'
+                          : isPlanActive
+                          ? 'Đang hoạt động'
+                          : planExp
+                          ? 'Đã hết hạn'
+                          : 'Chưa kích hoạt'}
                       </span>
                     </div>
 
-                    <div className="text-2xl font-black text-indigo-600 dark:text-indigo-400">
-                      {monthlyCredits}{monthlyAllowance > 0 ? ` / ${monthlyAllowance}` : ''}{' '}
+                    <div className={`text-2xl font-black ${
+                      hasUnlimitedCredits && isPlanActive
+                        ? 'text-amber-600 dark:text-amber-400'
+                        : 'text-indigo-600 dark:text-indigo-400'
+                    }`}>
+                      {hasUnlimitedCredits
+                        ? (isPlanActive ? '∞ Không giới hạn' : '0')
+                        : `${monthlyCredits}${monthlyAllowance > 0 ? ` / ${monthlyAllowance}` : ''}`}{' '}
                       <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Credits</span>
                     </div>
 
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-                      Credit tháng sẽ tự động reset về định mức ban đầu mỗi chu kỳ 30 ngày (không cộng dồn qua tháng).
+                      {hasUnlimitedCredits
+                        ? 'Đặc quyền VIP không giới hạn lượt tạo hình và soạn giáo án trong thời hạn sử dụng.'
+                        : 'Credit tháng sẽ tự động reset về định mức ban đầu mỗi chu kỳ 30 ngày (không cộng dồn qua tháng).'}
                     </p>
                   </div>
 
                   <div className="pt-2.5 border-t border-indigo-200/60 dark:border-indigo-800/50 flex flex-col gap-1 text-xs">
-                    {formattedResetAt && isPlanActive && (
+                    {formattedResetAt && isPlanActive && !hasUnlimitedCredits && (
                       <div className="flex items-center justify-between">
                         <span className="text-slate-500 dark:text-slate-400">Làm mới định mức:</span>
                         <span className="font-semibold text-indigo-900 dark:text-indigo-200">
@@ -796,7 +766,7 @@ export default function SettingsPage() {
                       <span className="font-semibold text-indigo-900 dark:text-indigo-200">
                         {formattedPlanExp ? (
                           isPlanActive ? (
-                            `Hết hạn: ${formattedPlanExp}`
+                            `Còn ${subDaysRemaining} ngày • ${formattedPlanExp}`
                           ) : (
                             <span className="text-rose-500">Đã hết hạn ({formattedPlanExp})</span>
                           )
@@ -829,7 +799,9 @@ export default function SettingsPage() {
                     </div>
 
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-                      Tích lũy vĩnh viễn từ trial và key trọn đời. Chỉ tiêu hao khi Credit thuê bao đã hết.
+                      {isPlanActive
+                        ? 'Tích lũy vĩnh viễn từ trial và key trọn đời (Dự phòng sử dụng khi hết hạn gói thuê bao).'
+                        : 'Tích lũy vĩnh viễn từ trial và key trọn đời. Chỉ tiêu hao khi Credit thuê bao đã hết.'}
                     </p>
                   </div>
 

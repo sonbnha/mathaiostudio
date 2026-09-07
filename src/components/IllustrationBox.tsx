@@ -50,7 +50,7 @@ export const IllustrationBox: React.FC<IllustrationBoxProps> = ({ description, f
         detail: { prompt: description, figureId },
       })
     );
-    router.replace('?tab=geometry', { scroll: false });
+    router.push('/geometry');
   };
 
   const handleRemoveFigure = () => {

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import NextTopLoader from "nextjs-toploader";
 import "./globals.css";
 import { ApiKeyProvider } from "@/context/ApiKeyContext";
 import { ApiKeyModal } from "@/components/ApiKeyModal";
@@ -43,6 +44,17 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col font-sans bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors">
+        <NextTopLoader
+          color="#06b6d4"
+          initialPosition={0.08}
+          crawlSpeed={200}
+          height={2.5}
+          crawl={true}
+          showSpinner={false}
+          easing="ease"
+          speed={200}
+          shadow="0 0 10px #06b6d4,0 0 5px #0891b2"
+        />
         <AuthProvider>
           <ApiKeyProvider>
             <RenewModalProvider>

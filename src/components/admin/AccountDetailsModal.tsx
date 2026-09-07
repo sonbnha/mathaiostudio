@@ -160,7 +160,7 @@ export default function AccountDetailsModal({ isOpen, onClose, data }: AccountDe
   // License Key Details
   const duration = licenseKey?.durationDays ?? licenseKey?.duration_days ?? 30;
   const isKeyLifetime = duration === 0 || licenseKey?.key?.startsWith('AIO-LT-');
-  const durationStr = isKeyLifetime ? 'Vô hạn (∞)' : `+${duration} ngày`;
+  const durationStr = isKeyLifetime ? 'Trọn đời' : `+${duration} ngày`;
   const usage = licenseKey?.credits ?? licenseKey?.maxUsage ?? licenseKey?.max_usage ?? licenseKey?.totalCredits ?? licenseKey?.total_credits ?? 50;
   const usageStr = usage === -1 
     ? '∞ Ω' 
@@ -271,13 +271,13 @@ export default function AccountDetailsModal({ isOpen, onClose, data }: AccountDe
                   Thuê Bao Ω:
                 </span>
                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
-                  isAdmin
+                    isAdmin
                     ? 'bg-blue-500/20 text-blue-700 dark:text-blue-300'
                     : isPlanActive
                     ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
                     : 'bg-slate-200/80 dark:bg-slate-800 text-slate-500'
                 }`}>
-                  {isAdmin ? 'Vô hạn' : isPlanActive ? 'Còn hạn' : (planExpiresAt ? 'Hết hạn' : 'Chưa có')}
+                  {isAdmin ? 'Trọn đời' : isPlanActive ? 'Còn hạn' : (planExpiresAt ? 'Hết hạn' : 'Chưa có')}
                 </span>
               </div>
               <div className="flex items-baseline justify-between mt-0.5">
@@ -291,13 +291,13 @@ export default function AccountDetailsModal({ isOpen, onClose, data }: AccountDe
               <div className="flex items-center justify-between text-[11px] pt-1 border-t border-blue-200/50 dark:border-blue-900/30 text-slate-500 dark:text-slate-400">
                 <span>Làm mới chu kỳ:</span>
                 <span className="font-mono font-medium text-slate-700 dark:text-slate-300">
-                  {isAdmin ? '∞' : (nextCreditResetAt ? formatDateVN(nextCreditResetAt) : 'Chưa kích hoạt')}
+                  {isAdmin ? 'Trọn đời' : (nextCreditResetAt ? formatDateVN(nextCreditResetAt) : 'Chưa kích hoạt')}
                 </span>
               </div>
               <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
                 <span>Hạn gói:</span>
                 <span className="font-mono font-medium text-slate-700 dark:text-slate-300">
-                  {isAdmin ? '∞' : (planExpiresAt ? formatDateVN(planExpiresAt) : 'Chưa kích hoạt')}
+                  {isAdmin ? 'Trọn đời' : (planExpiresAt ? formatDateVN(planExpiresAt) : 'Chưa kích hoạt')}
                 </span>
               </div>
             </div>
@@ -311,7 +311,7 @@ export default function AccountDetailsModal({ isOpen, onClose, data }: AccountDe
                     Ω Vô Hạn:
                   </span>
                   <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
-                    Vô hạn (∞)
+                    Trọn đời
                   </span>
                 </div>
                 <div className="flex items-baseline justify-between mt-0.5">
@@ -323,7 +323,7 @@ export default function AccountDetailsModal({ isOpen, onClose, data }: AccountDe
                 <div className="flex items-center justify-between text-[11px] pt-1 border-t border-amber-200/50 dark:border-amber-900/30 text-slate-500 dark:text-slate-400">
                   <span>Thời hạn:</span>
                   <span className="font-medium text-emerald-600 dark:text-emerald-400 font-mono">
-                    Vô hạn
+                    Trọn đời
                   </span>
                 </div>
               </div>
@@ -381,7 +381,7 @@ export default function AccountDetailsModal({ isOpen, onClose, data }: AccountDe
                     const kKey = k.key;
                     const kDur = k.durationDays ?? k.duration_days ?? 30;
                     const isLt = kDur === 0 || (kKey && kKey.startsWith('AIO-LT-'));
-                    const durStr = isLt ? 'Vô hạn (∞)' : `+${kDur} ngày`;
+                    const durStr = isLt ? 'Trọn đời' : `+${kDur} ngày`;
                     const rawUsage = k.totalCredits ?? k.total_credits ?? k.credits ?? k.maxUsage ?? k.max_usage ?? 50;
                     const usageText = rawUsage === -1 
                       ? '∞ Ω' 

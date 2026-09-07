@@ -112,7 +112,7 @@ export default function AdminLicenseKeysPage() {
         : `${creditsCount} Ω/tháng`;
 
     const expireStr = isLifetime
-      ? 'Vô hạn (∞)'
+      ? 'Trọn đời'
       : newlyCreatedKey.expiresAt
       ? new Date(newlyCreatedKey.expiresAt).toLocaleDateString('vi-VN')
       : `+${durDays} ngày`;
@@ -146,7 +146,7 @@ export default function AdminLicenseKeysPage() {
         : `${creditsCount} Ω/tháng`;
 
     const expireStr = isLifetime
-      ? 'Vô hạn (∞)'
+      ? 'Trọn đời'
       : keyItem.expiresAt
       ? new Date(keyItem.expiresAt).toLocaleDateString('vi-VN')
       : `+${durDays} ngày`;
@@ -484,7 +484,7 @@ export default function AdminLicenseKeysPage() {
                         {(() => {
                           const durDays = k.durationDays ?? k.duration_days ?? 30;
                           const isLifetime = durDays === 0 || k.key?.startsWith('AIO-LT-');
-                          return isLifetime ? 'Vô hạn (∞)' : `Hạn: ${durDays} ngày`;
+                          return isLifetime ? 'Hạn: Trọn đời' : `Hạn: ${durDays} ngày`;
                         })()}
                       </div>
                     </div>
@@ -636,7 +636,7 @@ export default function AdminLicenseKeysPage() {
                     { label: '30 ngày', value: 30 },
                     { label: '90 ngày', value: 90 },
                     { label: '1 năm', value: 365 },
-                    { label: 'Vô hạn', value: 0 },
+                    { label: 'Trọn đời', value: 0 },
                   ].map((dur) => (
                     <button
                       key={dur.value}
@@ -768,7 +768,7 @@ export default function AdminLicenseKeysPage() {
                   {(() => {
                     const durDays = newlyCreatedKey.durationDays ?? newlyCreatedKey.duration_days ?? 30;
                     const isLifetime = durDays === 0 || newlyCreatedKey.key?.startsWith('AIO-LT-');
-                    if (isLifetime) return 'Vô hạn (∞)';
+                    if (isLifetime) return 'Trọn đời';
                     return newlyCreatedKey.expiresAt
                       ? new Date(newlyCreatedKey.expiresAt).toLocaleDateString('vi-VN')
                       : `${durDays} ngày`;

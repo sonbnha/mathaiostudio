@@ -529,11 +529,11 @@ export default function UserProfileDropdown({
                 <span className="text-xs font-medium text-right">
                   {isAdmin ? (
                     <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
-                      Vô hạn
+                      Trọn đời
                     </span>
                   ) : hasUnlimitedCredits && (!planExp || hasUnlimitedTime) ? (
                     <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
-                      Vô hạn
+                      Trọn đời
                     </span>
                   ) : isFreeAccount ? (
                     <span className="text-slate-400 italic">
@@ -603,7 +603,7 @@ export default function UserProfileDropdown({
                       : 'text-emerald-600 dark:text-emerald-400 font-medium'
                   }`}
                 >
-                  {isFreeAccount ? 'Đã dùng hết' : 'Vô hạn'}
+                  {isFreeAccount ? 'Đã dùng hết' : 'Trọn đời'}
                 </span>
               </div>
 

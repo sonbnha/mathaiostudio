@@ -720,7 +720,7 @@ export default function SettingsPage() {
 
                 <div className="flex items-baseline gap-2 pt-1">
                   <span className="text-2xl sm:text-3xl font-black text-rose-600 dark:text-rose-400">
-                    ∞ Vô hạn
+                    ∞
                   </span>
                   <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Ω</span>
                 </div>
@@ -729,7 +729,7 @@ export default function SettingsPage() {
                   <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
                     <span>Thời hạn sử dụng:</span>
                     <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                      Vô hạn
+                      Trọn đời
                     </span>
                   </div>
                   <div className="text-[11px] text-slate-500 dark:text-slate-400 italic">
@@ -760,7 +760,7 @@ export default function SettingsPage() {
 
                 <div className="flex items-baseline gap-2 pt-1">
                   <span className="text-2xl sm:text-3xl font-black text-amber-600 dark:text-amber-400">
-                    ∞ Vô hạn
+                    ∞
                   </span>
                   <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Ω</span>
                 </div>
@@ -769,7 +769,7 @@ export default function SettingsPage() {
                   <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
                     <span>Thời hạn sử dụng:</span>
                     <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                      Vô hạn
+                      Trọn đời
                     </span>
                   </div>
                   <div className="text-[11px] text-slate-500 dark:text-slate-400 italic">
@@ -819,8 +819,8 @@ export default function SettingsPage() {
                         : 'text-indigo-600 dark:text-indigo-400'
                     }`}>
                       {hasUnlimitedCredits || monthlyCredits === -1
-                        ? (isPlanActive ? '∞ Vô hạn' : '0')
-                        : `${monthlyCredits === -1 ? '∞ Vô hạn' : monthlyCredits}${monthlyAllowance > 0 ? ` / ${monthlyAllowance === -1 ? '∞' : monthlyAllowance}` : ''}`}{' '}
+                        ? (isPlanActive ? '∞' : '0')
+                        : `${monthlyCredits === -1 ? '∞' : monthlyCredits}${monthlyAllowance > 0 ? ` / ${monthlyAllowance === -1 ? '∞' : monthlyAllowance}` : ''}`}{' '}
                       <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Ω</span>
                     </div>
 
@@ -868,12 +868,12 @@ export default function SettingsPage() {
                         </span>
                       </div>
                       <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-200/60 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300">
-                        Vô hạn
+                        Trọn đời
                       </span>
                     </div>
 
                     <div className="text-2xl font-black text-amber-600 dark:text-amber-400">
-                      {lifetimeCredits === -1 ? '∞ Vô hạn' : lifetimeCredits}{' '}
+                      {lifetimeCredits === -1 ? '∞' : lifetimeCredits}{' '}
                       <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Ω</span>
                     </div>
 
@@ -887,7 +887,7 @@ export default function SettingsPage() {
                   <div className="pt-2.5 border-t border-amber-200/60 dark:border-amber-800/50 flex items-center justify-between text-xs">
                     <span className="text-slate-500 dark:text-slate-400">Thời hạn sử dụng:</span>
                     <span className="font-semibold text-amber-700 dark:text-amber-300">
-                      Vô hạn
+                      Trọn đời
                     </span>
                   </div>
                 </div>
@@ -996,7 +996,7 @@ export default function SettingsPage() {
                         const isCopied = copiedKey === item.key;
                         const dur = item.durationDays ?? 30;
                         const isLt = dur === 0 || item.key?.startsWith('AIO-LT-');
-                        const durText = isLt ? 'Vô hạn (∞)' : `+${dur} ngày`;
+                        const durText = isLt ? 'Trọn đời' : `+${dur} ngày`;
                         const creditsVal = item.totalCredits ?? 50;
                         const creditsText = creditsVal === -1 ? '∞ Ω' : (isLt ? `+${creditsVal} Ω vô hạn` : `${creditsVal} Ω/tháng`);
 

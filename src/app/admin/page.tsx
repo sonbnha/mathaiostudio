@@ -72,7 +72,7 @@ export default function AdminOverviewPage() {
             </div>
             <span className="text-xs font-bold text-cyan-600 dark:text-cyan-400">
               {isStaffUnlimited
-                ? `∞ Vô hạn (Đã tạo ${staffCreatedCount} keys)`
+                ? `∞ (Đã tạo ${staffCreatedCount} keys)`
                 : `${staffCreatedCount} / ${staffMaxCredits} Key (${staffQuotaPercent}%)`}
             </span>
           </div>

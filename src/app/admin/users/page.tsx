@@ -948,7 +948,7 @@ export default function AdminUsersPage() {
                             : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                         }`}
                       >
-                        <span>Vô hạn Ω</span>
+                        <span>∞ Ω</span>
                       </button>
                     </div>
                   </div>
@@ -964,7 +964,7 @@ export default function AdminUsersPage() {
                         { days: 30, label: '30 ngày' },
                         { days: 90, label: '90 ngày' },
                         { days: 365, label: '1 năm' },
-                        { days: 0, label: 'Vô hạn' },
+                        { days: 0, label: 'Trọn đời' },
                       ].map((item) => {
                         const isSelected = newAccDurationDays === item.days;
                         return (

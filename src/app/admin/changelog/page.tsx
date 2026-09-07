@@ -220,7 +220,9 @@ export default function AdminChangelogPage() {
                                     ? 'bg-emerald-950/60 text-emerald-400 border-emerald-800/80 dark:bg-emerald-950/60 dark:text-emerald-400 dark:border-emerald-800/80'
                                     : ch.type === 'fix'
                                     ? 'bg-rose-950/60 text-rose-400 border-rose-800/80 dark:bg-rose-950/60 dark:text-rose-400 dark:border-rose-800/80'
-                                    : 'bg-sky-950/60 text-sky-400 border-sky-800/80 dark:bg-sky-950/60 dark:text-sky-400 dark:border-sky-800/80'
+                                    : ch.type === 'improve'
+                                    ? 'bg-sky-950/60 text-sky-400 border-sky-800/80 dark:bg-sky-950/60 dark:text-sky-400 dark:border-sky-800/80'
+                                    : 'bg-slate-800/80 text-slate-300 border-slate-700/80 dark:bg-slate-800/80 dark:text-slate-300 dark:border-slate-700/80'
                                 }`}
                               >
                                 {ch.type}

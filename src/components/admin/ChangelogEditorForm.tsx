@@ -23,18 +23,29 @@ export interface ChangelogEditorFormProps {
   isNew?: boolean;
 }
 
+export type ChangelogChangeType = 'feat' | 'fix' | 'improve' | 'note' | 'update';
+
+export interface ChangelogChangeItem {
+  type: ChangelogChangeType;
+  description: string;
+  content: string;
+}
+
 export function serializeChangesToText(changes?: any[]): string {
   if (!Array.isArray(changes) || changes.length === 0) return '';
   return changes
     .map((c) => {
-      const type = (c.type || 'feat').toLowerCase();
+      const type = (c.type || 'note').toLowerCase();
       const content = (c.description ?? c.content ?? '').trim();
+      if (type === 'note' || type === 'update') {
+        return content;
+      }
       return `/${type} ${content}`;
     })
     .join('\n');
 }
 
-export function parseChangesText(rawText: string) {
+export function parseChangesText(rawText: string): ChangelogChangeItem[] {
   const lines = rawText
     .split('\n')
     .map((line) => line.trim())
@@ -78,9 +89,20 @@ export function parseChangesText(rawText: string) {
         };
       }
 
-      // Default to 'feat'
+      // /note or [NOTE] or /update or [UPDATE] (case-insensitive)
+      const noteMatch = cleaned.match(/^(?:\/note|\[note\]|\/update|\[update\])\s+(.*)$/i);
+      if (noteMatch) {
+        const content = noteMatch[1].trim();
+        return {
+          type: 'note' as const,
+          description: content,
+          content: content,
+        };
+      }
+
+      // Neutral un-prefixed entry: default to 'note' (never fallback to 'feat')
       return {
-        type: 'feat' as const,
+        type: 'note' as const,
         description: cleaned,
         content: cleaned,
       };
@@ -177,12 +199,15 @@ export default function ChangelogEditorForm({
     let feat = 0;
     let fix = 0;
     let improve = 0;
+    let note = 0;
     parsedChanges.forEach((c) => {
-      if (c.type === 'feat') feat++;
-      else if (c.type === 'fix') fix++;
-      else if (c.type === 'improve') improve++;
+      const t = (c.type || '').toLowerCase();
+      if (t === 'feat') feat++;
+      else if (t === 'fix') fix++;
+      else if (t === 'improve') improve++;
+      else note++;
     });
-    return { feat, fix, improve, total: parsedChanges.length };
+    return { feat, fix, improve, note, total: parsedChanges.length };
   }, [parsedChanges]);
 
   // Insert tag at cursor
@@ -569,6 +594,11 @@ export default function ChangelogEditorForm({
                           IMPROVE
                         </span>
                       )}
+                      {(change.type === 'note' || change.type === 'update') && (
+                        <span className="bg-slate-800/80 text-slate-300 border border-slate-700/80 text-[9px] font-mono font-bold px-1.5 py-0.5 rounded shrink-0 uppercase tracking-wide">
+                          NOTE
+                        </span>
+                      )}
 
                       {/* Content */}
                       <span className="flex-1 break-words">
@@ -584,7 +614,7 @@ export default function ChangelogEditorForm({
           {/* Fixed Bottom Summary Footer */}
           <div className="border-t border-slate-800/80 px-4 py-3 bg-slate-950/40 flex items-center justify-between text-xs text-slate-400 shrink-0 font-mono">
             <span>Tổng cộng: {counts.total} mục</span>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               {counts.feat > 0 && (
                 <span className="text-emerald-400">{counts.feat} feat</span>
               )}
@@ -593,6 +623,9 @@ export default function ChangelogEditorForm({
               )}
               {counts.fix > 0 && (
                 <span className="text-rose-400">{counts.fix} fix</span>
+              )}
+              {counts.note > 0 && (
+                <span className="text-slate-400">{counts.note} note</span>
               )}
             </div>
           </div>

@@ -3,7 +3,7 @@ export interface VersionRelease {
   date: string;
   title: string;
   changes: {
-    type: "feat" | "fix" | "improve";
+    type: "feat" | "fix" | "improve" | "note" | "update" | string;
     description: string;
   }[];
 }

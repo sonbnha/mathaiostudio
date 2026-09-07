@@ -1876,9 +1876,9 @@ export default function UnifiedAdminPage() {
 
           {/* TAB 1: License Keys Management (Fixed Height & Internal Scroll Layout) */}
           {activeTab === 'keys' && (
-            <div className="flex-1 min-h-0 grid grid-cols-1 xl:grid-cols-12 gap-6 items-start xl:h-full w-full">
-              {/* Create Key Form (5 Cols on xl, 4 on 2xl, Sticky on desktop) */}
-              <div className="xl:col-span-5 2xl:col-span-4 bg-white dark:bg-[#111622] border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-3.5 sm:p-4 shadow-xs flex flex-col gap-3 transition-colors xl:sticky xl:top-0 xl:overflow-y-auto xl:max-h-full flex-shrink-0">
+            <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-5 items-start lg:h-full w-full">
+              {/* Create Key Form (4 Cols on lg, 3 on xl/2xl, Sticky on desktop) */}
+              <div className="lg:col-span-4 xl:col-span-3 2xl:col-span-3 bg-white dark:bg-[#111622] border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-3.5 sm:p-4 shadow-xs flex flex-col gap-3 transition-colors lg:sticky lg:top-0 lg:overflow-y-auto lg:max-h-full flex-shrink-0">
                 <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2.5 flex-shrink-0">
                   <h2 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                     <div className="w-6 h-6 rounded-md bg-cyan-500/10 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center">
@@ -2043,8 +2043,8 @@ export default function UnifiedAdminPage() {
                 </form>
               </div>
 
-              {/* Keys Table List (7 Cols on xl, 8 on 2xl, Internal Scroll) */}
-              <div className="xl:col-span-7 2xl:col-span-8 bg-white dark:bg-[#111622] border border-slate-200/80 dark:border-slate-800/80 rounded-2xl shadow-xs flex flex-col transition-colors min-w-0 xl:h-full xl:min-h-0 overflow-hidden">
+              {/* Keys Table List (8 Cols on lg, 9 on xl/2xl, Internal Scroll) */}
+              <div className="lg:col-span-8 xl:col-span-9 2xl:col-span-9 bg-white dark:bg-[#111622] border border-slate-200/80 dark:border-slate-800/80 rounded-2xl shadow-xs flex flex-col transition-colors min-w-0 lg:h-full lg:min-h-0 overflow-hidden">
                 {/* Header Filter / Search */}
                 <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 flex-shrink-0">
                   <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">

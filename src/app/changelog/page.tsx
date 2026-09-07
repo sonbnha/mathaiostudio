@@ -1,7 +1,7 @@
 import React from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowLeft, Sparkles } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import { CHANGELOG, sortChangelogsList, VersionRelease } from '@/config/changelog';
 import ChangelogContentRenderer from '@/components/ChangelogContentRenderer';
@@ -50,62 +50,59 @@ export default async function ChangelogPage() {
         <div className="absolute top-1/3 -right-40 w-[450px] h-[450px] bg-indigo-500/5 rounded-full blur-[160px]" />
       </div>
 
-      <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 py-10 md:py-16">
-        {/* Top Action Bar */}
-        <div className="flex items-center justify-between gap-4 pb-8 mb-8 border-b border-slate-800/60">
+      <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 py-10">
+        {/* 1. Thanh Top Navigation */}
+        <div className="w-full flex items-center justify-between mb-10 pb-4 border-b border-slate-800/60">
           <Link
             href="/"
-            className="inline-flex items-center gap-2 text-xs font-medium text-slate-400 hover:text-white px-3 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800/80 border border-slate-800 transition shadow-xs group"
+            className="inline-flex items-center gap-2 text-xs text-slate-400 hover:text-white transition-colors"
           >
-            <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+            <ArrowLeft className="w-3.5 h-3.5" />
             <span>Quay lại MathAIO Studio</span>
           </Link>
 
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono font-medium text-emerald-400 bg-emerald-950/40 border border-emerald-800/60">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              Live Updates
-            </span>
-          </div>
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono text-emerald-400 bg-emerald-950/40 border border-emerald-800/60">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            Live Updates
+          </span>
         </div>
 
-        {/* Page Header */}
-        <div className="space-y-4 mb-14 md:mb-20">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-semibold tracking-wider uppercase font-mono">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Nhật Ký Phát Hành</span>
-          </div>
-
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white leading-tight bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
-            Cập nhật sản phẩm & Tính năng mới
+        {/* 2. Khối Header Tiêu Đề (Thẳng hàng tuyệt đối với mép trái Timeline) */}
+        <div className="mb-12">
+          <span className="text-cyan-400 font-mono text-xs tracking-widest uppercase mb-2 inline-block">
+            Nhật Ký Phát Hành
+          </span>
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-3">
+            Cập nhật sản phẩm &amp; Tính năng mới
           </h1>
-
-          <p className="text-slate-400 text-sm md:text-base max-w-2xl leading-relaxed">
-            Khám phá tất cả các cập nhật, tính năng mới và cải tiến hiệu năng định kỳ của MathAIO Studio. Nền tảng được tối ưu hóa liên tục để phục vụ công tác giảng dạy & học tập hình học THCS/THPT.
+          <p className="text-sm sm:text-base text-slate-400 max-w-2xl leading-relaxed mb-12">
+            Khám phá tất cả các cập nhật, tính năng mới và cải tiến hiệu năng định kỳ của MathAIO Studio. Nền tảng được tối ưu hóa liên tục để phục vụ công tác giảng dạy &amp; học tập hình học THCS/THPT.
           </p>
         </div>
 
-        {/* Vertical Timeline Axis */}
-        <div className="relative border-l border-slate-800/80 ml-4 md:ml-48 pl-6 md:pl-10 space-y-16">
+        {/* 3. Xây dựng Trục Timeline Dọc (Left-Rail Vertical Spine Layout) */}
+        <div className="relative border-l border-slate-800/80 ml-2 md:ml-44 space-y-12">
           {releases.map((rel, idx) => {
             const isLatest = idx === 0;
 
             return (
-              <div key={rel.version} className="relative group">
-                {/* Timeline Dot on the Axis */}
+              <div key={rel.version} className="relative pl-6 md:pl-8 group">
+                {/* Điểm neo trên trục (Timeline Node Dot) */}
                 <div
-                  className={`absolute -left-[31px] md:-left-[47px] top-1.5 w-3.5 h-3.5 rounded-full bg-slate-950 border-2 transition-all duration-300 ${
+                  className={`absolute -left-[5px] top-2.5 w-2.5 h-2.5 rounded-full ring-4 ring-slate-950 transition-all duration-300 ${
                     isLatest
-                      ? 'border-cyan-400 shadow-[0_0_12px_rgba(34,211,238,0.7)] scale-110'
-                      : 'border-slate-600 group-hover:border-cyan-400 group-hover:shadow-[0_0_8px_rgba(34,211,238,0.4)]'
+                      ? 'bg-cyan-400 ring-cyan-950/80 shadow-[0_0_10px_rgba(34,211,238,0.8)] scale-110'
+                      : 'bg-cyan-400 ring-slate-950 group-hover:bg-cyan-300 group-hover:shadow-[0_0_8px_rgba(34,211,238,0.5)]'
                   }`}
                 />
 
-                {/* Desktop Left Column: Date + Version Badge (aligned outside timeline) */}
-                <div className="hidden md:flex flex-col items-end gap-1.5 absolute -left-48 w-36 text-right top-0.5">
-                  <span className="font-mono text-xs text-slate-400">{rel.date}</span>
+                {/* Cột mốc thời gian (Left Sidebar trên desktop, đặt absolute hoặc cố định thẳng hàng) */}
+                <div className="hidden md:flex md:flex-col items-baseline md:items-end gap-2 md:absolute md:-left-44 md:top-1.5 md:w-36 md:text-right">
+                  <span className="text-xs font-mono text-slate-400 font-medium">
+                    {rel.date}
+                  </span>
                   <div className="flex items-center gap-1.5">
-                    <span className="font-mono text-xs font-bold px-2.5 py-1 rounded-lg bg-slate-900/90 text-cyan-300 border border-slate-700/80 shadow-xs">
+                    <span className="px-2 py-0.5 rounded-md font-mono text-xs bg-slate-900 border border-slate-700/80 text-cyan-300">
                       {rel.version}
                     </span>
                   </div>
@@ -116,9 +113,9 @@ export default async function ChangelogPage() {
                   )}
                 </div>
 
-                {/* Mobile Meta Header: Shown only on small screens */}
+                {/* Mobile Meta Header: Hiện trên màn hình nhỏ */}
                 <div className="flex md:hidden items-center gap-2 mb-3 flex-wrap">
-                  <span className="font-mono text-xs font-bold px-2 py-0.5 rounded-md bg-cyan-950/80 text-cyan-300 border border-cyan-800/80">
+                  <span className="px-2 py-0.5 rounded-md font-mono text-xs bg-slate-900 border border-slate-700/80 text-cyan-300">
                     {rel.version}
                   </span>
                   {isLatest && (
@@ -126,17 +123,17 @@ export default async function ChangelogPage() {
                       Mới nhất
                     </span>
                   )}
-                  <span className="text-slate-400 text-xs font-mono">• {rel.date}</span>
+                  <span className="text-xs font-mono text-slate-400 font-medium">
+                    • {rel.date}
+                  </span>
                 </div>
 
-                {/* Main Content Card */}
-                <div className="bg-slate-900/40 border border-slate-800/70 hover:border-slate-700/80 rounded-2xl p-5 md:p-6 transition shadow-sm backdrop-blur-xs">
-                  {/* Release Title */}
-                  <h2 className="text-base md:text-lg font-bold text-slate-100 mb-4 leading-snug">
+                {/* Khung Card Nội Dung Bản Phát Hành (Nền mờ có chiều sâu) */}
+                <div className="bg-slate-900/40 border border-slate-800/70 rounded-2xl p-5 sm:p-7 backdrop-blur-sm shadow-xl shadow-black/20">
+                  <h2 className="text-lg sm:text-xl font-semibold text-white tracking-tight mb-5">
                     {rel.title}
                   </h2>
 
-                  {/* Grouped Changes Renderer */}
                   <ChangelogContentRenderer changes={rel.changes} />
                 </div>
               </div>
@@ -144,7 +141,7 @@ export default async function ChangelogPage() {
           })}
         </div>
 
-        {/* Bottom Footer Section */}
+        {/* Footer */}
         <div className="mt-20 pt-8 border-t border-slate-800/60 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
           <p>© {new Date().getFullYear()} MathAIO Studio. Chuẩn Công văn 5512 BGD&ĐT.</p>
           <Link

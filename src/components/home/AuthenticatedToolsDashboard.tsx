@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import {
@@ -8,8 +8,6 @@ import {
   BookOpen,
   Shield,
   Users,
-  Sun,
-  Moon,
   Settings,
   Key,
   Cpu,
@@ -18,6 +16,7 @@ import {
 import { APP_VERSION } from '@/config/version';
 import { useApiKey } from '@/context/ApiKeyContext';
 import UserProfileDropdown from '@/components/header/UserProfileDropdown';
+import ThemeToggleButton from '@/components/header/ThemeToggleButton';
 
 export interface AuthenticatedToolsDashboardProps {
   user: any;
@@ -32,31 +31,6 @@ export default function AuthenticatedToolsDashboard({
   const { openApiKeyModal, isCustomKeyActive } = useApiKey();
   const router = useRouter();
 
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
-
-  // Sync theme
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as 'dark' | 'light' | null;
-    if (savedTheme === 'light') {
-      setTheme('light');
-      document.documentElement.classList.add('dark');
-    } else {
-      setTheme('dark');
-      document.documentElement.classList.add('dark');
-    }
-  }, []);
-
-  const toggleTheme = () => {
-    const nextTheme = theme === 'dark' ? 'light' : 'dark';
-    setTheme(nextTheme);
-    localStorage.setItem('theme', nextTheme);
-    if (nextTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  };
-
   const handleLogoutClick = async () => {
     await onLogout();
     router.refresh();
@@ -69,7 +43,7 @@ export default function AuthenticatedToolsDashboard({
   const displayName = user?.name || user?.username || user?.email?.split('@')[0] || 'Thầy/Cô';
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 antialiased selection:bg-cyan-500 selection:text-slate-950 flex flex-col justify-between relative overflow-hidden">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased selection:bg-cyan-500 selection:text-slate-950 flex flex-col justify-between relative overflow-hidden transition-colors duration-200">
       {/* Subtle Background Glows */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[850px] h-[420px] bg-cyan-500/10 rounded-full blur-[150px]" />
@@ -78,7 +52,7 @@ export default function AuthenticatedToolsDashboard({
       </div>
 
       {/* Top Header Bar */}
-      <header className="relative z-30 w-full border-b border-slate-800/60 bg-slate-950/60 backdrop-blur-md px-4 sm:px-8 py-3.5 flex items-center justify-between">
+      <header className="relative z-30 w-full border-b border-slate-200 dark:border-slate-800/60 bg-white/80 dark:bg-slate-950/60 backdrop-blur-md px-4 sm:px-8 py-3.5 flex items-center justify-between transition-colors">
         <div className="flex items-center gap-3">
           <Link href="/" className="flex items-center gap-3 group">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-cyan-500/20 group-hover:scale-105 transition-transform">
@@ -86,14 +60,14 @@ export default function AuthenticatedToolsDashboard({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-bold text-lg bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
+                <span className="font-bold text-lg bg-gradient-to-r from-slate-900 via-slate-800 to-slate-600 dark:from-white dark:via-slate-100 dark:to-slate-400 bg-clip-text text-transparent">
                   MathAIO
                 </span>
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">
                   Studio
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 hidden sm:block">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:block">
                 Hệ Sinh Thái Ứng Dụng Toán Học Trực Quan
               </p>
             </div>
@@ -102,7 +76,7 @@ export default function AuthenticatedToolsDashboard({
           <Link
             href={pathname ? `/changelog?from=${encodeURIComponent(pathname)}` : '/changelog'}
             title="Xem nhật ký phát hành (Changelog)"
-            className="text-[11px] font-mono font-medium px-2.5 py-1 rounded-full bg-slate-900 hover:bg-slate-850 text-slate-400 hover:text-cyan-400 border border-slate-800 hover:border-slate-700 transition flex items-center gap-1 cursor-pointer"
+            className="text-[11px] font-mono font-medium px-2.5 py-1 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-850 text-slate-600 dark:text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-400 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition flex items-center gap-1 cursor-pointer"
           >
             <span>{APP_VERSION.fullString}</span>
           </Link>
@@ -114,19 +88,19 @@ export default function AuthenticatedToolsDashboard({
           <button
             type="button"
             onClick={() => openApiKeyModal()}
-            className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono text-slate-300 bg-slate-900 border border-slate-700/80 hover:border-slate-600 shrink-0 shadow-xs transition cursor-pointer"
+            className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600 shrink-0 shadow-xs transition cursor-pointer"
             title="Cấu hình Gemini API Key"
           >
-            <Key className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+            <Key className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 shrink-0" />
             <span>{isCustomKeyActive ? 'Gemini Key Cá nhân' : 'Gemini Key AUTO'}</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(52,211,153,0.8)] shrink-0" />
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(52,211,153,0.8)] shrink-0" />
           </button>
 
           {/* Nút "Quản trị": CHỈ HIỂN THỊ KHI isAdmin === true */}
           {isAdmin && (
             <Link
               href="/admin"
-              className="px-3 py-1.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent hover:border-slate-800 transition text-xs flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900 border border-transparent hover:border-slate-200 dark:hover:border-slate-800 transition text-xs flex items-center gap-1.5"
               title="Cổng quản trị hệ thống"
             >
               <Settings className="w-3.5 h-3.5" />
@@ -137,30 +111,23 @@ export default function AuthenticatedToolsDashboard({
           {/* User Profile Dropdown */}
           <UserProfileDropdown user={user} onLogout={handleLogoutClick} />
 
-          {/* Theme Toggle */}
-          <button
-            type="button"
-            onClick={toggleTheme}
-            className="p-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-amber-400 transition shadow-xs cursor-pointer"
-            title={theme === 'dark' ? 'Chuyển sang chế độ sáng' : 'Chuyển sang chế độ tối'}
-          >
-            {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-400" />}
-          </button>
+          {/* Theme Toggle Button */}
+          <ThemeToggleButton />
         </div>
       </header>
 
       {/* Main Hub Content: Minimal Launcher without Hero text (Above-the-fold) */}
       <main className="relative z-10 flex-1 max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 w-full flex flex-col justify-center">
         {/* Minimal Hub Header */}
-        <div className="flex items-center justify-between mb-5 pt-1 border-b border-slate-800/60 pb-3">
-          <div className="flex items-center gap-2 text-xs font-mono text-slate-400">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+        <div className="flex items-center justify-between mb-5 pt-1 border-b border-slate-200 dark:border-slate-800/60 pb-3">
+          <div className="flex items-center gap-2 text-xs font-mono text-slate-500 dark:text-slate-400">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />
             <span className="tracking-wide">KHÔNG GIAN LÀM VIỆC • CHỌN CÔNG CỤ ĐỂ BẮT ĐẦU</span>
           </div>
 
           <div className="hidden sm:flex items-center gap-2 text-xs text-slate-500 font-mono">
             <span>Tài khoản:</span>
-            <span className="text-slate-300 font-semibold bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
+            <span className="text-slate-700 dark:text-slate-300 font-semibold bg-slate-100 dark:bg-slate-900 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-800">
               {displayName}
             </span>
           </div>
@@ -171,7 +138,7 @@ export default function AuthenticatedToolsDashboard({
           {/* Bento Card 1: HERO TOOL - Geometry Canvas (2 CỘT: col-span-1 md:col-span-2) */}
           <Link
             href="/geometry"
-            className="group relative md:col-span-2 bg-gradient-to-b from-slate-900/60 to-slate-950/80 hover:from-slate-900/80 hover:to-slate-900/90 border border-slate-800/90 hover:border-cyan-500/50 rounded-2xl p-5 sm:p-6 transition-all duration-300 shadow-xl shadow-black/40 hover:shadow-cyan-950/20 flex flex-col justify-between backdrop-blur-sm overflow-hidden"
+            className="group relative md:col-span-2 bg-white/90 dark:bg-gradient-to-b dark:from-slate-900/60 dark:to-slate-950/80 hover:bg-white dark:hover:from-slate-900/80 dark:hover:to-slate-900/90 border border-slate-200/90 dark:border-slate-800/90 hover:border-cyan-500/50 rounded-2xl p-5 sm:p-6 transition-all duration-300 shadow-md dark:shadow-xl shadow-slate-200/60 dark:shadow-black/40 hover:shadow-cyan-500/10 dark:hover:shadow-cyan-950/20 flex flex-col justify-between backdrop-blur-sm overflow-hidden"
           >
             {/* Top decorative glow */}
             <div className="absolute top-0 right-0 w-80 h-80 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none group-hover:bg-cyan-500/10 transition-colors" />
@@ -179,24 +146,24 @@ export default function AuthenticatedToolsDashboard({
             <div className="relative z-10 space-y-3.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <div className="text-cyan-400 bg-cyan-950/70 p-2.5 rounded-xl border border-cyan-800/60 group-hover:scale-105 transition-transform">
+                  <div className="text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950/70 p-2.5 rounded-xl border border-cyan-200 dark:border-cyan-800/60 group-hover:scale-105 transition-transform">
                     <Compass className="w-5 h-5" />
                   </div>
                   <div>
-                    <h2 className="text-base sm:text-lg font-bold text-white group-hover:text-cyan-300 transition-colors">
+                    <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-300 transition-colors">
                       Vẽ Hình Học Trực Quan AI
                     </h2>
-                    <p className="text-[11px] text-slate-400">
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
                       Mô hình hóa hình học phẳng, toạ độ giải tích &amp; công thức LaTeX
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-mono font-semibold px-2.5 py-0.5 rounded-full bg-cyan-950/80 text-cyan-300 border border-cyan-800/80">
+                  <span className="text-[10px] font-mono font-semibold px-2.5 py-0.5 rounded-full bg-cyan-100/80 dark:bg-cyan-950/80 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800/80">
                     SVG Dynamic Engine
                   </span>
-                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-slate-850 text-slate-300 border border-slate-700">
+                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-850 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                     {APP_VERSION.version}
                   </span>
                 </div>
@@ -278,8 +245,8 @@ export default function AuthenticatedToolsDashboard({
             </div>
 
             {/* Bottom Card Footer */}
-            <div className="relative z-10 pt-3.5 mt-2 border-t border-slate-800/70 flex items-center justify-between text-xs">
-              <span className="font-semibold text-cyan-400 flex items-center gap-1 group-hover:translate-x-1.5 transition-transform">
+            <div className="relative z-10 pt-3.5 mt-2 border-t border-slate-200 dark:border-slate-800/70 flex items-center justify-between text-xs">
+              <span className="font-semibold text-cyan-600 dark:text-cyan-400 flex items-center gap-1 group-hover:translate-x-1.5 transition-transform">
                 Mở Không Gian Vẽ Canvas →
               </span>
               <span className="text-[11px] font-mono text-slate-500">TikZ &amp; SVG Ready</span>
@@ -289,56 +256,56 @@ export default function AuthenticatedToolsDashboard({
           {/* Bento Card 2: TOOL 2 - Soạn Giáo Án 5512 (1 CỘT: col-span-1) */}
           <Link
             href="/lesson-plan"
-            className="group relative col-span-1 bg-gradient-to-b from-slate-900/60 to-slate-950/80 hover:from-slate-900/80 hover:to-slate-900/90 border border-slate-800/90 hover:border-emerald-500/50 rounded-2xl p-5 sm:p-6 transition-all duration-300 shadow-xl shadow-black/40 hover:shadow-emerald-950/20 flex flex-col justify-between backdrop-blur-sm overflow-hidden"
+            className="group relative col-span-1 bg-white/90 dark:bg-gradient-to-b dark:from-slate-900/60 dark:to-slate-950/80 hover:bg-white dark:hover:from-slate-900/80 dark:hover:to-slate-900/90 border border-slate-200/90 dark:border-slate-800/90 hover:border-emerald-500/50 rounded-2xl p-5 sm:p-6 transition-all duration-300 shadow-md dark:shadow-xl shadow-slate-200/60 dark:shadow-black/40 hover:shadow-emerald-500/10 dark:hover:shadow-emerald-950/20 flex flex-col justify-between backdrop-blur-sm overflow-hidden"
           >
             <div className="space-y-3.5">
               <div className="flex items-center justify-between">
-                <div className="text-emerald-400 bg-emerald-950/70 p-2.5 rounded-xl border border-emerald-800/60 group-hover:scale-105 transition-transform">
+                <div className="text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/70 p-2.5 rounded-xl border border-emerald-200 dark:border-emerald-800/60 group-hover:scale-105 transition-transform">
                   <BookOpen className="w-5 h-5" />
                 </div>
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-950/80 text-emerald-300 border border-emerald-800/80">
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-100/80 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/80">
                   Chuẩn 5512 BGD&amp;ĐT
                 </span>
               </div>
 
               <div>
-                <h2 className="text-base sm:text-lg font-bold text-white group-hover:text-emerald-300 transition-colors">
+                <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-300 transition-colors">
                   Soạn Giáo Án Chuẩn 5512
                 </h2>
-                <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
                   Tự động hóa tiến trình 4 hoạt động dạy học, ma trận đề thi và kế hoạch bài dạy môn Toán.
                 </p>
               </div>
 
               {/* 4-Step Methodology Preview Stack */}
               <div className="space-y-1.5 pt-1">
-                <div className="p-2 rounded-lg bg-slate-950/80 border border-slate-800/80 flex items-center justify-between text-xs">
-                  <span className="flex items-center gap-2 text-slate-300 font-medium">
-                    <span className="w-5 h-5 rounded-md bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-[10px] font-bold">1</span>
+                <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800/80 flex items-center justify-between text-xs">
+                  <span className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-medium">
+                    <span className="w-5 h-5 rounded-md bg-cyan-500/10 dark:bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center text-[10px] font-bold">1</span>
                     <span>HĐ Khởi động</span>
                   </span>
                   <span className="text-[10px] font-mono text-slate-500">Tình huống</span>
                 </div>
 
-                <div className="p-2 rounded-lg bg-slate-950/80 border border-slate-800/80 flex items-center justify-between text-xs">
-                  <span className="flex items-center gap-2 text-slate-300 font-medium">
-                    <span className="w-5 h-5 rounded-md bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-[10px] font-bold">2</span>
+                <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800/80 flex items-center justify-between text-xs">
+                  <span className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-medium">
+                    <span className="w-5 h-5 rounded-md bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-[10px] font-bold">2</span>
                     <span>HĐ Hình thành kiến thức</span>
                   </span>
-                  <span className="text-[10px] font-mono text-indigo-400">Định lý + Hình</span>
+                  <span className="text-[10px] font-mono text-indigo-600 dark:text-indigo-400">Định lý + Hình</span>
                 </div>
 
-                <div className="p-2 rounded-lg bg-slate-950/80 border border-slate-800/80 flex items-center justify-between text-xs">
-                  <span className="flex items-center gap-2 text-slate-300 font-medium">
-                    <span className="w-5 h-5 rounded-md bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[10px] font-bold">3</span>
+                <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800/80 flex items-center justify-between text-xs">
+                  <span className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-medium">
+                    <span className="w-5 h-5 rounded-md bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-[10px] font-bold">3</span>
                     <span>HĐ Luyện tập</span>
                   </span>
                   <span className="text-[10px] font-mono text-slate-500">Phiếu bài tập</span>
                 </div>
 
-                <div className="p-2 rounded-lg bg-slate-950/80 border border-slate-800/80 flex items-center justify-between text-xs">
-                  <span className="flex items-center gap-2 text-slate-300 font-medium">
-                    <span className="w-5 h-5 rounded-md bg-amber-500/20 text-amber-400 flex items-center justify-center text-[10px] font-bold">4</span>
+                <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800/80 flex items-center justify-between text-xs">
+                  <span className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-medium">
+                    <span className="w-5 h-5 rounded-md bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center text-[10px] font-bold">4</span>
                     <span>HĐ Vận dụng &amp; Mở rộng</span>
                   </span>
                   <span className="text-[10px] font-mono text-slate-500">Thực tiễn</span>
@@ -347,8 +314,8 @@ export default function AuthenticatedToolsDashboard({
             </div>
 
             {/* Bottom Card Footer */}
-            <div className="pt-3.5 mt-2 border-t border-slate-800/70 flex items-center justify-between text-xs">
-              <span className="font-semibold text-emerald-400 flex items-center gap-1 group-hover:translate-x-1.5 transition-transform">
+            <div className="pt-3.5 mt-2 border-t border-slate-200 dark:border-slate-800/70 flex items-center justify-between text-xs">
+              <span className="font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 group-hover:translate-x-1.5 transition-transform">
                 Soạn Giáo Án Ngay →
               </span>
               <span className="text-[11px] font-mono text-slate-500">Word A4 Sync</span>
@@ -359,36 +326,36 @@ export default function AuthenticatedToolsDashboard({
         {/* Hàng 2: Tiện ích mở rộng & Phân quyền (Tự động dàn đều 2 hoặc 3 cột tùy số lượng thẻ thực tế) */}
         <div className={`grid grid-cols-1 ${isAdmin ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-5 mt-5`}>
           {/* Bento Card 3: AI Gemini Flash & LaTeX Engine */}
-          <div className="relative bg-slate-900/40 hover:bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 flex flex-col justify-between backdrop-blur-sm">
+          <div className="relative bg-white/90 dark:bg-slate-900/40 hover:bg-white dark:hover:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 rounded-2xl p-5 flex flex-col justify-between backdrop-blur-sm shadow-sm dark:shadow-none">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <div className="text-amber-400 bg-amber-950/50 p-2 rounded-xl border border-amber-800/50">
+                <div className="text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50 p-2 rounded-xl border border-amber-200 dark:border-amber-800/50">
                   <Cpu className="w-4 h-4" />
                 </div>
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-950/70 text-amber-300 border border-amber-800/60">
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/70 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60">
                   AI Nano-Speed
                 </span>
               </div>
 
               <div>
-                <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                   <span>Gemini 3.6 &amp; LaTeX Engine</span>
                 </h3>
-                <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
                   Công nghệ suy luận hình học nano-giây, render công thức KaTeX sắc nét và hỗ trợ quét OCR đề thi từ ảnh chụp.
                 </p>
               </div>
 
               {/* Math preview formula snippet */}
-              <div className="bg-slate-950/70 border border-slate-800 rounded-lg p-2.5 font-mono text-[11px] text-slate-300 flex items-center justify-between">
+              <div className="bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 font-mono text-[11px] text-slate-700 dark:text-slate-300 flex items-center justify-between">
                 <span>S = \frac{1}{2}ab\sin C = pr</span>
-                <span className="text-amber-400 font-bold">&lt; 1.2s</span>
+                <span className="text-amber-600 dark:text-amber-400 font-bold">&lt; 1.2s</span>
               </div>
             </div>
 
-            <div className="pt-3 mt-3 border-t border-slate-800/60 flex items-center justify-between text-[11px] text-slate-500 font-mono">
+            <div className="pt-3 mt-3 border-t border-slate-100 dark:border-slate-800/60 flex items-center justify-between text-[11px] text-slate-500 font-mono">
               <span>Độ trễ tối ưu</span>
-              <span className="text-amber-400/80">KaTeX + MathJax</span>
+              <span className="text-amber-600 dark:text-amber-400/80">KaTeX + MathJax</span>
             </div>
           </div>
 
@@ -396,30 +363,30 @@ export default function AuthenticatedToolsDashboard({
           {isAdmin && (
             <Link
               href="/admin"
-              className="group relative bg-slate-900/40 hover:bg-slate-900/70 border border-slate-800/80 hover:border-purple-500/50 rounded-2xl p-5 transition-all duration-300 shadow-lg shadow-black/20 hover:shadow-purple-950/20 flex flex-col justify-between backdrop-blur-sm"
+              className="group relative bg-white/90 dark:bg-slate-900/40 hover:bg-white dark:hover:bg-slate-900/70 border border-slate-200 dark:border-slate-800/80 hover:border-purple-500/50 rounded-2xl p-5 transition-all duration-300 shadow-sm dark:shadow-lg dark:shadow-black/20 hover:shadow-purple-950/20 flex flex-col justify-between backdrop-blur-sm"
             >
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="text-purple-400 bg-purple-950/60 p-2 rounded-xl border border-purple-800/60 group-hover:scale-105 transition-transform">
+                  <div className="text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/60 p-2 rounded-xl border border-purple-200 dark:border-purple-800/60 group-hover:scale-105 transition-transform">
                     <Shield className="w-4 h-4" />
                   </div>
-                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-purple-950/80 text-purple-300 border border-purple-800/80">
+                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/80">
                     Super Admin
                   </span>
                 </div>
 
                 <div>
-                  <h3 className="text-sm font-bold text-white group-hover:text-purple-300 transition-colors flex items-center gap-1.5">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-300 transition-colors flex items-center gap-1.5">
                     <span>Cổng Quản Trị Hệ Thống</span>
                   </h3>
-                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
                     Cấp phát License Keys, thiết lập quota người dùng, phân quyền giáo viên và quản lý bản phát hành Changelog.
                   </p>
                 </div>
               </div>
 
-              <div className="pt-3 mt-3 border-t border-slate-800/60 flex items-center justify-between text-xs">
-                <span className="font-semibold text-purple-400 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+              <div className="pt-3 mt-3 border-t border-slate-100 dark:border-slate-800/60 flex items-center justify-between text-xs">
+                <span className="font-semibold text-purple-600 dark:text-purple-400 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
                   Vào Quản Trị →
                 </span>
                 <span className="text-[10px] font-mono text-slate-500">Admin Portal</span>
@@ -428,19 +395,19 @@ export default function AuthenticatedToolsDashboard({
           )}
 
           {/* Bento Card 5: Cộng Đồng Chia Sẻ Giáo Án */}
-          <div className="relative bg-slate-900/20 border border-dashed border-slate-800/80 rounded-2xl p-5 opacity-65 flex flex-col justify-between cursor-not-allowed">
+          <div className="relative bg-slate-50/80 dark:bg-slate-900/20 border border-dashed border-slate-300 dark:border-slate-800/80 rounded-2xl p-5 opacity-75 flex flex-col justify-between cursor-not-allowed">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <div className="text-slate-400 bg-slate-800/50 p-2 rounded-xl border border-slate-700/50">
+                <div className="text-slate-500 dark:text-slate-400 bg-slate-200/60 dark:bg-slate-800/50 p-2 rounded-xl border border-slate-300/60 dark:border-slate-700/50">
                   <Users className="w-4 h-4" />
                 </div>
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-800/80 text-slate-400 border border-slate-700/80">
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-700/80">
                   Sắp ra mắt
                 </span>
               </div>
 
               <div>
-                <h3 className="text-sm font-bold text-slate-300">
+                <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">
                   Cộng Đồng Chia Sẻ Giáo Án
                 </h3>
                 <p className="text-xs text-slate-500 mt-1 leading-relaxed">
@@ -449,23 +416,23 @@ export default function AuthenticatedToolsDashboard({
               </div>
             </div>
 
-            <div className="pt-3 mt-3 border-t border-slate-800/40 flex items-center justify-between text-xs text-slate-500">
+            <div className="pt-3 mt-3 border-t border-slate-200 dark:border-slate-800/40 flex items-center justify-between text-xs text-slate-500">
               <span>Đang hoàn thiện...</span>
-              <span className="text-[10px] font-mono text-slate-600">Community</span>
+              <span className="text-[10px] font-mono text-slate-400 dark:text-slate-600">Community</span>
             </div>
           </div>
         </div>
       </main>
 
       {/* Status Footer */}
-      <footer className="relative z-10 w-full border-t border-slate-800/60 bg-slate-950/60 backdrop-blur-md px-4 sm:px-8 py-3.5 text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <footer className="relative z-10 w-full border-t border-slate-200 dark:border-slate-800/60 bg-white/80 dark:bg-slate-950/60 backdrop-blur-md px-4 sm:px-8 py-3.5 text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-3 transition-colors">
         <div className="flex items-center gap-3">
           <span>MathAIO Studio &copy; {new Date().getFullYear()} – Hệ thống Quản trị &amp; Nền tảng Toán học All-in-One</span>
-          <span className="hidden sm:inline text-slate-700">|</span>
+          <span className="hidden sm:inline text-slate-300 dark:text-slate-700">|</span>
           <span className="hidden sm:inline">Chuẩn Công văn 5512 BGD&amp;ĐT</span>
           <Link
             href={pathname ? `/changelog?from=${encodeURIComponent(pathname)}` : '/changelog'}
-            className="hover:text-cyan-400 underline decoration-dotted transition font-mono"
+            className="hover:text-cyan-600 dark:hover:text-cyan-400 underline decoration-dotted transition font-mono"
             title="Xem Changelog"
           >
             {APP_VERSION.fullString}

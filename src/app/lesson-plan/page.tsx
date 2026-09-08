@@ -7,38 +7,14 @@ import {
   Compass,
   BookOpen,
   Settings,
-  Sun,
-  Moon,
 } from 'lucide-react';
 import { APP_VERSION } from '@/config/version';
 import LessonPlanView from '@/components/LessonPlanView';
+import ThemeToggleButton from '@/components/header/ThemeToggleButton';
 
 export default function LessonPlanPage() {
   const router = useRouter();
   const pathname = usePathname();
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
-
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as 'dark' | 'light' | null;
-    if (savedTheme === 'light') {
-      setTheme('light');
-      document.documentElement.classList.remove('dark');
-    } else {
-      setTheme('dark');
-      document.documentElement.classList.add('dark');
-    }
-  }, []);
-
-  const toggleTheme = () => {
-    const nextTheme = theme === 'dark' ? 'light' : 'dark';
-    setTheme(nextTheme);
-    localStorage.setItem('theme', nextTheme);
-    if (nextTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  };
 
   return (
     <div className="h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors duration-200">
@@ -102,13 +78,8 @@ export default function LessonPlanPage() {
             <span className="hidden sm:inline">Quản trị</span>
           </Link>
 
-          <button
-            onClick={toggleTheme}
-            className="p-2 rounded-xl text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-            title={theme === 'dark' ? 'Chuyển sang chế độ sáng' : 'Chuyển sang chế độ tối'}
-          >
-            {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-600" />}
-          </button>
+          {/* Theme Toggle Button */}
+          <ThemeToggleButton />
         </div>
       </header>
 

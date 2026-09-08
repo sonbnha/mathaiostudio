@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import NextTopLoader from "nextjs-toploader";
 import "./globals.css";
+import { ThemeProvider } from "@/context/ThemeContext";
 import { ApiKeyProvider } from "@/context/ApiKeyContext";
 import { ApiKeyModal } from "@/components/ApiKeyModal";
 import { RenewModalProvider } from "@/context/RenewModalContext";
@@ -55,14 +56,16 @@ export default function RootLayout({
           speed={200}
           shadow="0 0 10px #06b6d4,0 0 5px #0891b2"
         />
-        <AuthProvider>
-          <ApiKeyProvider>
-            <RenewModalProvider>
-              {children}
-              <ApiKeyModal />
-            </RenewModalProvider>
-          </ApiKeyProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <ApiKeyProvider>
+              <RenewModalProvider>
+                {children}
+                <ApiKeyModal />
+              </RenewModalProvider>
+            </ApiKeyProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

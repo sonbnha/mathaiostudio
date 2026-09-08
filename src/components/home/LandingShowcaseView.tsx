@@ -1,13 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Compass,
   BookOpen,
-  Sun,
-  Moon,
   Sparkles,
   LogIn,
   UserPlus,
@@ -27,40 +25,17 @@ import {
 } from 'lucide-react';
 import { APP_VERSION } from '@/config/version';
 import { useApiKey } from '@/context/ApiKeyContext';
+import ThemeToggleButton from '@/components/header/ThemeToggleButton';
 
 export default function LandingShowcaseView() {
   const pathname = usePathname();
   const { openApiKeyModal, isCustomKeyActive } = useApiKey();
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [activeCanvasTab, setActiveCanvasTab] = useState<'visual' | 'print'>('visual');
-
-  // Sync theme
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as 'dark' | 'light' | null;
-    if (savedTheme === 'light') {
-      setTheme('light');
-      document.documentElement.classList.add('dark');
-    } else {
-      setTheme('dark');
-      document.documentElement.classList.add('dark');
-    }
-  }, []);
-
-  const toggleTheme = () => {
-    const nextTheme = theme === 'dark' ? 'light' : 'dark';
-    setTheme(nextTheme);
-    localStorage.setItem('theme', nextTheme);
-    if (nextTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  };
 
   const changelogUrl = pathname ? `/changelog?from=${encodeURIComponent(pathname)}` : '/changelog';
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 antialiased selection:bg-cyan-500 selection:text-slate-950 flex flex-col justify-between relative overflow-x-hidden">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased selection:bg-cyan-500 selection:text-slate-950 flex flex-col justify-between relative overflow-x-hidden transition-colors duration-200">
       {/* Background Lighting Gradients (Linear/Raycast Ambient Glow) */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1100px] h-[500px] bg-gradient-to-b from-cyan-500/15 via-indigo-500/10 to-transparent rounded-full blur-[160px]" />
@@ -69,7 +44,7 @@ export default function LandingShowcaseView() {
       </div>
 
       {/* 1. Header Khách Vãng Lai (Guest Navigation Glassmorphism) */}
-      <header className="sticky top-0 z-40 w-full border-b border-slate-800/60 bg-slate-950/80 backdrop-blur-md px-4 sm:px-8 py-3.5 flex items-center justify-between">
+      <header className="sticky top-0 z-40 w-full border-b border-slate-200 dark:border-slate-800/60 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md px-4 sm:px-8 py-3.5 flex items-center justify-between transition-colors">
         <div className="flex items-center gap-3">
           <Link href="/" className="flex items-center gap-3 group">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-cyan-500/20 group-hover:scale-105 transition-transform">
@@ -77,14 +52,14 @@ export default function LandingShowcaseView() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-bold text-lg bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">
+                <span className="font-bold text-lg bg-gradient-to-r from-slate-900 via-slate-800 to-slate-600 dark:from-white dark:via-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
                   MathAIO
                 </span>
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-mono">
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">
                   Studio
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 hidden sm:block">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:block">
                 Hệ Sinh Thái Ứng Dụng Toán Học Trực Quan
               </p>
             </div>
@@ -93,33 +68,33 @@ export default function LandingShowcaseView() {
           <Link
             href={changelogUrl}
             title="Xem nhật ký phát hành (Changelog)"
-            className="text-[11px] font-mono font-medium px-2.5 py-1 rounded-full bg-slate-900 hover:bg-slate-850 text-slate-400 hover:text-cyan-400 border border-slate-800 hover:border-slate-700 transition flex items-center gap-1 cursor-pointer"
+            className="text-[11px] font-mono font-medium px-2.5 py-1 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-850 text-slate-600 dark:text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-400 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition flex items-center gap-1 cursor-pointer"
           >
             <span>{APP_VERSION.fullString}</span>
           </Link>
         </div>
 
         {/* Right Nav Utilities */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-3">
           {/* Badge Gemini Key */}
           <button
             type="button"
             onClick={() => openApiKeyModal()}
-            className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono text-slate-300 bg-slate-900 border border-slate-700/80 hover:border-slate-600 shrink-0 shadow-xs transition cursor-pointer"
+            className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600 shrink-0 shadow-xs transition cursor-pointer"
             title="Cấu hình Gemini API Key"
           >
-            <Key className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+            <Key className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 shrink-0" />
             <span>{isCustomKeyActive ? 'Gemini Key Cá nhân' : 'Gemini Key AUTO'}</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(52,211,153,0.8)] shrink-0" />
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(52,211,153,0.8)] shrink-0" />
           </button>
 
-          {/* Guest Auth Buttons */}
+          {/* Đăng nhập & Đăng ký */}
           <div className="flex items-center gap-2">
             <Link
               href="/login"
-              className="text-sm text-slate-300 hover:text-white font-medium px-3 py-1.5 transition-colors flex items-center gap-1.5"
+              className="text-sm text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-medium px-3 py-1.5 transition-colors flex items-center gap-1.5"
             >
-              <LogIn className="w-3.5 h-3.5 text-slate-400" />
+              <LogIn className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
               <span>Đăng nhập</span>
             </Link>
             <Link
@@ -131,15 +106,8 @@ export default function LandingShowcaseView() {
             </Link>
           </div>
 
-          {/* Theme Toggle */}
-          <button
-            type="button"
-            onClick={toggleTheme}
-            className="p-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-amber-400 transition shadow-xs cursor-pointer"
-            title={theme === 'dark' ? 'Chuyển sang chế độ sáng' : 'Chuyển sang chế độ tối'}
-          >
-            {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-400" />}
-          </button>
+          {/* Theme Toggle Button */}
+          <ThemeToggleButton />
         </div>
       </header>
 
@@ -751,29 +719,29 @@ export default function LandingShowcaseView() {
       </main>
 
       {/* 7. Status Footer Toàn Diện */}
-      <footer className="relative z-10 w-full border-t border-slate-800/60 bg-slate-950/80 backdrop-blur-md px-4 sm:px-8 py-4 text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <footer className="relative z-10 w-full border-t border-slate-200 dark:border-slate-800/60 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md px-4 sm:px-8 py-4 text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-3 transition-colors">
         <div className="flex items-center gap-3 flex-wrap justify-center sm:justify-start">
           <span>MathAIO Studio &copy; {new Date().getFullYear()} – Hệ thống Quản trị &amp; Nền tảng Toán học All-in-One</span>
-          <span className="hidden sm:inline text-slate-700">|</span>
+          <span className="hidden sm:inline text-slate-300 dark:text-slate-700">|</span>
           <span className="hidden sm:inline">Chuẩn Công văn 5512 BGD&amp;ĐT</span>
           <Link
             href={changelogUrl}
-            className="hover:text-cyan-400 underline decoration-dotted transition font-mono"
+            className="hover:text-cyan-600 dark:hover:text-cyan-400 underline decoration-dotted transition font-mono"
             title="Xem Changelog"
           >
             {APP_VERSION.fullString}
           </Link>
         </div>
-        <div className="flex items-center gap-4 text-[11px] text-slate-400">
-          <Link href="/geometry" className="hover:text-cyan-400 transition">
+        <div className="flex items-center gap-4 text-[11px] text-slate-500 dark:text-slate-400">
+          <Link href="/geometry" className="hover:text-cyan-600 dark:hover:text-cyan-400 transition">
             Vẽ Hình Học
           </Link>
           <span>•</span>
-          <Link href="/lesson-plan" className="hover:text-emerald-400 transition">
+          <Link href="/lesson-plan" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition">
             Soạn Giáo Án 5512
           </Link>
           <span>•</span>
-          <div className="flex items-center gap-1.5 text-slate-400">
+          <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
             <span>Gemini 3.6 Flash</span>
           </div>

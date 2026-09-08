@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@google/genai": "^2.19.0",
+    "@monaco-editor/react": "^4.7.0",
     "@neondatabase/serverless": "^1.1.0",
     "@prisma/client": "^6.19.3",
     "bcryptjs": "^3.0.3",
@@ -24,6 +25,7 @@
     "nextjs-toploader": "^3.9.17",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "react-pdf": "^10.5.0",
     "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {

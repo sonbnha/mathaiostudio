@@ -138,7 +138,7 @@ export default function AuthenticatedToolsDashboard({
           {/* Bento Card 1: HERO TOOL - Geometry Canvas (2 CỘT: col-span-1 md:col-span-2) */}
           <Link
             href="/geometry"
-            className="group relative md:col-span-2 bg-white/90 dark:bg-gradient-to-b dark:from-slate-900/60 dark:to-slate-950/80 hover:bg-white dark:hover:from-slate-900/80 dark:hover:to-slate-900/90 border border-slate-200/90 dark:border-slate-800/90 hover:border-cyan-500/50 rounded-2xl p-5 sm:p-6 transition-all duration-300 shadow-md dark:shadow-xl shadow-slate-200/60 dark:shadow-black/40 hover:shadow-cyan-500/10 dark:hover:shadow-cyan-950/20 flex flex-col justify-between backdrop-blur-sm overflow-hidden"
+            className="group relative col-span-1 bg-white/90 dark:bg-gradient-to-b dark:from-slate-900/60 dark:to-slate-950/80 hover:bg-white dark:hover:from-slate-900/80 dark:hover:to-slate-900/90 border border-slate-200/90 dark:border-slate-800/90 hover:border-cyan-500/50 rounded-2xl p-5 sm:p-6 transition-all duration-300 shadow-md dark:shadow-xl shadow-slate-200/60 dark:shadow-black/40 hover:shadow-cyan-500/10 dark:hover:shadow-cyan-950/20 flex flex-col justify-between backdrop-blur-sm overflow-hidden"
           >
             {/* Top decorative glow */}
             <div className="absolute top-0 right-0 w-80 h-80 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none group-hover:bg-cyan-500/10 transition-colors" />
@@ -251,6 +251,18 @@ export default function AuthenticatedToolsDashboard({
               </span>
               <span className="text-[11px] font-mono text-slate-500">TikZ &amp; SVG Ready</span>
             </div>
+          </Link>
+
+          <Link href="/latex" className="group rounded-2xl p-6 border border-slate-200 dark:border-slate-800 hover:border-rose-500/60 bg-white dark:bg-slate-900/60 flex flex-col justify-between gap-5 shadow-md">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-rose-400 bg-rose-950/60 p-3 rounded-xl border border-rose-800/60 font-serif font-bold text-xl">TeX</span>
+              <span className="text-xs text-rose-600 dark:text-rose-300 border border-rose-500/30 rounded-full px-2 py-1">PDF Engine v1.0</span>
+            </div>
+            <div><h2 className="text-lg font-bold mb-3">Biên Soạn &amp; Xuất Bản LaTeX</h2>
+              <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">Biên tập mã TeX/LaTeX chuyên sâu, xem trước trực quan và xuất bản đề thi, tài liệu toán học chuẩn PDF in ấn.</p>
+            </div>
+            <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-5 font-serif text-center text-xl">∫₀¹ x² dx = ⅓<p className="mt-3 font-sans text-xs text-slate-500">A4 · Toán học · Đề thi · TikZ</p></div>
+            <span className="text-rose-600 dark:text-rose-400 font-semibold text-sm">Mở LaTeX Studio →</span>
           </Link>
 
           {/* Bento Card 2: TOOL 2 - Soạn Giáo Án 5512 (1 CỘT: col-span-1) */}

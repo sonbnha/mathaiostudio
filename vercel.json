@@ -5,6 +5,9 @@
     },
     "src/app/api/generate/route.ts": {
       "maxDuration": 60
+    },
+    "src/app/api/latex/compile/route.ts": {
+      "maxDuration": 60
     }
   }
 }

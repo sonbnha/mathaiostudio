@@ -1509,17 +1509,6 @@ function HomeContent() {
               {/* TRƯỜNG HỢP 2: ĐÃ ĐĂNG NHẬP (currentUser) */}
               <UserProfileDropdown
                 user={currentUser}
-                collectionsCount={historyItems.length}
-                onOpenCollection={() => {
-                  try {
-                    localStorage.setItem('saved_collection_collapsed', 'false');
-                    window.dispatchEvent(new Event('expand-saved-collection'));
-                  } catch {}
-                  const collectionEl = document.getElementById('saved-collection-section');
-                  if (collectionEl) {
-                    collectionEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                  }
-                }}
                 onLogout={handleLogout}
               />
             </div>

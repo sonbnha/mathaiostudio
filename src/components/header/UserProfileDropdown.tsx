@@ -2,12 +2,10 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import {
   Crown,
   Sparkles,
   ChevronDown,
-  Bookmark,
   Zap,
   Shield,
   Settings,
@@ -17,8 +15,6 @@ import { performClientLogout } from '@/lib/authClient';
 
 export interface UserProfileDropdownProps {
   user?: any;
-  collectionsCount?: number;
-  onOpenCollection?: () => void;
   onLogout?: () => Promise<void> | void;
   align?: 'left' | 'right';
   className?: string;
@@ -39,51 +35,12 @@ function formatDateVN(dateStr?: string | null): string {
 
 export default function UserProfileDropdown({
   user,
-  collectionsCount,
-  onOpenCollection,
   onLogout,
   align = 'right',
   className = '',
 }: UserProfileDropdownProps) {
-  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-
-  const [internalCollectionsCount, setInternalCollectionsCount] = useState<number>(() => {
-    if (typeof collectionsCount === 'number') return collectionsCount;
-    if (typeof window !== 'undefined') {
-      try {
-        const cached = localStorage.getItem('user_collection') || localStorage.getItem('mathviz_history_items');
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed)) return parsed.length;
-        }
-      } catch {}
-    }
-    return 0;
-  });
-
-  // Fetch collections count if not provided
-  useEffect(() => {
-    if (typeof collectionsCount === 'number') {
-      setInternalCollectionsCount(collectionsCount);
-      return;
-    }
-    if (!user || !user.id) return;
-    let isMounted = true;
-    fetch('/api/user/collection')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (isMounted && data) {
-          const items = data.collection || data.diagrams || data.items || [];
-          setInternalCollectionsCount(items.length);
-        }
-      })
-      .catch(() => {});
-    return () => {
-      isMounted = false;
-    };
-  }, [user?.id, collectionsCount]);
 
   // Click outside listener
   useEffect(() => {
@@ -228,24 +185,6 @@ export default function UserProfileDropdown({
       monthlyCredits > 0 ||
       Boolean(user.is_unlimited || user.isUnlimited) ||
       Boolean(planExp && new Date(planExp) > new Date()));
-
-  const handleOpenCollectionClick = () => {
-    setIsOpen(false);
-    if (onOpenCollection) {
-      onOpenCollection();
-      return;
-    }
-    try {
-      localStorage.setItem('saved_collection_collapsed', 'false');
-      window.dispatchEvent(new Event('expand-saved-collection'));
-    } catch {}
-    const collectionEl = document.getElementById('saved-collection-section');
-    if (collectionEl) {
-      collectionEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    } else {
-      router.push('/geometry?action=open-collection');
-    }
-  };
 
   const handleLogoutClick = async () => {
     setIsOpen(false);
@@ -618,24 +557,7 @@ export default function UserProfileDropdown({
 
           {/* Menu Tiện ích & Thao tác */}
           <div className="px-1.5 pt-1 flex flex-col gap-0.5">
-            {/* Mục 1: Bộ sưu tập của tôi */}
-            <button
-              type="button"
-              onClick={handleOpenCollectionClick}
-              className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100/80 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer text-left"
-            >
-              <div className="flex items-center gap-2.5">
-                <Bookmark className="w-4 h-4 shrink-0 text-cyan-500" />
-                <span>Bộ sưu tập của tôi</span>
-              </div>
-              <span
-                className={`${badgeBase} bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-normal border border-slate-200/70 dark:border-slate-700`}
-              >
-                {internalCollectionsCount} hình
-              </span>
-            </button>
-
-            {/* Mục 2: Nạp thêm Ω / Gia hạn */}
+            {/* Mục 1: Nạp thêm Ω / Gia hạn */}
             <Link
               href="/settings?tab=credits"
               onClick={() => setIsOpen(false)}

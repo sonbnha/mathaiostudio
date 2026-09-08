@@ -12,7 +12,6 @@ import {
   Moon,
   Settings,
   Key,
-  Bookmark,
   Cpu,
   Maximize2,
 } from 'lucide-react';
@@ -355,8 +354,11 @@ export default function AuthenticatedToolsDashboard({
               <span className="text-[11px] font-mono text-slate-500">Word A4 Sync</span>
             </div>
           </Link>
+        </div>
 
-          {/* Bento Card 3: AI Gemini Flash & LaTeX Engine (Hàng dưới, Cột 1) */}
+        {/* Hàng 2: Tiện ích mở rộng & Phân quyền (Tự động dàn đều 2 hoặc 3 cột tùy số lượng thẻ thực tế) */}
+        <div className={`grid grid-cols-1 ${isAdmin ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-5 mt-5`}>
+          {/* Bento Card 3: AI Gemini Flash & LaTeX Engine */}
           <div className="relative bg-slate-900/40 hover:bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 flex flex-col justify-between backdrop-blur-sm">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
@@ -390,8 +392,8 @@ export default function AuthenticatedToolsDashboard({
             </div>
           </div>
 
-          {/* Bento Card 4: Quản Trị Hệ Thống (Nếu là Admin) HOẶC Bộ Sưu Tập Của Tôi (Nếu là User thường) */}
-          {isAdmin ? (
+          {/* Bento Card 4: Quản Trị Hệ Thống (CHỈ HIỂN THỊ NẾU LÀ ADMIN) */}
+          {isAdmin && (
             <Link
               href="/admin"
               className="group relative bg-slate-900/40 hover:bg-slate-900/70 border border-slate-800/80 hover:border-purple-500/50 rounded-2xl p-5 transition-all duration-300 shadow-lg shadow-black/20 hover:shadow-purple-950/20 flex flex-col justify-between backdrop-blur-sm"
@@ -421,38 +423,6 @@ export default function AuthenticatedToolsDashboard({
                   Vào Quản Trị →
                 </span>
                 <span className="text-[10px] font-mono text-slate-500">Admin Portal</span>
-              </div>
-            </Link>
-          ) : (
-            <Link
-              href="/geometry"
-              className="group relative bg-slate-900/40 hover:bg-slate-900/70 border border-slate-800/80 hover:border-cyan-500/50 rounded-2xl p-5 transition-all duration-300 shadow-lg shadow-black/20 hover:shadow-cyan-950/20 flex flex-col justify-between backdrop-blur-sm"
-            >
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="text-cyan-400 bg-cyan-950/60 p-2 rounded-xl border border-cyan-800/60 group-hover:scale-105 transition-transform">
-                    <Bookmark className="w-4 h-4" />
-                  </div>
-                  <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-cyan-950/80 text-cyan-300 border border-cyan-800/80">
-                    Cloud Storage
-                  </span>
-                </div>
-
-                <div>
-                  <h3 className="text-sm font-bold text-white group-hover:text-cyan-300 transition-colors flex items-center gap-1.5">
-                    <span>Bộ Sưu Tập Học Liệu Số</span>
-                  </h3>
-                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                    Lưu trữ đám mây các mô hình toán học đã vẽ, đồng bộ tài khoản tự động và mở lại chỉnh sửa tức thì trên mọi thiết bị.
-                  </p>
-                </div>
-              </div>
-
-              <div className="pt-3 mt-3 border-t border-slate-800/60 flex items-center justify-between text-xs">
-                <span className="font-semibold text-cyan-400 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                  Xem Bộ Sưu Tập →
-                </span>
-                <span className="text-[10px] font-mono text-slate-500">Đồng bộ Neon DB</span>
               </div>
             </Link>
           )}

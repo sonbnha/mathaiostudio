@@ -10,7 +10,6 @@ import {
   Users,
   Settings,
   Key,
-  Cpu,
   Maximize2,
 } from 'lucide-react';
 import { APP_VERSION } from '@/config/version';
@@ -76,7 +75,7 @@ export default function AuthenticatedToolsDashboard({
           <Link
             href={pathname ? `/changelog?from=${encodeURIComponent(pathname)}` : '/changelog'}
             title="Xem nhật ký phát hành (Changelog)"
-            className="text-[11px] font-mono font-medium px-2.5 py-1 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-850 text-slate-600 dark:text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-400 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition flex items-center gap-1 cursor-pointer"
+            className="text-[11px] font-mono font-medium px-2.5 py-1 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-400 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition flex items-center gap-1 cursor-pointer"
           >
             <span>{APP_VERSION.fullString}</span>
           </Link>
@@ -135,18 +134,18 @@ export default function AuthenticatedToolsDashboard({
 
         {/* Bento Grid: Right at the top */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {/* Bento Card 1: HERO TOOL - Geometry Canvas (2 CỘT: col-span-1 md:col-span-2) */}
+          {/* Bento Card 1: Geometry Canvas */}
           <Link
             href="/geometry"
-            className="group relative col-span-1 bg-white/90 dark:bg-gradient-to-b dark:from-slate-900/60 dark:to-slate-950/80 hover:bg-white dark:hover:from-slate-900/80 dark:hover:to-slate-900/90 border border-slate-200/90 dark:border-slate-800/90 hover:border-cyan-500/50 rounded-2xl p-5 sm:p-6 transition-all duration-300 shadow-md dark:shadow-xl shadow-slate-200/60 dark:shadow-black/40 hover:shadow-cyan-500/10 dark:hover:shadow-cyan-950/20 flex flex-col justify-between backdrop-blur-sm overflow-hidden"
+            className="group relative col-span-1 bg-white/90 dark:bg-slate-900 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/90 dark:border-slate-800/90 hover:border-cyan-500/50 rounded-2xl p-5 sm:p-6 transition-all duration-300 shadow-md dark:shadow-xl shadow-slate-200/60 dark:shadow-black/40 hover:shadow-cyan-500/10 dark:hover:shadow-cyan-950/20 flex flex-col justify-between backdrop-blur-sm overflow-hidden"
           >
             {/* Top decorative glow */}
             <div className="absolute top-0 right-0 w-80 h-80 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none group-hover:bg-cyan-500/10 transition-colors" />
 
             <div className="relative z-10 space-y-3.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950/70 p-2.5 rounded-xl border border-cyan-200 dark:border-cyan-800/60 group-hover:scale-105 transition-transform">
+              <div className="flex flex-col items-start gap-3">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950/70 p-2.5 shrink-0 rounded-xl border border-cyan-200 dark:border-cyan-800/60 group-hover:scale-105 transition-transform">
                     <Compass className="w-5 h-5" />
                   </div>
                   <div>
@@ -163,7 +162,7 @@ export default function AuthenticatedToolsDashboard({
                   <span className="text-[10px] font-mono font-semibold px-2.5 py-0.5 rounded-full bg-cyan-100/80 dark:bg-cyan-950/80 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800/80">
                     SVG Dynamic Engine
                   </span>
-                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-850 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                     {APP_VERSION.version}
                   </span>
                 </div>
@@ -172,7 +171,7 @@ export default function AuthenticatedToolsDashboard({
               {/* Interactive Mockup Preview Window */}
               <div className="w-full rounded-xl bg-slate-950/90 border border-slate-800/80 p-3 sm:p-4 shadow-inner relative group/mockup overflow-hidden">
                 {/* Mini Canvas Ribbon Toolbar */}
-                <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-850 text-[10px] text-slate-400 font-mono">
+                <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 text-[10px] text-slate-400 font-mono">
                   <div className="flex items-center gap-1.5">
                     <span className="w-2.5 h-2.5 rounded-full bg-rose-500/80" />
                     <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
@@ -253,7 +252,7 @@ export default function AuthenticatedToolsDashboard({
             </div>
           </Link>
 
-          <Link href="/latex" className="group rounded-2xl p-6 border border-slate-200 dark:border-slate-800 hover:border-rose-500/60 bg-white dark:bg-slate-900/60 flex flex-col justify-between gap-5 shadow-md">
+          <Link href="/latex" className="group rounded-2xl p-6 border border-slate-200 dark:border-slate-800 hover:border-rose-500/60 bg-white/90 dark:bg-slate-900 hover:bg-white dark:hover:bg-slate-800 transition-colors flex flex-col justify-between gap-5 shadow-md">
             <div className="flex items-center justify-between gap-2">
               <span className="text-rose-400 bg-rose-950/60 p-3 rounded-xl border border-rose-800/60 font-serif font-bold text-xl">TeX</span>
               <span className="text-xs text-rose-600 dark:text-rose-300 border border-rose-500/30 rounded-full px-2 py-1">PDF Engine v1.0</span>
@@ -268,7 +267,7 @@ export default function AuthenticatedToolsDashboard({
           {/* Bento Card 2: TOOL 2 - Soạn Giáo Án 5512 (1 CỘT: col-span-1) */}
           <Link
             href="/lesson-plan"
-            className="group relative col-span-1 bg-white/90 dark:bg-gradient-to-b dark:from-slate-900/60 dark:to-slate-950/80 hover:bg-white dark:hover:from-slate-900/80 dark:hover:to-slate-900/90 border border-slate-200/90 dark:border-slate-800/90 hover:border-emerald-500/50 rounded-2xl p-5 sm:p-6 transition-all duration-300 shadow-md dark:shadow-xl shadow-slate-200/60 dark:shadow-black/40 hover:shadow-emerald-500/10 dark:hover:shadow-emerald-950/20 flex flex-col justify-between backdrop-blur-sm overflow-hidden"
+            className="group relative col-span-1 bg-white/90 dark:bg-slate-900 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/90 dark:border-slate-800/90 hover:border-emerald-500/50 rounded-2xl p-5 sm:p-6 transition-all duration-300 shadow-md dark:shadow-xl shadow-slate-200/60 dark:shadow-black/40 hover:shadow-emerald-500/10 dark:hover:shadow-emerald-950/20 flex flex-col justify-between backdrop-blur-sm overflow-hidden"
           >
             <div className="space-y-3.5">
               <div className="flex items-center justify-between">
@@ -335,42 +334,8 @@ export default function AuthenticatedToolsDashboard({
           </Link>
         </div>
 
-        {/* Hàng 2: Tiện ích mở rộng & Phân quyền (Tự động dàn đều 2 hoặc 3 cột tùy số lượng thẻ thực tế) */}
-        <div className={`grid grid-cols-1 ${isAdmin ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-5 mt-5`}>
-          {/* Bento Card 3: AI Gemini Flash & LaTeX Engine */}
-          <div className="relative bg-white/90 dark:bg-slate-900/40 hover:bg-white dark:hover:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 rounded-2xl p-5 flex flex-col justify-between backdrop-blur-sm shadow-sm dark:shadow-none">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50 p-2 rounded-xl border border-amber-200 dark:border-amber-800/50">
-                  <Cpu className="w-4 h-4" />
-                </div>
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/70 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60">
-                  AI Nano-Speed
-                </span>
-              </div>
-
-              <div>
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                  <span>Gemini 3.6 &amp; LaTeX Engine</span>
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                  Công nghệ suy luận hình học nano-giây, render công thức KaTeX sắc nét và hỗ trợ quét OCR đề thi từ ảnh chụp.
-                </p>
-              </div>
-
-              {/* Math preview formula snippet */}
-              <div className="bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 font-mono text-[11px] text-slate-700 dark:text-slate-300 flex items-center justify-between">
-                <span>S = \frac{1}{2}ab\sin C = pr</span>
-                <span className="text-amber-600 dark:text-amber-400 font-bold">&lt; 1.2s</span>
-              </div>
-            </div>
-
-            <div className="pt-3 mt-3 border-t border-slate-100 dark:border-slate-800/60 flex items-center justify-between text-[11px] text-slate-500 font-mono">
-              <span>Độ trễ tối ưu</span>
-              <span className="text-amber-600 dark:text-amber-400/80">KaTeX + MathJax</span>
-            </div>
-          </div>
-
+        {/* Hàng 2: Quản trị và cộng đồng; tự cân theo quyền tài khoản */}
+        <div className={`grid grid-cols-1 ${isAdmin ? 'md:grid-cols-2' : ''} gap-5 mt-5`}>
           {/* Bento Card 4: Quản Trị Hệ Thống (CHỈ HIỂN THỊ NẾU LÀ ADMIN) */}
           {isAdmin && (
             <Link

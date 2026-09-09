@@ -13,8 +13,9 @@ export default function TeXEditor({source, onChange, fontSize, onCompile}: {sour
   };
   if (fallback) return <div className="h-full flex flex-col"><p className="text-xs p-2">Trình soạn thảo nâng cao chưa tải được. Bạn vẫn có thể soạn và biên dịch mã bên dưới.</p><textarea aria-label="Mã nguồn LaTeX" value={source} onChange={e => onChange(e.target.value)} spellCheck={false} className="flex-1 min-h-0 w-full p-3 bg-transparent font-mono" style={{fontSize}} /></div>;
   return <Editor language="latex" path="document.tex" value={source} onChange={v => onChange(v ?? '')}
-    theme={resolvedTheme === 'dark' ? 'vs-dark' : 'light'} onMount={mount}
+    theme={resolvedTheme === 'dark' ? 'mathaio-dark' : 'light'} onMount={mount}
     beforeMount={monaco => {
+      monaco.editor.defineTheme('mathaio-dark', {base: 'vs-dark', inherit: true, rules: [], colors: {'editor.background': '#020617', 'editor.foreground': '#cbd5e1', 'editorLineNumber.foreground': '#475569', 'editorLineNumber.activeForeground': '#22d3ee', 'editor.lineHighlightBackground': '#0f172a', 'editor.selectionBackground': '#164e6380'}});
       if (!monaco.languages.getLanguages().some((l: {id: string}) => l.id === 'latex')) {
         monaco.languages.register({id: 'latex'});
         monaco.languages.setMonarchTokensProvider('latex', { tokenizer: { root: [

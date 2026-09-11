@@ -63,6 +63,7 @@ import {
   createNewProject,
   getAllProjects,
   getProjectsByType,
+  generateDefaultGeometryTitle,
 } from '@/lib/storage/projectStore';
 import { useRenewModal } from '@/context/RenewModalContext';
 import { computeLicenseStatus } from '@/lib/licenseStatus';
@@ -373,7 +374,7 @@ function HomeContent() {
     refreshGeometryCount();
   }, [refreshGeometryCount]);
 
-  // Initial load from URL search param ?id=...
+  // Initial load from URL search param ?id=... or auto-initialize new drawing on direct access
   useEffect(() => {
     if (docIdParam) {
       const proj = getProjectById(docIdParam);
@@ -392,8 +393,23 @@ function HomeContent() {
       } else {
         setCurrentDocId(docIdParam);
       }
+    } else {
+      // Direct access to /geometry without query param
+      const defaultTitle = generateDefaultGeometryTitle();
+      const newProj = createNewProject('geometry', defaultTitle, {
+        topic: 'Hình học phẳng & Không gian',
+        badge: 'SVG Vector',
+      });
+      setCurrentDocId(newProj.id);
+      setDocTitle(newProj.title);
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.set('id', newProj.id);
+        window.history.replaceState({}, '', url.toString());
+      } catch {}
+      refreshGeometryCount();
     }
-  }, [docIdParam]);
+  }, [docIdParam, refreshGeometryCount]);
 
   const handleSelectProject = (project: ProjectItem) => {
     // Auto-save current draft if dirty
@@ -450,7 +466,8 @@ function HomeContent() {
       }
     }
 
-    const newProj = createNewProject('geometry', `Hinh_hoc_${new Date().toISOString().slice(0, 10)}`, {
+    const defaultTitle = generateDefaultGeometryTitle();
+    const newProj = createNewProject('geometry', defaultTitle, {
       topic: 'Hình học phẳng & Không gian',
       badge: 'SVG Vector',
     });
@@ -1468,8 +1485,35 @@ function HomeContent() {
 
       {/* 1. HEADER (Shrink-0) */}
       <header className="shrink-0 z-30 backdrop-blur-md bg-white/85 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800/80 px-4 lg:px-8 py-2.5 sm:py-3 flex flex-wrap items-center justify-between gap-3 shadow-xs dark:shadow-xl dark:shadow-slate-950/50 transition-colors">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 min-w-0">
           <WorkspaceBrand badge="AI Visualizer" subtitle="Mô hình hóa hình học &amp; lượng giác THCS / THPT" />
+
+          <span className="h-4 w-px bg-slate-200 dark:bg-slate-700 hidden xl:inline" />
+
+          {/* Inline Editable Document Title on Topbar */}
+          <div className="hidden sm:flex items-center gap-1.5 min-w-0 max-w-[180px] lg:max-w-[240px]">
+            <input
+              type="text"
+              value={docTitle}
+              onChange={(e) => {
+                const newTitle = e.target.value;
+                setDocTitle(newTitle);
+                if (currentDocId) {
+                  const curr = getProjectById(currentDocId);
+                  if (curr) {
+                    saveProject({
+                      ...curr,
+                      title: newTitle,
+                      updatedAt: Date.now(),
+                    });
+                  }
+                }
+              }}
+              className="font-bold text-xs bg-slate-100/60 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-white dark:focus:bg-slate-950 border border-slate-200/60 dark:border-slate-700/60 focus:border-cyan-500 rounded-lg px-2.5 py-1 truncate transition focus:outline-none w-full text-slate-800 dark:text-slate-100 cursor-text shadow-2xs"
+              title="Click để sửa tên hình vẽ trực tiếp"
+              placeholder="Hình vẽ chưa đặt tên"
+            />
+          </div>
 
           {/* Module Navigation Tabs */}
           <WorkspaceHeader />
@@ -1672,15 +1716,15 @@ function HomeContent() {
         >
           {/* CỘT 1: NHẬP LIỆU VÀ CÔNG CỤ (Cố định bề ngang ~320px-340px, h-full, cuộn độc lập) */}
           <section className="w-full lg:w-[320px] xl:w-[340px] shrink-0 h-full overflow-y-auto p-4 box-border rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs flex flex-col gap-4">
-            {/* Thanh công cụ quản lý bản vẽ: Mở nhanh lịch sử & Tạo mới */}
-            <div className="flex items-center gap-2 shrink-0">
+            {/* Thanh công cụ quản lý bản vẽ: Mở nhanh lịch sử */}
+            <div className="flex items-center shrink-0">
               <button
                 type="button"
                 onClick={() => {
                   refreshGeometryCount();
                   setIsQuickSwitcherOpen(true);
                 }}
-                className="flex-1 flex items-center justify-between px-3.5 py-2.5 rounded-2xl bg-slate-100/90 hover:bg-cyan-50 dark:bg-slate-800/80 dark:hover:bg-cyan-950/40 border border-slate-200 dark:border-slate-700/80 hover:border-cyan-500/50 dark:hover:border-cyan-500/50 text-slate-800 dark:text-slate-200 hover:text-cyan-600 dark:hover:text-cyan-400 transition shadow-2xs group cursor-pointer"
+                className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl bg-slate-100/90 hover:bg-cyan-50 dark:bg-slate-800/80 dark:hover:bg-cyan-950/40 border border-slate-200 dark:border-slate-700/80 hover:border-cyan-500/50 dark:hover:border-cyan-500/50 text-slate-800 dark:text-slate-200 hover:text-cyan-600 dark:hover:text-cyan-400 transition shadow-2xs group cursor-pointer"
                 title="Mở nhanh lịch sử bản vẽ và chuyển đổi giữa các dự án hình học"
               >
                 <div className="flex items-center gap-2.5">
@@ -1695,15 +1739,6 @@ function HomeContent() {
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 font-bold border border-cyan-500/20">
                   {savedGeometryCount} tệp
                 </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleCreateNewDrawing}
-                className="w-11 h-11 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700/80 text-slate-600 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400 flex items-center justify-center transition cursor-pointer shrink-0 shadow-2xs"
-                title="Tạo bản vẽ hình học mới"
-              >
-                <Plus className="w-4 h-4" />
               </button>
             </div>
 

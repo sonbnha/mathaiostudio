@@ -42,6 +42,7 @@ import {
   duplicateProject,
   renameProject,
   toggleStarProject,
+  generateDefaultGeometryTitle,
   type ProjectItem,
   type ProjectType,
 } from '@/lib/storage/projectStore';
@@ -308,8 +309,13 @@ export default function AuthenticatedToolsDashboard({
                   <button
                     onClick={() => {
                       setIsNewMenuOpen(false);
-                      setCreateType('geometry');
-                      setNewTitle(`Hinh_hoc_${new Date().toISOString().slice(0, 10)}`);
+                      const title = generateDefaultGeometryTitle();
+                      const created = createNewProject('geometry', title, {
+                        topic: 'Hình học phẳng & Không gian',
+                        badge: 'SVG Vector',
+                      });
+                      refreshProjects();
+                      router.push(`/geometry?id=${encodeURIComponent(created.id)}`);
                     }}
                     className="w-full p-2.5 rounded-xl hover:bg-cyan-500/10 text-left text-xs font-semibold flex items-center gap-2.5 text-slate-800 dark:text-slate-200 hover:text-cyan-600 dark:hover:text-cyan-400 transition cursor-pointer"
                   >

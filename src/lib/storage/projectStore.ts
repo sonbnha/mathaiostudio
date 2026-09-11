@@ -295,3 +295,22 @@ export function toggleStarProject(id: string): boolean {
 export function getProjectsByType(type: ProjectType): ProjectItem[] {
   return getAllProjects().filter((p) => p.type === type);
 }
+
+export function generateDefaultGeometryTitle(): string {
+  if (typeof window === 'undefined') return 'Hình vẽ chưa đặt tên';
+  try {
+    const geoList = getAllProjects().filter((p) => p.type === 'geometry');
+    const baseTitle = 'Hình vẽ chưa đặt tên';
+    if (!geoList.some((p) => p.title.trim() === baseTitle)) {
+      return baseTitle;
+    }
+    let count = 2;
+    while (geoList.some((p) => p.title.trim() === `${baseTitle} ${count}`)) {
+      count++;
+    }
+    return `${baseTitle} ${count}`;
+  } catch {
+    return 'Hình vẽ chưa đặt tên';
+  }
+}
+

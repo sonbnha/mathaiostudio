@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import {
   Compass,
   Key,
@@ -35,6 +35,9 @@ import {
   Settings,
   Zap,
   Coins,
+  FolderClock,
+  Plus,
+  History,
 } from 'lucide-react';
 import Link from 'next/link';
 import { APP_VERSION, formatDateVN } from '@/config/version';
@@ -45,7 +48,7 @@ import {
   generateMathWithFallback,
 } from '@/lib/geminiClient';
 import UnifiedProblemInput from '@/components/UnifiedProblemInput';
-import SavedCollection from '@/components/SavedCollection';
+import GeometryQuickSwitcherModal from '@/components/geometry/GeometryQuickSwitcherModal';
 import ExportDropdown from '@/components/ExportDropdown';
 import InteractiveSvgEditor from '@/components/InteractiveSvgEditor';
 import UserProfileDropdown from '@/components/header/UserProfileDropdown';
@@ -53,6 +56,14 @@ import WorkspaceBrand from '@/components/header/WorkspaceBrand';
 import WorkspaceHeader from '@/components/header/WorkspaceHeader';
 import ThemeToggleButton from '@/components/header/ThemeToggleButton';
 import type { AuthUser } from '@/components/AuthModal';
+import {
+  ProjectItem,
+  getProjectById,
+  saveProject,
+  createNewProject,
+  getAllProjects,
+  getProjectsByType,
+} from '@/lib/storage/projectStore';
 import { useRenewModal } from '@/context/RenewModalContext';
 import { computeLicenseStatus } from '@/lib/licenseStatus';
 import { REAL_WORLD_MATH_SAMPLES } from '@/data/samplePrompts';
@@ -343,6 +354,124 @@ function HomeContent() {
   const [tikzCopied, setTikzCopied] = useState(false);
   const [tikzError, setTikzError] = useState<string | null>(null);
 
+  // Unified Project Store & Quick Switcher State
+  const searchParams = useSearchParams();
+  const docIdParam = searchParams?.get('id');
+  const [currentDocId, setCurrentDocId] = useState<string | null>(null);
+  const [docTitle, setDocTitle] = useState<string>('Bản vẽ hình học');
+  const [isQuickSwitcherOpen, setIsQuickSwitcherOpen] = useState(false);
+  const [savedGeometryCount, setSavedGeometryCount] = useState(0);
+
+  const refreshGeometryCount = useCallback(() => {
+    try {
+      const geoProjects = getProjectsByType('geometry');
+      setSavedGeometryCount(geoProjects.length);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    refreshGeometryCount();
+  }, [refreshGeometryCount]);
+
+  // Initial load from URL search param ?id=...
+  useEffect(() => {
+    if (docIdParam) {
+      const proj = getProjectById(docIdParam);
+      if (proj && proj.type === 'geometry') {
+        setCurrentDocId(proj.id);
+        setDocTitle(proj.title);
+        if (proj.metadata?.promptText) {
+          setPrompt(proj.metadata.promptText);
+        }
+        if (proj.metadata?.svgCode) {
+          setSvgOutput(proj.metadata.svgCode);
+        }
+        if (proj.metadata?.tikzCode) {
+          setTikzCode(proj.metadata.tikzCode);
+        }
+      } else {
+        setCurrentDocId(docIdParam);
+      }
+    }
+  }, [docIdParam]);
+
+  const handleSelectProject = (project: ProjectItem) => {
+    // Auto-save current draft if dirty
+    if (currentDocId && (prompt.trim() || svgOutput)) {
+      const curr = getProjectById(currentDocId);
+      if (curr) {
+        saveProject({
+          ...curr,
+          title: docTitle,
+          updatedAt: Date.now(),
+          metadata: {
+            ...curr.metadata,
+            promptText: prompt,
+            svgCode: svgOutput,
+            tikzCode: tikzCode,
+          },
+        });
+      }
+    }
+
+    setCurrentDocId(project.id);
+    setDocTitle(project.title);
+    setPrompt(project.metadata?.promptText || project.title);
+    setSvgOutput(project.metadata?.svgCode || '');
+    setTikzCode(project.metadata?.tikzCode || '');
+    setErrorMsg(null);
+    setImagePreview(null);
+    setIsEditMode(false);
+
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set('id', project.id);
+      window.history.replaceState({}, '', url.toString());
+    } catch {}
+
+    refreshGeometryCount();
+  };
+
+  const handleCreateNewDrawing = () => {
+    if (currentDocId && (prompt.trim() || svgOutput)) {
+      const curr = getProjectById(currentDocId);
+      if (curr) {
+        saveProject({
+          ...curr,
+          title: docTitle,
+          updatedAt: Date.now(),
+          metadata: {
+            ...curr.metadata,
+            promptText: prompt,
+            svgCode: svgOutput,
+            tikzCode: tikzCode,
+          },
+        });
+      }
+    }
+
+    const newProj = createNewProject('geometry', `Hinh_hoc_${new Date().toISOString().slice(0, 10)}`, {
+      topic: 'Hình học phẳng & Không gian',
+      badge: 'SVG Vector',
+    });
+    setCurrentDocId(newProj.id);
+    setDocTitle(newProj.title);
+    setPrompt('');
+    setSvgOutput('');
+    setTikzCode('');
+    setErrorMsg(null);
+    setImagePreview(null);
+    setIsEditMode(false);
+
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set('id', newProj.id);
+      window.history.replaceState({}, '', url.toString());
+    } catch {}
+
+    refreshGeometryCount();
+  };
+
   // Canvas Loading Progress State (0 - 100)
   const [progress, setProgress] = useState(0);
   const isGenerating = loading || refineLoading;
@@ -623,8 +752,59 @@ function HomeContent() {
       const topic = classifyTopic(promptText);
       const cleanPrompt = promptText.trim();
       const firstLine = cleanPrompt.split('.')[0] || cleanPrompt;
-      const title = firstLine.length > 60 ? firstLine.substring(0, 60) + '...' : firstLine;
+      const title = firstLine.length > 60 ? firstLine.substring(0, 60) + '...' : (firstLine || 'Mô hình hình học');
       const optimizedSvg = cleanSvgPayload(svgCode);
+
+      // 1. Sync directly with projectStore
+      if (currentDocId) {
+        const existing = getProjectById(currentDocId);
+        if (existing) {
+          saveProject({
+            ...existing,
+            title: existing.title || title,
+            updatedAt: Date.now(),
+            metadata: {
+              ...existing.metadata,
+              topic,
+              badge: existing.metadata?.badge || 'SVG Vector',
+              promptText: cleanPrompt,
+              svgCode: optimizedSvg,
+              tikzCode: tikzCode,
+            },
+          });
+        } else {
+          const created = createNewProject('geometry', title, {
+            topic,
+            badge: 'SVG Vector',
+            promptText: cleanPrompt,
+            svgCode: optimizedSvg,
+            tikzCode: tikzCode,
+          });
+          setCurrentDocId(created.id);
+          setDocTitle(created.title);
+          try {
+            const url = new URL(window.location.href);
+            url.searchParams.set('id', created.id);
+            window.history.replaceState({}, '', url.toString());
+          } catch {}
+        }
+      } else {
+        const created = createNewProject('geometry', title, {
+          topic,
+          badge: 'SVG Vector',
+          promptText: cleanPrompt,
+          svgCode: optimizedSvg,
+          tikzCode: tikzCode,
+        });
+        setCurrentDocId(created.id);
+        setDocTitle(created.title);
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.set('id', created.id);
+          window.history.replaceState({}, '', url.toString());
+        } catch {}
+      }
+      refreshGeometryCount();
 
       const newItem: HistoryItem = {
         id: `hist_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
@@ -1492,8 +1672,43 @@ function HomeContent() {
         >
           {/* CỘT 1: NHẬP LIỆU VÀ CÔNG CỤ (Cố định bề ngang ~320px-340px, h-full, cuộn độc lập) */}
           <section className="w-full lg:w-[320px] xl:w-[340px] shrink-0 h-full overflow-y-auto p-4 box-border rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs flex flex-col gap-4">
-          {/* Preset Buttons Collapsible Accordion */}
-          <div className="w-full max-w-full mx-auto border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/50 rounded-2xl overflow-hidden shadow-xs shrink-0 transition-colors box-border">
+            {/* Thanh công cụ quản lý bản vẽ: Mở nhanh lịch sử & Tạo mới */}
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  refreshGeometryCount();
+                  setIsQuickSwitcherOpen(true);
+                }}
+                className="flex-1 flex items-center justify-between px-3.5 py-2.5 rounded-2xl bg-slate-100/90 hover:bg-cyan-50 dark:bg-slate-800/80 dark:hover:bg-cyan-950/40 border border-slate-200 dark:border-slate-700/80 hover:border-cyan-500/50 dark:hover:border-cyan-500/50 text-slate-800 dark:text-slate-200 hover:text-cyan-600 dark:hover:text-cyan-400 transition shadow-2xs group cursor-pointer"
+                title="Mở nhanh lịch sử bản vẽ và chuyển đổi giữa các dự án hình học"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-xl bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 flex items-center justify-center group-hover:scale-105 transition-transform shadow-xs">
+                    <FolderClock className="w-4 h-4" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-xs font-bold leading-tight">Lịch sử bản vẽ</p>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-normal">Mở bản vẽ đã lưu</p>
+                  </div>
+                </div>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 font-bold border border-cyan-500/20">
+                  {savedGeometryCount} tệp
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleCreateNewDrawing}
+                className="w-11 h-11 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700/80 text-slate-600 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400 flex items-center justify-center transition cursor-pointer shrink-0 shadow-2xs"
+                title="Tạo bản vẽ hình học mới"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Preset Buttons Collapsible Accordion */}
+            <div className="w-full max-w-full mx-auto border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/50 rounded-2xl overflow-hidden shadow-xs shrink-0 transition-colors box-border">
             <button
               type="button"
               onClick={toggleExamples}
@@ -1807,7 +2022,22 @@ function HomeContent() {
               <InteractiveSvgEditor
                 svgCode={svgOutput || ''}
                 isEditMode={isEditMode}
-                onUpdateSvg={(newSvg) => setSvgOutput(newSvg)}
+                onUpdateSvg={(newSvg) => {
+                  setSvgOutput(newSvg);
+                  if (currentDocId) {
+                    const existing = getProjectById(currentDocId);
+                    if (existing) {
+                      saveProject({
+                        ...existing,
+                        updatedAt: Date.now(),
+                        metadata: {
+                          ...existing.metadata,
+                          svgCode: newSvg,
+                        },
+                      });
+                    }
+                  }
+                }}
                 onCloseEditMode={() => setIsEditMode(false)}
                 mountContainerId="svgMount"
               />
@@ -1874,22 +2104,6 @@ function HomeContent() {
                 </button>
               </div>
             </div>
-
-            {/* Khối Bộ sưu tập đã lưu ở đáy */}
-            <SavedCollection
-              items={historyItems.map((item) => ({
-                id: item.id,
-                title: item.title,
-                svgContent: item.svgCode,
-                createdAt: new Date(item.timestamp).toLocaleDateString('vi-VN'),
-              }))}
-              onSelectItem={(saved) => {
-                const found = historyItems.find((h) => h.id === saved.id);
-                if (found) handleLoadFromHistory(found);
-              }}
-              onDeleteItem={(id) => handleDeleteHistoryItem(id)}
-              onClearAll={handleClearAllHistory}
-            />
           </section>
         </div>
       </main>
@@ -2177,6 +2391,18 @@ function HomeContent() {
           </button>
         </div>
       )}
+
+      {/* Modal Mở nhanh lịch sử bản vẽ hình học (Quick File Switcher Modal) */}
+      <GeometryQuickSwitcherModal
+        isOpen={isQuickSwitcherOpen}
+        onClose={() => {
+          setIsQuickSwitcherOpen(false);
+          refreshGeometryCount();
+        }}
+        currentDocId={currentDocId}
+        onSelectProject={handleSelectProject}
+        onCreateNew={handleCreateNewDrawing}
+      />
     </div>
   );
 }

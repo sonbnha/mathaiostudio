@@ -43,6 +43,7 @@ export function getInitialSeedProjects(): ProjectItem[] {
         badge: 'SVG Vector',
         promptText: 'Cho tam giác ABC nhọn nội tiếp đường tròn (O), kẻ đường cao AH vuông góc với BC tại H...',
         previewType: 'triangle',
+        svgCode: '<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg"><circle cx="200" cy="150" r="110" fill="none" stroke="#0284c7" stroke-width="2"/><polygon points="200,45 105,205 295,205" fill="rgba(14,165,233,0.08)" stroke="#0f172a" stroke-width="2.5"/><line x1="200" y1="45" x2="200" y2="205" stroke="#ef4444" stroke-width="2" stroke-dasharray="4,3"/><text x="195" y="35" font-family="sans-serif" font-weight="bold" font-size="16" fill="#0f172a">A</text><text x="85" y="220" font-family="sans-serif" font-weight="bold" font-size="16" fill="#0f172a">B</text><text x="305" y="220" font-family="sans-serif" font-weight="bold" font-size="16" fill="#0f172a">C</text><text x="205" y="222" font-family="sans-serif" font-weight="bold" font-size="14" fill="#ef4444">H</text><text x="205" y="155" font-family="sans-serif" font-weight="bold" font-size="14" fill="#0284c7">O</text><circle cx="200" cy="150" r="3" fill="#0284c7"/></svg>',
       },
     },
     {
@@ -86,6 +87,7 @@ export function getInitialSeedProjects(): ProjectItem[] {
         badge: 'TikZ & SVG',
         promptText: 'Cho hình chóp S.ABCD có đáy ABCD là hình vuông cạnh a, SA vuông góc với đáy...',
         previewType: 'pyramid',
+        svgCode: '<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg"><line x1="90" y1="210" x2="270" y2="210" stroke="#0f172a" stroke-width="2.5"/><line x1="270" y1="210" x2="330" y2="150" stroke="#0f172a" stroke-width="2.5"/><line x1="90" y1="210" x2="150" y2="150" stroke="#0f172a" stroke-width="1.5" stroke-dasharray="4,4"/><line x1="150" y1="150" x2="330" y2="150" stroke="#0f172a" stroke-width="1.5" stroke-dasharray="4,4"/><line x1="150" y1="150" x2="150" y2="50" stroke="#0f172a" stroke-width="1.5" stroke-dasharray="4,4"/><line x1="150" y1="50" x2="90" y2="210" stroke="#0f172a" stroke-width="2.5"/><line x1="150" y1="50" x2="270" y2="210" stroke="#0f172a" stroke-width="2.5"/><line x1="150" y1="50" x2="330" y2="150" stroke="#0f172a" stroke-width="2.5"/><text x="145" y="40" font-family="sans-serif" font-weight="bold" font-size="16" fill="#0f172a">S</text><text x="75" y="225" font-family="sans-serif" font-weight="bold" font-size="16" fill="#0f172a">A</text><text x="275" y="225" font-family="sans-serif" font-weight="bold" font-size="16" fill="#0f172a">B</text><text x="338" y="155" font-family="sans-serif" font-weight="bold" font-size="16" fill="#0f172a">C</text><text x="135" y="145" font-family="sans-serif" font-weight="bold" font-size="16" fill="#0f172a">D</text></svg>',
       },
     },
     {
@@ -288,4 +290,8 @@ export function toggleStarProject(id: string): boolean {
   const updatedStarred = !proj.isStarred;
   saveProject({ ...proj, isStarred: updatedStarred });
   return updatedStarred;
+}
+
+export function getProjectsByType(type: ProjectType): ProjectItem[] {
+  return getAllProjects().filter((p) => p.type === type);
 }

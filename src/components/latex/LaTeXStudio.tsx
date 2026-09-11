@@ -17,12 +17,17 @@ import {
   AlertCircle,
   CheckCircle2,
   History as HistoryIcon,
+  ChevronLeft,
+  Edit3,
+  FileCode,
+  Share2,
 } from 'lucide-react';
 import { APP_VERSION } from '@/config/version';
 import WorkspaceHeader, { WorkspaceBrand } from '@/components/header/WorkspaceHeader';
 import ThemeToggleButton from '@/components/header/ThemeToggleButton';
 import StudioTools, { type StudioFile, type StudioImage, type RestorePoint } from '@/components/latex/StudioTools';
 import { LATEX_TEMPLATES, DEFAULT_TEMPLATE_ID, getTemplateById } from '@/components/latex/LaTeXTemplates';
+import { getDocumentById, saveDocument, type LatexDocumentItem } from '@/lib/latexStorage';
 
 const TeXEditor = dynamic(() => import('@/components/latex/TeXEditor'), {
   ssr: false,
@@ -38,14 +43,21 @@ const PDFPreview = dynamic(() => import('@/components/latex/PDFPreview'), {
   ),
 });
 
-const STORAGE_KEY = 'mathaio_latex_studio_state_v2';
-
 const button =
   'inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-50 cursor-pointer';
 
-export default function LaTeXStudio({ engineLabel }: { engineLabel: string }) {
-  // Main state
+export default function LaTeXStudio({
+  docId,
+  engineLabel,
+}: {
+  docId?: string;
+  engineLabel: string;
+}) {
   const defaultTpl = getTemplateById(DEFAULT_TEMPLATE_ID) || LATEX_TEMPLATES[0];
+
+  // Document metadata & project state
+  const [currentDocId, setCurrentDocId] = useState<string>(docId || 'temp-doc');
+  const [docTitle, setDocTitle] = useState<string>('Tai_lieu_Toan_chua_dat_ten.tex');
   const [template, setTemplate] = useState<string>(defaultTpl.id);
   const [source, setSource] = useState<string>(defaultTpl.source);
   const [activeFileName, setActiveFileName] = useState<string>('main.tex');
@@ -68,59 +80,57 @@ export default function LaTeXStudio({ engineLabel }: { engineLabel: string }) {
   const [highlightPage, setHighlightPage] = useState<number | undefined>(undefined);
   const [insertRequest, setInsertRequest] = useState<{ id: number; text: string } | undefined>(undefined);
   const [isPresentation, setIsPresentation] = useState<boolean>(false);
-  const [storageNotice, setStorageNotice] = useState<string>('');
+  const [storageNotice, setStorageNotice] = useState<string>('Tự động lưu');
 
   // AI & Async busy flags
   const [aiBusy, setAiBusy] = useState<boolean>(false);
   const [ocrBusy, setOcrBusy] = useState<boolean>(false);
   const [fixBusy, setFixBusy] = useState<boolean>(false);
 
-  // Restore saved state from LocalStorage on initial client mount
+  // Load document from storage on mount
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.source) {
-          setSource(parsed.source);
-          setFiles(parsed.files || [{ name: 'main.tex', content: parsed.source }]);
-          setHistory(parsed.history || []);
-          if (parsed.template) setTemplate(parsed.template);
-          if (parsed.fontSize) setFontSize(parsed.fontSize);
-          setStorageNotice('Đã khôi phục bản nháp trước');
-        }
+    if (docId) {
+      const stored = getDocumentById(docId);
+      if (stored) {
+        setCurrentDocId(stored.id);
+        setDocTitle(stored.title);
+        setTemplate(stored.templateId);
+        setSource(stored.source);
+        setFiles(stored.files && stored.files.length > 0 ? stored.files : [{ name: 'main.tex', content: stored.source }]);
+        setImages(stored.images || []);
+        setHistory(stored.history || []);
+        setStorageNotice('Đã tải từ kho lưu trữ');
       }
-    } catch {
-      // ignore
     }
-  }, []);
+  }, [docId]);
 
-  // Auto-save debounced to LocalStorage
+  // Auto-save debounced to Storage
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   useEffect(() => {
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = setTimeout(() => {
       try {
-        localStorage.setItem(
-          STORAGE_KEY,
-          JSON.stringify({
-            source,
-            template,
-            fontSize,
-            files: files.map((f) => (f.name === activeFileName ? { ...f, content: source } : f)),
-            history: history.slice(-20),
-            updatedAt: Date.now(),
-          })
-        );
-        setStorageNotice(`Tự động lưu lúc ${new Date().toLocaleTimeString('vi-VN')}`);
+        const itemToSave: LatexDocumentItem = {
+          id: currentDocId,
+          title: docTitle,
+          templateId: template,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          source,
+          files: files.map((f) => (f.name === activeFileName ? { ...f, content: source } : f)),
+          images,
+          history: history.slice(-25),
+        };
+        saveDocument(itemToSave);
+        setStorageNotice(`Đã lưu lúc ${new Date().toLocaleTimeString('vi-VN')}`);
       } catch {
-        // storage quota
+        // quota
       }
-    }, 1200);
+    }, 1000);
     return () => {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     };
-  }, [source, template, fontSize, files, activeFileName, history]);
+  }, [source, docTitle, template, files, activeFileName, images, history, currentDocId]);
 
   // Insert helper for Ribbon and snippets
   const handleInsert = useCallback((text: string) => {
@@ -195,7 +205,7 @@ export default function LaTeXStudio({ engineLabel }: { engineLabel: string }) {
       setFiles((prev) =>
         prev.map((f) => (f.name === activeFileName ? { ...f, content: data.fixedSource } : f))
       );
-      // Auto re-compile fixed source!
+      // Auto re-compile fixed source
       await compile(data.fixedSource);
     } catch (err: any) {
       alert(err.message || 'Lỗi khi AI sửa mã.');
@@ -218,7 +228,6 @@ export default function LaTeXStudio({ engineLabel }: { engineLabel: string }) {
         throw new Error(data.error || 'AI không thể hoàn thành yêu cầu.');
       }
 
-      // Append AI generated math content at cursor or bottom
       handleInsert(`\n\n% --- AI generated content ---\n${data.result}\n`);
     } catch (err: any) {
       alert(err.message || 'Lỗi khi gọi trợ lý AI.');
@@ -280,10 +289,11 @@ export default function LaTeXStudio({ engineLabel }: { engineLabel: string }) {
   // Export LaTeX to Word (.docx)
   const handleExportWord = async () => {
     try {
+      const cleanTitle = docTitle.replace(/\.tex$/, '');
       const res = await fetch('/api/latex/word', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ source, title: 'Tai_lieu_MathAIO' }),
+        body: JSON.stringify({ source, title: cleanTitle }),
       });
       if (!res.ok) throw new Error('Không thể tạo file Word.');
 
@@ -291,7 +301,7 @@ export default function LaTeXStudio({ engineLabel }: { engineLabel: string }) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'Tai_lieu_MathAIO.docx';
+      a.download = `${cleanTitle}.docx`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (err: any) {
@@ -305,7 +315,7 @@ export default function LaTeXStudio({ engineLabel }: { engineLabel: string }) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = activeFileName || 'document.tex';
+    a.download = docTitle || activeFileName || 'document.tex';
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -322,7 +332,6 @@ export default function LaTeXStudio({ engineLabel }: { engineLabel: string }) {
 
   // 2-Way SyncTeX Click Handlers
   const handleSyncPDFToCode = (page: number, ratio: number) => {
-    // Approximate line calculation from page and ratio
     const lines = source.split('\n');
     const estimatedTotalPages = Math.max(1, Math.ceil(lines.length / 45));
     const linesPerPage = Math.ceil(lines.length / estimatedTotalPages);
@@ -340,27 +349,45 @@ export default function LaTeXStudio({ engineLabel }: { engineLabel: string }) {
 
   return (
     <div className="h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors duration-200">
-      {/* 1. Header Bar */}
-      <header className="shrink-0 z-30 backdrop-blur-md bg-white/85 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800/80 px-4 lg:px-8 py-2.5 sm:py-3 flex flex-wrap items-center justify-between gap-3 shadow-xs dark:shadow-xl dark:shadow-slate-950/50 transition-colors">
-        <div className="flex flex-wrap items-center gap-3">
-          <WorkspaceBrand
-            badge="LaTeX Studio"
-            subtitle="Biên soạn tài liệu toán học &amp; xuất bản PDF A4"
-          />
-          <WorkspaceHeader />
+      {/* 1. Header Bar with Back Navigation & Editable Document Title */}
+      <header className="shrink-0 z-30 backdrop-blur-md bg-white/85 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800/80 px-3 sm:px-6 py-2 sm:py-2.5 flex flex-wrap items-center justify-between gap-3 shadow-xs dark:shadow-xl dark:shadow-slate-950/50 transition-colors">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          {/* Back to Document Dashboard Button */}
+          <Link
+            href="/latex"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 transition cursor-pointer"
+            title="Quay lại danh sách dự án"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            <span className="hidden sm:inline">Danh sách tài liệu</span>
+          </Link>
+
+          <span className="h-4 w-px bg-slate-200 dark:bg-slate-700" />
+
+          {/* Editable Document Title in Topbar */}
+          <div className="flex items-center gap-1.5 min-w-0">
+            <FileCode className="w-4 h-4 text-cyan-500 shrink-0" />
+            <input
+              type="text"
+              value={docTitle}
+              onChange={(e) => setDocTitle(e.target.value)}
+              className="font-bold text-xs sm:text-sm bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-white dark:focus:bg-slate-950 border border-transparent focus:border-cyan-500 rounded-lg px-2 py-0.5 max-w-64 sm:max-w-xs truncate transition focus:outline-none"
+              title="Click để đổi tên tài liệu trực tiếp"
+            />
+            <span className="text-[10px] text-slate-400 font-mono hidden md:inline shrink-0">
+              ({storageNotice})
+            </span>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
-          <span className="hidden xl:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80">
-            <FileText className="w-3.5 h-3.5 text-cyan-500" />
-            PDF Engine v2.0 (XeLaTeX)
-          </span>
+        <div className="flex items-center gap-2">
+          <WorkspaceHeader />
           <ThemeToggleButton />
         </div>
       </header>
 
       {/* 2. Top Action Controls */}
-      <div className="relative z-10 mx-4 md:mx-6 mt-3 p-3 border border-slate-200 dark:border-slate-800 rounded-2xl bg-white/85 dark:bg-slate-900/70 shadow-xs backdrop-blur-sm flex flex-wrap items-center gap-2 shrink-0">
+      <div className="relative z-10 mx-4 md:mx-6 mt-2.5 p-2.5 sm:p-3 border border-slate-200 dark:border-slate-800 rounded-2xl bg-white/85 dark:bg-slate-900/70 shadow-xs backdrop-blur-sm flex flex-wrap items-center gap-2 shrink-0">
         <h1 className="sr-only">Biên Soạn &amp; Biên Dịch LaTeX Sang PDF</h1>
 
         {/* Template Selector with GDPT 2018 badges */}
@@ -372,7 +399,7 @@ export default function LaTeXStudio({ engineLabel }: { engineLabel: string }) {
             aria-label="Chọn mẫu tài liệu"
             value={template}
             disabled={status === 'compiling'}
-            className={`${button} bg-white dark:bg-slate-900 max-w-72 font-medium`}
+            className={`${button} bg-white dark:bg-slate-900 max-w-64 font-medium`}
             onChange={(e) => {
               const selected = LATEX_TEMPLATES.find((t) => t.id === e.target.value);
               if (selected) {
@@ -423,7 +450,11 @@ export default function LaTeXStudio({ engineLabel }: { engineLabel: string }) {
 
         {/* Download PDF */}
         {pdf ? (
-          <a href={pdf} download="Tai_lieu_Toan_MathAIO.pdf" className={button}>
+          <a
+            href={pdf}
+            download={`${docTitle.replace(/\.tex$/, '')}.pdf`}
+            className={button}
+          >
             <Download className="w-3.5 h-3.5 text-emerald-500" />
             <span>Tải PDF A4</span>
           </a>
@@ -626,7 +657,7 @@ export default function LaTeXStudio({ engineLabel }: { engineLabel: string }) {
           <span className="hidden md:inline text-slate-300 dark:text-slate-700">|</span>
           <span className="hidden md:inline-flex items-center gap-1.5">
             <Save className="w-3 h-3 text-emerald-500" />
-            {storageNotice || 'Tự động lưu bản nháp'}
+            {storageNotice}
           </span>
           <Link
             href="/changelog?from=%2Flatex"

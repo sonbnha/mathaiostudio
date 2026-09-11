@@ -411,48 +411,22 @@ export default function LaTeXStudio({
 
   return (
     <div className="h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors duration-200">
-      {/* 1. Global Standard Header (matching /geometry) */}
+      {/* 1. Global Standard Header with Breadcrumb & Inline Title */}
       <AppHeader
-        badge="LaTeX Studio"
-        subtitle="Biên soạn tài liệu toán học &amp; xuất bản PDF A4"
+        docTitle={docTitle}
+        onDocTitleChange={(newTitle) => setDocTitle(newTitle)}
+        saveStatus="saved"
+        saveStatusLabel={storageNotice || 'Đã lưu'}
+        toolType="latex"
       />
 
-      {/* 2. Top Action Controls & Document Breadcrumb */}
-      <div className="relative z-10 mx-4 md:mx-6 mt-2.5 p-2.5 sm:p-3 border border-slate-200 dark:border-slate-800 rounded-2xl bg-white/85 dark:bg-slate-900/70 shadow-xs backdrop-blur-sm flex flex-wrap items-center justify-between gap-2 shrink-0">
+      {/* 2. Top Action Controls */}
+      <div className="relative z-10 mx-4 md:mx-6 mt-2.5 p-2 sm:p-2.5 border border-slate-200 dark:border-slate-800 rounded-2xl bg-white/85 dark:bg-slate-900/70 shadow-xs backdrop-blur-sm flex flex-wrap items-center justify-between gap-2 shrink-0">
         <h1 className="sr-only">Biên Soạn &amp; Biên Dịch LaTeX Sang PDF</h1>
 
-        {/* Left: Back to Home Hub Button & Editable Document Title */}
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100/70 dark:bg-slate-800/70 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 transition cursor-pointer shrink-0"
-            title="Quay lại Trung tâm Dự án Trang chủ"
-          >
-            <ChevronLeft className="w-4 h-4" />
-            <span className="hidden sm:inline">Trang chủ</span>
-          </Link>
-
-          <span className="h-4 w-px bg-slate-200 dark:bg-slate-700 hidden sm:inline" />
-
-          <div className="flex items-center gap-1.5 min-w-0">
-            <FileCode className="w-4 h-4 text-cyan-500 shrink-0" />
-            <input
-              type="text"
-              value={docTitle}
-              onChange={(e) => setDocTitle(e.target.value)}
-              className="font-bold text-xs sm:text-sm bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-white dark:focus:bg-slate-950 border border-transparent focus:border-cyan-500 rounded-lg px-2 py-0.5 max-w-44 sm:max-w-xs truncate transition focus:outline-none"
-              title="Click để đổi tên tài liệu trực tiếp"
-            />
-            <span className="text-[10px] text-slate-400 font-mono hidden lg:inline shrink-0">
-              ({storageNotice})
-            </span>
-          </div>
-        </div>
-
-        {/* Right: Actions, Template, Compile, Export */}
-        <div className="flex items-center gap-2 ml-auto">
-          {/* Template Selector with GDPT 2018 badges */}
-          <div className="hidden md:flex items-center gap-1.5">
+        {/* Template Selector with GDPT 2018 badges */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5">
             <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
               Mẫu:
             </label>
@@ -487,6 +461,10 @@ export default function LaTeXStudio({
               ))}
             </select>
           </div>
+        </div>
+
+        {/* Right: Actions, Compile, Export */}
+        <div className="flex items-center gap-2 ml-auto">
 
           {/* Compile Action Button */}
           <button

@@ -51,9 +51,9 @@ import UnifiedProblemInput from '@/components/UnifiedProblemInput';
 import GeometryQuickSwitcherModal from '@/components/geometry/GeometryQuickSwitcherModal';
 import ExportDropdown from '@/components/ExportDropdown';
 import InteractiveSvgEditor from '@/components/InteractiveSvgEditor';
+import AppHeader from '@/components/header/AppHeader';
 import UserProfileDropdown from '@/components/header/UserProfileDropdown';
 import WorkspaceBrand from '@/components/header/WorkspaceBrand';
-import WorkspaceHeader from '@/components/header/WorkspaceHeader';
 import ThemeToggleButton from '@/components/header/ThemeToggleButton';
 import type { AuthUser } from '@/components/AuthModal';
 import {
@@ -1504,46 +1504,27 @@ function HomeContent() {
         <div className="absolute top-1/3 -right-40 w-96 h-96 bg-indigo-600/10 dark:bg-indigo-600/15 rounded-full blur-3xl"></div>
       </div>
 
-      {/* 1. HEADER (Shrink-0) */}
-      <header className="shrink-0 z-30 backdrop-blur-md bg-white/85 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800/80 px-4 lg:px-8 py-2.5 sm:py-3 flex flex-wrap items-center justify-between gap-3 shadow-xs dark:shadow-xl dark:shadow-slate-950/50 transition-colors">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <WorkspaceBrand badge="AI Visualizer" subtitle="Mô hình hóa hình học &amp; lượng giác THCS / THPT" />
-
-          <span className="h-4 w-px bg-slate-200 dark:bg-slate-700 hidden xl:inline" />
-
-          {/* Inline Editable Document Title on Topbar */}
-          <div className="hidden sm:flex items-center gap-1.5 min-w-0 max-w-[180px] lg:max-w-[240px]">
-            <input
-              type="text"
-              value={docTitle}
-              onChange={(e) => {
-                const newTitle = e.target.value;
-                setDocTitle(newTitle);
-                if (currentDocId) {
-                  const curr = getProjectById(currentDocId);
-                  if (curr) {
-                    saveProject({
-                      ...curr,
-                      title: newTitle,
-                      updatedAt: Date.now(),
-                    });
-                  }
-                }
-              }}
-              className="font-bold text-xs bg-slate-100/60 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-white dark:focus:bg-slate-950 border border-slate-200/60 dark:border-slate-700/60 focus:border-cyan-500 rounded-lg px-2.5 py-1 truncate transition focus:outline-none w-full text-slate-800 dark:text-slate-100 cursor-text shadow-2xs"
-              title="Click để sửa tên hình vẽ trực tiếp"
-              placeholder="Hình vẽ chưa đặt tên"
-            />
-          </div>
-
-          {/* Module Navigation Tabs */}
-          <WorkspaceHeader />
-        </div>
-
-        {/* Header Right: License Key + Library + Theme Toggle */}
-        <div className="flex items-center gap-2.5">
-          {/* License Key & Live Status Badge: CHỈ HIỂN THỊ CHO KHÁCH VÃNG LAI (!currentUser) */}
-          {!currentUser && (!hasToken || !isAuthLoading) && (
+      {/* 1. Standardized Workspace Header with Breadcrumb & Inline File Rename */}
+      <AppHeader
+        docTitle={docTitle}
+        onDocTitleChange={(newTitle) => {
+          setDocTitle(newTitle);
+          if (currentDocId) {
+            const curr = getProjectById(currentDocId);
+            if (curr) {
+              saveProject({
+                ...curr,
+                title: newTitle,
+                updatedAt: Date.now(),
+              });
+            }
+          }
+        }}
+        saveStatus="saved"
+        toolType="geometry"
+        extraRight={
+          /* License Key & Live Status Badge: CHỈ HIỂN THỊ CHO KHÁCH VÃNG LAI (!currentUser) */
+          !currentUser && (!hasToken || !isAuthLoading) && (
             licenseStatus?.valid ? (
               (() => {
                 const isTrial =
@@ -1580,7 +1561,7 @@ function HomeContent() {
                     </span>
                   </button>
                 ) : (
-                  /* Collapsed VIP Badge cho khách vãng lai (kèm tooltip gợi ý liên kết tài khoản) */
+                  /* Collapsed VIP Badge cho khách vãng lai */
                   <div className="relative group shrink-0">
                     <button
                       type="button"
@@ -1608,8 +1589,6 @@ function HomeContent() {
                         ⚙️ Đổi key
                       </span>
                     </button>
-
-                    {/* Tooltip nhắc nhở liên kết tài khoản */}
                     <div className="absolute top-full right-0 mt-2 w-72 p-3 bg-slate-900 dark:bg-slate-950 text-slate-100 text-xs rounded-2xl shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all z-50 border border-amber-500/40 backdrop-blur-md text-left">
                       <div className="flex items-center gap-1.5 text-amber-400 font-bold mb-1">
                         <Sparkles className="w-3.5 h-3.5" />
@@ -1630,7 +1609,6 @@ function HomeContent() {
                 );
               })()
             ) : (
-              /* Chưa có key hợp lệ: Nút Nhập License Key mở modal */
               <button
                 type="button"
                 onClick={() => {
@@ -1646,86 +1624,9 @@ function HomeContent() {
                 <span>Nhập License Key</span>
               </button>
             )
-          )}
-
-          {/* Gemini API Key Configuration Button */}
-          <button
-            type="button"
-            onClick={() => openApiKeyModal()}
-            className="h-10 inline-flex items-center justify-center gap-2 px-3 sm:px-3.5 rounded-xl text-xs font-medium border transition-all duration-200 shadow-xs cursor-pointer group shrink-0 bg-gradient-to-r from-purple-50 via-indigo-50/60 to-sky-50 border-purple-200 hover:border-purple-300 hover:bg-purple-100/50 text-purple-900 dark:from-indigo-950/40 dark:via-purple-950/30 dark:to-sky-950/40 dark:border-purple-500/30 dark:hover:border-purple-400/60 dark:hover:bg-purple-950/60 dark:text-purple-200 dark:hover:text-white"
-            title={
-              isCustomKeyActive
-                ? 'Đang dùng Gemini Key cá nhân. Bấm để quản lý.'
-                : 'Đang dùng Gemini Key hệ thống (Auto). Bấm để nhập Key cá nhân.'
-            }
-          >
-            <Key className="w-3.5 h-3.5 text-purple-600 dark:text-indigo-400 group-hover:rotate-12 transition-transform shrink-0" />
-            {isCustomKeyActive ? (
-              <div className="flex items-center gap-1.5">
-                <span className="font-medium text-xs text-purple-900 dark:text-purple-200">
-                  Key riêng
-                </span>
-                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 border border-purple-200/80 dark:bg-purple-500/20 dark:text-purple-300 dark:border-purple-500/30 uppercase tracking-wide">
-                  Cá nhân
-                </span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1.5">
-                <span className="font-medium text-xs text-purple-900 dark:text-purple-200">
-                  Gemini Key
-                </span>
-                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 border border-purple-200/80 dark:bg-purple-500/20 dark:text-purple-300 dark:border-purple-500/30 uppercase tracking-wide">
-                  Auto
-                </span>
-              </div>
-            )}
-            <span
-              className={`w-2 h-2 rounded-full shrink-0 transition-all ${
-                isCustomKeyActive
-                  ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.7)] animate-pulse'
-                  : 'bg-purple-500 dark:bg-indigo-400 shadow-[0_0_6px_rgba(168,85,247,0.4)] dark:shadow-[0_0_6px_rgba(129,140,248,0.7)]'
-              }`}
-            ></span>
-          </button>
-
-          {/* User Auth Section: Skeleton while loading (chỉ khi có token cần verify), Login Buttons for Guests, or User Profile for Logged-in */}
-          {hasToken && isAuthLoading && !currentUser ? (
-            <div className="flex items-center gap-2 shrink-0 animate-pulse">
-              <div className="h-10 w-9 sm:w-28 bg-slate-200/80 dark:bg-slate-800/80 rounded-2xl border border-slate-200/50 dark:border-slate-800/50" />
-            </div>
-          ) : !currentUser ? (
-            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-              <Link
-                href="/login"
-                className="h-10 px-3 sm:px-3.5 rounded-xl text-xs font-semibold bg-gradient-to-r from-blue-600 via-cyan-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white flex items-center gap-1.5 shadow-sm hover:shadow transition-all cursor-pointer shrink-0"
-                title="Đăng nhập tài khoản MathAIO"
-              >
-                <LogIn className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Đăng nhập</span>
-              </Link>
-              <Link
-                href="/register"
-                className="h-10 px-2.5 sm:px-3 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 shadow-xs hover:shadow transition-all cursor-pointer shrink-0"
-                title="Đăng ký tài khoản nhận 10 Ω Trial"
-              >
-                <UserPlus className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
-                <span className="hidden sm:inline">Đăng ký</span>
-              </Link>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 shrink-0">
-              {/* TRƯỜNG HỢP 2: ĐÃ ĐĂNG NHẬP (currentUser) */}
-              <UserProfileDropdown
-                user={currentUser}
-                onLogout={handleLogout}
-              />
-            </div>
-          )}
-
-          {/* Theme Toggle Button */}
-          <ThemeToggleButton />
-        </div>
-      </header>
+          )
+        }
+      />
 
 
       {/* 2. KHÔNG GIAN LÀM VIỆC (Flex-1 min-h-0, không bị tràn ra ngoài) */}

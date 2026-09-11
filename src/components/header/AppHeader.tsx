@@ -6,62 +6,100 @@ import {
   Key,
   LogIn,
   UserPlus,
-  Crown,
-  Sparkles,
+  Home,
+  ChevronRight,
+  Compass,
+  FileCode,
+  BookOpen,
+  Cloud,
+  RefreshCw,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useApiKey } from '@/context/ApiKeyContext';
-import { useRenewModal } from '@/context/RenewModalContext';
 import WorkspaceBrand from '@/components/header/WorkspaceBrand';
-import WorkspaceHeader from '@/components/header/WorkspaceHeader';
 import ThemeToggleButton from '@/components/header/ThemeToggleButton';
 import UserProfileDropdown from '@/components/header/UserProfileDropdown';
 import { checkHasAuthToken } from '@/lib/authClient';
+import { APP_VERSION } from '@/config/version';
 
 export interface AppHeaderProps {
   badge?: string;
   subtitle?: string;
   className?: string;
+  docTitle?: string;
+  onDocTitleChange?: (newTitle: string) => void;
+  saveStatus?: 'saved' | 'saving' | 'unsaved' | string;
+  saveStatusLabel?: string;
+  toolType?: 'geometry' | 'latex' | 'lesson-plan' | string;
+  toolName?: string;
+  toolIcon?: React.ReactNode;
+  extraRight?: React.ReactNode;
 }
 
 export default function AppHeader({
   badge,
   subtitle,
   className = '',
+  docTitle,
+  onDocTitleChange,
+  saveStatus = 'saved',
+  saveStatusLabel,
+  toolType,
+  toolName,
+  toolIcon,
+  extraRight,
 }: AppHeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, isLoading, logout } = useAuth();
   const { openApiKeyModal, isCustomKeyActive } = useApiKey();
-  const { openRenewModal } = useRenewModal();
 
   const [hasToken, setHasToken] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [localDocTitle, setLocalDocTitle] = useState(docTitle || '');
 
   useEffect(() => {
     setMounted(true);
     setHasToken(checkHasAuthToken());
   }, []);
 
-  // Determine default badge & subtitle based on current route if not explicitly passed
-  let resolvedBadge = badge;
-  let resolvedSubtitle = subtitle;
-
-  if (!resolvedBadge) {
-    if (pathname.startsWith('/geometry')) {
-      resolvedBadge = 'AI Visualizer';
-      resolvedSubtitle = 'Mô hình hóa hình học & lượng giác THCS / THPT';
-    } else if (pathname.startsWith('/lesson-plan') || pathname.startsWith('/soan-giao-an')) {
-      resolvedBadge = 'Kế Hoạch Bài Dạy 5512';
-      resolvedSubtitle = 'Soạn giáo án tự động theo chuẩn Công văn 5512/BGDĐT';
-    } else if (pathname.startsWith('/latex')) {
-      resolvedBadge = 'LaTeX Studio';
-      resolvedSubtitle = 'Biên soạn tài liệu toán học & xuất bản PDF A4';
-    } else {
-      resolvedBadge = 'Studio';
-      resolvedSubtitle = 'Hệ sinh thái ứng dụng Toán học trực quan';
+  useEffect(() => {
+    if (docTitle !== undefined) {
+      setLocalDocTitle(docTitle);
     }
+  }, [docTitle]);
+
+  const isHome = pathname === '/' || pathname === '/landing';
+
+  // Determine tool information for workspace breadcrumb
+  let currentToolType = toolType;
+  if (!currentToolType) {
+    if (pathname.startsWith('/geometry')) currentToolType = 'geometry';
+    else if (pathname.startsWith('/latex')) currentToolType = 'latex';
+    else if (pathname.startsWith('/lesson-plan') || pathname.startsWith('/soan-giao-an')) currentToolType = 'lesson-plan';
   }
+
+  let currentToolName = toolName;
+  let currentToolIcon = toolIcon;
+  let defaultPlaceholder = 'Tài liệu chưa đặt tên';
+
+  if (currentToolType === 'geometry') {
+    currentToolName = currentToolName || 'Hình học';
+    currentToolIcon = currentToolIcon || <Compass className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />;
+    defaultPlaceholder = 'Hình vẽ chưa đặt tên';
+  } else if (currentToolType === 'latex') {
+    currentToolName = currentToolName || 'LaTeX Studio';
+    currentToolIcon = currentToolIcon || <FileCode className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />;
+    defaultPlaceholder = 'Tài liệu LaTeX';
+  } else if (currentToolType === 'lesson-plan') {
+    currentToolName = currentToolName || 'Giáo án 5512';
+    currentToolIcon = currentToolIcon || <BookOpen className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />;
+    defaultPlaceholder = 'Kế hoạch bài dạy';
+  }
+
+  // Determine default badge & subtitle for home hub view
+  let resolvedBadge = badge || 'Workspace Hub';
+  let resolvedSubtitle = subtitle || 'Trung tâm Quản lý Dự án & Hệ sinh thái Toán học';
 
   const handleLogout = async () => {
     await logout();
@@ -72,14 +110,97 @@ export default function AppHeader({
     <header
       className={`shrink-0 z-30 backdrop-blur-md bg-white/85 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800/80 px-4 lg:px-8 py-2.5 sm:py-3 flex flex-wrap items-center justify-between gap-3 shadow-xs dark:shadow-xl dark:shadow-slate-950/50 transition-colors ${className}`}
     >
-      {/* 1. Left Section: Logo MathAIO, Version Tag, and Navigation Tabs */}
-      <div className="flex items-center gap-3">
-        <WorkspaceBrand badge={resolvedBadge} subtitle={resolvedSubtitle || ''} />
-        <WorkspaceHeader />
-      </div>
+      {/* 1. Left Section */}
+      {isHome ? (
+        /* HOME VIEW: Clean MathAIO Brand Logo + Version & Hub Badge */
+        <div className="flex items-center gap-3">
+          <WorkspaceBrand badge={resolvedBadge} subtitle={resolvedSubtitle} />
+        </div>
+      ) : (
+        /* WORKSPACE VIEW: Context-aware Breadcrumb (Trang chủ -> Tool -> Inline Title -> Status) */
+        <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 max-w-full">
+          {/* Mini Brand / Home Link */}
+          <Link
+            href="/"
+            className="flex items-center gap-2 group shrink-0 px-2 py-1 -ml-1 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/80 transition"
+            title="Về Trung tâm Dự án Trang chủ"
+          >
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-600 flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform">
+              <Home className="w-4 h-4 text-white" />
+            </div>
+            <div className="hidden sm:flex flex-col">
+              <span className="text-xs font-bold text-slate-800 dark:text-slate-100 tracking-tight leading-none">
+                MathAIO
+              </span>
+              <span className="text-[10px] text-slate-400 font-medium leading-none mt-0.5">
+                Trang chủ
+              </span>
+            </div>
+          </Link>
 
-      {/* 2. Right Section: Gemini Key, Auth / UserProfileDropdown, Theme Toggle */}
-      <div className="flex items-center gap-2.5">
+          <ChevronRight className="w-3.5 h-3.5 text-slate-300 dark:text-slate-700 shrink-0" />
+
+          {/* Tool Category Badge */}
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 text-xs font-semibold text-slate-700 dark:text-slate-200 shrink-0">
+            {currentToolIcon}
+            <span className="hidden xs:inline sm:inline">{currentToolName}</span>
+          </div>
+
+          <ChevronRight className="w-3.5 h-3.5 text-slate-300 dark:text-slate-700 shrink-0" />
+
+          {/* Inline Editable Document Title */}
+          <div className="relative flex items-center min-w-0 max-w-[150px] xs:max-w-[180px] sm:max-w-[240px] md:max-w-[300px] lg:max-w-[380px] group">
+            <input
+              type="text"
+              value={docTitle !== undefined ? docTitle : localDocTitle}
+              onChange={(e) => {
+                const val = e.target.value;
+                setLocalDocTitle(val);
+                onDocTitleChange?.(val);
+              }}
+              placeholder={defaultPlaceholder}
+              className="w-full font-bold text-xs bg-slate-100/70 hover:bg-slate-200/60 focus:bg-white dark:bg-slate-800/60 dark:hover:bg-slate-700/60 dark:focus:bg-slate-950 border border-slate-200/70 focus:border-cyan-500 dark:border-slate-700/70 dark:focus:border-cyan-500 rounded-lg px-2.5 py-1 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 truncate transition focus:outline-none shadow-2xs cursor-text"
+              title="Click để sửa tên tệp trực tiếp (tự động đồng bộ)"
+            />
+          </div>
+
+          {/* Save Status Cloud Badge */}
+          <div className="hidden sm:flex items-center shrink-0">
+            {saveStatus === 'saving' ? (
+              <span className="inline-flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400 font-medium px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-800/40">
+                <RefreshCw className="w-3 h-3 animate-spin" />
+                <span className="hidden md:inline">Đang lưu</span>
+              </span>
+            ) : (
+              <span
+                className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40"
+                title="Đã lưu vào bộ nhớ trình duyệt"
+              >
+                <Cloud className="w-3.5 h-3.5 text-emerald-500" />
+                <span className="hidden md:inline">{saveStatusLabel || 'Đã lưu'}</span>
+              </span>
+            )}
+          </div>
+
+          {/* Changelog Version Link */}
+          <Link
+            href={`/changelog?from=${encodeURIComponent(pathname)}`}
+            title="Xem Changelog"
+            className="hidden xl:inline-block text-[10px] font-mono font-medium px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-400 border border-slate-200 dark:border-slate-700 transition shrink-0"
+          >
+            {APP_VERSION.fullString}
+          </Link>
+        </div>
+      )}
+
+      {/* 2. Middle Spacer: Flexible space without center tabs */}
+      <div className="flex-1 min-w-0" />
+
+      {/* 3. Right Section: Extra actions + Gemini Key + Auth / UserProfileDropdown + Theme Toggle */}
+      <div className="flex items-center gap-2.5 shrink-0">
+        {/* Extra workspace actions (e.g. Guest License Badges) */}
+        {extraRight}
+
         {/* Gemini API Key Configuration Button */}
         <button
           type="button"
@@ -114,7 +235,7 @@ export default function AppHeader({
           <span
             className={`w-2 h-2 rounded-full shrink-0 transition-all ${
               isCustomKeyActive
-                ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.7)] animate-pulse'
+                ? 'bg-emerald-500 shadow-[0_0_6px_rgba(160,185,129,0.7)] animate-pulse'
                 : 'bg-purple-500 dark:bg-indigo-400 shadow-[0_0_6px_rgba(168,85,247,0.4)] dark:shadow-[0_0_6px_rgba(129,140,248,0.7)]'
             }`}
           />

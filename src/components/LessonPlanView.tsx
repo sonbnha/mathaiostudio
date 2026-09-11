@@ -36,15 +36,32 @@ import { computeLicenseStatus } from '@/lib/licenseStatus';
 
 interface LessonPlanViewProps {
   licenseKey?: string;
+  topic?: string;
+  onTopicChange?: (topic: string) => void;
 }
 
-export default function LessonPlanView({ licenseKey: parentKey = '' }: LessonPlanViewProps) {
+export default function LessonPlanView({
+  licenseKey: parentKey = '',
+  topic: externalTopic,
+  onTopicChange,
+}: LessonPlanViewProps) {
   // Gemini API Key Context
   const { isCustomKeyActive, openApiKeyModal, getApiKeyHeaders, handleRateLimitError } = useApiKey();
   const { openRenewModal } = useRenewModal();
 
   // Form states
-  const [topic, setTopic] = useState('Định lý Pythagore (Pytago) và ứng dụng thực tế');
+  const [topic, setTopicState] = useState(externalTopic || 'Định lý Pythagore (Pytago) và ứng dụng thực tế');
+
+  const setTopic = (newTopic: string) => {
+    setTopicState(newTopic);
+    onTopicChange?.(newTopic);
+  };
+
+  React.useEffect(() => {
+    if (externalTopic !== undefined) {
+      setTopicState(externalTopic);
+    }
+  }, [externalTopic]);
   const [grade, setGrade] = useState('Lớp 8');
   const [duration, setDuration] = useState('2 tiết (90 phút)');
   const [style, setStyle] = useState('Chuẩn 5512');

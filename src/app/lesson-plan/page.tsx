@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { APP_VERSION } from '@/config/version';
@@ -9,18 +9,22 @@ import AppHeader from '@/components/header/AppHeader';
 
 export default function LessonPlanPage() {
   const pathname = usePathname();
+  const [docTitle, setDocTitle] = useState('Định lý Pythagore (Pytago) và ứng dụng thực tế');
 
   return (
     <div className="h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors duration-200">
-      {/* Unified Global Header */}
+      {/* Unified Global Header with Breadcrumb & Inline Title */}
       <AppHeader
-        badge="Kế Hoạch Bài Dạy 5512"
-        subtitle="Soạn giáo án tự động theo chuẩn Công văn 5512/BGDĐT"
+        docTitle={docTitle}
+        onDocTitleChange={setDocTitle}
+        saveStatus="saved"
+        saveStatusLabel="Chuẩn CV 5512"
+        toolType="lesson-plan"
       />
 
       {/* Main Workspace */}
       <main className="flex-1 min-h-0 w-full px-4 md:px-6 py-3 overflow-hidden flex flex-col">
-        <LessonPlanView />
+        <LessonPlanView topic={docTitle} onTopicChange={setDocTitle} />
       </main>
 
       {/* Footer / Status Bar */}

@@ -594,8 +594,8 @@ export default function FileTreeExplorer({
       {bothExpanded && (
         <div
           onMouseDown={handleMouseDownHorizontalSplitter}
-          className="h-1 bg-slate-200 dark:bg-white/10 hover:bg-cyan-500/60 cursor-row-resize flex-shrink-0 select-none transition-colors z-10"
-          title="Kéo chỉnh tỷ lệ giữa File tree và File outline"
+          className="h-1.5 bg-[#181a1d] hover:bg-emerald-500/40 cursor-row-resize flex-shrink-0 border-y border-white/5 transition-colors select-none z-10"
+          title="Kéo phân chia tỷ lệ chiều cao Cây thư mục và Dàn ý"
         />
       )}
 

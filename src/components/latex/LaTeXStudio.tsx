@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
@@ -54,6 +54,11 @@ import {
   Copy,
   Check,
   ExternalLink,
+  Sparkles,
+  BookOpen,
+  FileCheck,
+  Shapes,
+  Send,
 } from 'lucide-react';
 import { APP_VERSION } from '@/config/version';
 import { useTheme } from '@/context/ThemeContext';
@@ -159,6 +164,7 @@ export default function LaTeXStudio({
   const wordInputRef = useRef<HTMLInputElement>(null);
 
   // Sidebar & Dual resizers state
+  const [activeActivityTab, setActiveActivityTab] = useState<'files' | 'search' | 'ai'>('files');
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   const [sidebarWidth, setSidebarWidth] = useState<number>(260); // 180px - 360px
   const [isShortcutsOpen, setIsShortcutsOpen] = useState<boolean>(false);
@@ -171,6 +177,92 @@ export default function LaTeXStudio({
   const workspaceRef = useRef<HTMLDivElement>(null);
   const pdfSectionRef = useRef<HTMLElement>(null);
   const [pdfWidth, setPdfWidth] = useState<number>(600);
+
+  // Search & Replace within Primary Sidebar
+  const [searchQuery, setSearchQuery] = useState('');
+  const [replaceQuery, setReplaceQuery] = useState('');
+  const [matchCase, setMatchCase] = useState(false);
+  const [wholeWord, setWholeWord] = useState(false);
+  const [useRegex, setUseRegex] = useState(false);
+  const [aiPromptText, setAiPromptText] = useState('');
+
+  const searchMatches = useMemo(() => {
+    if (!searchQuery) return [];
+    const lines = source.split('\n');
+    const results: Array<{ line: number; text: string }> = [];
+    try {
+      let pattern: RegExp;
+      if (useRegex) {
+        pattern = new RegExp(searchQuery, matchCase ? 'g' : 'gi');
+      } else {
+        const escaped = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const wordBound = wholeWord ? `\\b${escaped}\\b` : escaped;
+        pattern = new RegExp(wordBound, matchCase ? 'g' : 'gi');
+      }
+      lines.forEach((lineText, idx) => {
+        if (pattern.test(lineText)) {
+          results.push({ line: idx + 1, text: lineText });
+        }
+      });
+    } catch {
+      // Regex parsing error fallback
+    }
+    return results;
+  }, [source, searchQuery, matchCase, wholeWord, useRegex]);
+
+  const handleReplaceNext = () => {
+    if (!searchQuery) return;
+    try {
+      let pattern: RegExp;
+      if (useRegex) {
+        pattern = new RegExp(searchQuery, matchCase ? '' : 'i');
+      } else {
+        const escaped = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const wordBound = wholeWord ? `\\b${escaped}\\b` : escaped;
+        pattern = new RegExp(wordBound, matchCase ? '' : 'i');
+      }
+      const newSource = source.replace(pattern, replaceQuery);
+      setSource(newSource);
+      setFiles((prev) =>
+        prev.map((f) => (f.name === activeFileName ? { ...f, content: newSource } : f))
+      );
+    } catch (err) {
+      console.error('Replace error:', err);
+    }
+  };
+
+  const handleReplaceAll = () => {
+    if (!searchQuery) return;
+    try {
+      let pattern: RegExp;
+      if (useRegex) {
+        pattern = new RegExp(searchQuery, matchCase ? 'g' : 'gi');
+      } else {
+        const escaped = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const wordBound = wholeWord ? `\\b${escaped}\\b` : escaped;
+        pattern = new RegExp(wordBound, matchCase ? 'g' : 'gi');
+      }
+      const newSource = source.replace(pattern, replaceQuery);
+      setSource(newSource);
+      setFiles((prev) =>
+        prev.map((f) => (f.name === activeFileName ? { ...f, content: newSource } : f))
+      );
+    } catch (err) {
+      console.error('Replace all error:', err);
+    }
+  };
+
+  const handleActivityTabClick = (tab: 'files' | 'search' | 'ai') => {
+    if (isSidebarOpen && activeActivityTab === tab) {
+      setIsSidebarOpen(false);
+    } else {
+      setActiveActivityTab(tab);
+      setIsSidebarOpen(true);
+      if (sidebarWidth < 180) {
+        setSidebarWidth(260);
+      }
+    }
+  };
 
   // Measure PDF panel width for responsive toolbar
   useEffect(() => {
@@ -655,7 +747,7 @@ export default function LaTeXStudio({
     setJumpToPage(page);
   };
 
-  // Resizer 1: Left Sidebar Divider (180px - 360px, offset by Activity Bar 44px, Snap below 80px)
+  // Resizer 1: Left Sidebar Divider (180px - 360px, offset by Activity Bar 44px, Snap below 40px)
   const handleMouseDownSidebarDivider = (e: React.MouseEvent) => {
     e.preventDefault();
     resizingTargetRef.current = 'sidebar';
@@ -665,7 +757,7 @@ export default function LaTeXStudio({
     const onMouseMove = (moveEvent: MouseEvent) => {
       if (resizingTargetRef.current !== 'sidebar') return;
       const rawWidth = moveEvent.clientX - activityBarWidth;
-      if (rawWidth < 80) {
+      if (rawWidth < 40) {
         setIsSidebarOpen(false);
       } else {
         setIsSidebarOpen(true);
@@ -689,7 +781,7 @@ export default function LaTeXStudio({
     window.addEventListener('mouseup', onMouseUp);
   };
 
-  // Resizer 2: Editor & PDF Preview Split Divider (25% - 75% relative to Main Workspace, Snap PDF if < 100px from right)
+  // Resizer 2: Editor & PDF Preview Split Divider (25% - 75% relative to Main Workspace, Snap PDF if < 40px from right)
   const handleMouseDownEditorPdfDivider = (e: React.MouseEvent) => {
     e.preventDefault();
     resizingTargetRef.current = 'editor-pdf';
@@ -703,7 +795,7 @@ export default function LaTeXStudio({
       const wsRect = wsEl.getBoundingClientRect();
       const distanceFromRight = wsRect.right - moveEvent.clientX;
 
-      if (distanceFromRight < 100) {
+      if (distanceFromRight < 40) {
         // Snap PDF to 0 and expand Editor 100%
         setLayoutMode('code');
       } else {
@@ -1755,20 +1847,20 @@ export default function LaTeXStudio({
           aria-label="Thanh điều hướng Activity Bar"
           className="w-11 h-full bg-[#181a1d] border-r border-white/10 flex-shrink-0 flex flex-col justify-between items-center py-2.5 z-30 select-none"
         >
-          {/* Top Group: Files, Search, AI Assistant, Math Symbols */}
+          {/* Top Group: Files, Search, AI Assistant */}
           <div className="flex flex-col items-center gap-2 w-full">
             {/* File button */}
             <button
               type="button"
-              onClick={() => setIsSidebarOpen((prev) => !prev)}
+              onClick={() => handleActivityTabClick('files')}
               className={`relative p-2 rounded-lg transition-colors cursor-pointer group flex items-center justify-center ${
-                isSidebarOpen
+                isSidebarOpen && activeActivityTab === 'files'
                   ? 'text-white bg-white/10 shadow-xs'
                   : 'text-neutral-400 hover:text-white hover:bg-white/5'
               }`}
               title="Tệp & Dàn ý tài liệu (Files & Outline)"
             >
-              {isSidebarOpen && (
+              {isSidebarOpen && activeActivityTab === 'files' && (
                 <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-emerald-500 rounded-r" />
               )}
               <Files className="w-4.5 h-4.5" />
@@ -1777,21 +1869,40 @@ export default function LaTeXStudio({
             {/* Search button */}
             <button
               type="button"
-              onClick={() => triggerEditorAction('find')}
-              className="p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center"
-              title="Tìm kiếm & Thay thế trong mã (Ctrl+F)"
+              onClick={() => handleActivityTabClick('search')}
+              className={`relative p-2 rounded-lg transition-colors cursor-pointer group flex items-center justify-center ${
+                isSidebarOpen && activeActivityTab === 'search'
+                  ? 'text-white bg-white/10 shadow-xs'
+                  : 'text-neutral-400 hover:text-white hover:bg-white/5'
+              }`}
+              title="Tìm kiếm & Thay thế toàn dự án (Search)"
             >
+              {isSidebarOpen && activeActivityTab === 'search' && (
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-emerald-500 rounded-r" />
+              )}
               <Search className="w-4.5 h-4.5" />
             </button>
 
             {/* AI Assistant button */}
-            <AIAssistantDropdown
-              onAI={handleAI}
-              aiBusy={aiBusy}
-              iconOnly={true}
-              align="sidebar"
-              className="p-2 rounded-lg text-indigo-400 hover:text-indigo-200 hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center"
-            />
+            <button
+              type="button"
+              onClick={() => handleActivityTabClick('ai')}
+              className={`relative p-2 rounded-lg transition-colors cursor-pointer group flex items-center justify-center ${
+                isSidebarOpen && activeActivityTab === 'ai'
+                  ? 'text-indigo-400 bg-white/10 shadow-xs'
+                  : 'text-indigo-400/80 hover:text-indigo-300 hover:bg-white/5'
+              }`}
+              title="Trợ lý AI soạn thảo & sửa lỗi"
+            >
+              {isSidebarOpen && activeActivityTab === 'ai' && (
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-emerald-500 rounded-r" />
+              )}
+              {aiBusy ? (
+                <Loader2 className="w-4.5 h-4.5 animate-spin text-indigo-400" />
+              ) : (
+                <Sparkles className="w-4.5 h-4.5" />
+              )}
+            </button>
           </div>
 
           {/* Bottom Group: Settings, Shortcuts/Help */}
@@ -1908,25 +2019,260 @@ export default function LaTeXStudio({
           </div>
         </aside>
 
-        {/* COLUMN 1: LEFT SIDEBAR (File tree + File outline) */}
+        {/* COLUMN 1: UNIFIED PRIMARY SIDEBAR (Files | Search | AI) */}
         {isSidebarOpen && (
           <div
             style={{ width: `${sidebarWidth}px`, flexShrink: 0 }}
-            className="file-tree-sidebar h-full overflow-hidden border-r border-slate-200 dark:border-slate-800 shadow-2xs flex flex-shrink-0 shrink-0"
+            className="file-tree-sidebar h-full overflow-hidden border-r border-slate-200 dark:border-slate-800 shadow-2xs flex flex-col flex-shrink-0 shrink-0 bg-white dark:bg-[#1e2124]"
           >
-            <FileTreeExplorer
-              files={files}
-              activeFileName={activeFileName}
-              source={source}
-              onSelectFile={handleSelectFile}
-              onCreateFile={handleCreateFile}
-              onDeleteFile={handleDeleteFile}
-              onRenameFile={handleRenameFile}
-              onUploadAsset={handleUploadAsset}
-              onJumpToLine={(line) => setTargetLine(line)}
-              isCollapsed={false}
-              onToggleCollapse={() => setIsSidebarOpen(false)}
-            />
+            {activeActivityTab === 'files' && (
+              <FileTreeExplorer
+                files={files}
+                activeFileName={activeFileName}
+                source={source}
+                onSelectFile={handleSelectFile}
+                onCreateFile={handleCreateFile}
+                onDeleteFile={handleDeleteFile}
+                onRenameFile={handleRenameFile}
+                onUploadAsset={handleUploadAsset}
+                onJumpToLine={(line) => setTargetLine(line)}
+                isCollapsed={false}
+                onToggleCollapse={() => setIsSidebarOpen(false)}
+              />
+            )}
+
+            {activeActivityTab === 'search' && (
+              <div className="h-full flex flex-col overflow-hidden text-xs select-none">
+                {/* Search Header */}
+                <div className="flex items-center justify-between px-2.5 py-2 bg-slate-50/90 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800 shrink-0 font-semibold text-[11px] uppercase tracking-wider text-neutral-400">
+                  <div className="flex items-center gap-1.5">
+                    <Search className="w-3.5 h-3.5 text-cyan-500" />
+                    <span>TÌM KIẾM TOÀN DỰ ÁN</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsSidebarOpen(false)}
+                    className="p-1 text-slate-400 hover:text-white rounded transition cursor-pointer"
+                    title="Thu gọn"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                {/* Search Inputs Form */}
+                <div className="p-2 space-y-2 border-b border-slate-200 dark:border-white/10 shrink-0">
+                  <div className="relative flex items-center">
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Tìm kiếm trong tài liệu..."
+                      className="w-full bg-slate-100 dark:bg-[#141618] border border-slate-200 dark:border-white/10 rounded px-2 py-1.5 text-xs text-slate-800 dark:text-slate-200 outline-none pr-16 focus:border-cyan-500"
+                    />
+                    <div className="absolute right-1 flex items-center gap-0.5">
+                      <button
+                        type="button"
+                        onClick={() => setMatchCase(!matchCase)}
+                        className={`px-1 py-0.5 text-[10px] font-mono rounded transition cursor-pointer ${
+                          matchCase ? 'bg-cyan-500 text-white' : 'text-neutral-400 hover:text-white'
+                        }`}
+                        title="Khớp chữ hoa/thường (Match Case)"
+                      >
+                        Aa
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setWholeWord(!wholeWord)}
+                        className={`px-1 py-0.5 text-[10px] font-mono rounded transition cursor-pointer ${
+                          wholeWord ? 'bg-cyan-500 text-white' : 'text-neutral-400 hover:text-white'
+                        }`}
+                        title="Khớp nguyên từ (Whole Word)"
+                      >
+                        \b
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setUseRegex(!useRegex)}
+                        className={`px-1 py-0.5 text-[10px] font-mono rounded transition cursor-pointer ${
+                          useRegex ? 'bg-cyan-500 text-white' : 'text-neutral-400 hover:text-white'
+                        }`}
+                        title="Biểu thức chính quy (Regex)"
+                      >
+                        .*
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="text"
+                      value={replaceQuery}
+                      onChange={(e) => setReplaceQuery(e.target.value)}
+                      placeholder="Thay thế bằng..."
+                      className="flex-1 bg-slate-100 dark:bg-[#141618] border border-slate-200 dark:border-white/10 rounded px-2 py-1.5 text-xs text-slate-800 dark:text-slate-200 outline-none focus:border-cyan-500"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between gap-1.5 pt-0.5">
+                    <button
+                      type="button"
+                      disabled={!searchQuery}
+                      onClick={handleReplaceNext}
+                      className="flex-1 py-1 px-2 rounded bg-slate-200 dark:bg-neutral-800 hover:bg-slate-300 dark:hover:bg-neutral-700 text-slate-700 dark:text-neutral-300 text-[11px] font-medium transition cursor-pointer disabled:opacity-40"
+                    >
+                      Thay thế
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!searchQuery}
+                      onClick={handleReplaceAll}
+                      className="flex-1 py-1 px-2 rounded bg-cyan-600 hover:bg-cyan-500 text-white text-[11px] font-semibold transition cursor-pointer disabled:opacity-40 shadow-xs"
+                    >
+                      Thay tất cả
+                    </button>
+                  </div>
+                </div>
+
+                {/* Match Results Count & List */}
+                <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-1">
+                  <div className="text-[11px] font-mono text-neutral-400 mb-1 flex items-center justify-between">
+                    <span>Kết quả ({searchMatches.length})</span>
+                    {searchQuery && (
+                      <span className="text-[10px] text-cyan-400">
+                        {activeFileName}
+                      </span>
+                    )}
+                  </div>
+                  {searchMatches.length > 0 ? (
+                    searchMatches.map((m, idx) => (
+                      <button
+                        key={`${m.line}-${idx}`}
+                        type="button"
+                        onClick={() => setTargetLine(m.line)}
+                        className="w-full text-left p-1.5 rounded hover:bg-slate-100 dark:hover:bg-[#252a2e] text-slate-700 dark:text-slate-300 transition text-[11px] font-mono cursor-pointer border border-transparent hover:border-white/5"
+                      >
+                        <span className="text-cyan-500 font-bold mr-1.5">L{m.line}:</span>
+                        <span className="truncate">{m.text.trim()}</span>
+                      </button>
+                    ))
+                  ) : searchQuery ? (
+                    <div className="text-center py-6 text-neutral-500 text-xs">
+                      Không tìm thấy kết quả phù hợp
+                    </div>
+                  ) : (
+                    <div className="text-center py-6 text-neutral-500 text-xs">
+                      Nhập từ khóa để bắt đầu tìm kiếm
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {activeActivityTab === 'ai' && (
+              <div className="h-full flex flex-col overflow-hidden text-xs select-none">
+                {/* AI Header */}
+                <div className="flex items-center justify-between px-2.5 py-2 bg-slate-50/90 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800 shrink-0 font-semibold text-[11px] uppercase tracking-wider text-neutral-400">
+                  <div className="flex items-center gap-1.5 text-indigo-400">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>TRỢ LÝ AI SOẠN THẢO</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsSidebarOpen(false)}
+                    className="p-1 text-slate-400 hover:text-white rounded transition cursor-pointer"
+                    title="Thu gọn"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                {/* AI Prompts & Chat Body */}
+                <div className="flex-1 min-h-0 overflow-y-auto p-2.5 space-y-3">
+                  {/* Preset quick actions */}
+                  <div>
+                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block mb-1.5">
+                      Gợi ý tác vụ nhanh
+                    </span>
+                    <div className="space-y-1">
+                      {[
+                        { id: 'exam', label: 'Soạn 5 câu trắc nghiệm Toán (A-B-C-D)', icon: <BookOpen className="w-3.5 h-3.5 text-cyan-400" /> },
+                        { id: 'solution', label: 'Viết lời giải chi tiết theo từng bước', icon: <FileCheck className="w-3.5 h-3.5 text-emerald-400" /> },
+                        { id: 'tikz', label: 'Tạo khối hình học không gian TikZ', icon: <Shapes className="w-3.5 h-3.5 text-amber-400" /> },
+                        { id: 'table', label: 'Lập bảng biến thiên hàm số', icon: <Sigma className="w-3.5 h-3.5 text-indigo-400" /> },
+                        { id: 'fix', label: 'Tự động sửa lỗi cú pháp LaTeX', icon: <WandSparkles className="w-3.5 h-3.5 text-rose-400" /> },
+                      ].map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          disabled={aiBusy}
+                          onClick={() => {
+                            if (p.id === 'fix') {
+                              handleAIFix();
+                            } else {
+                              handleAI(p.id);
+                            }
+                          }}
+                          className="w-full flex items-center gap-2 p-1.5 rounded-lg text-left text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#252a2e] hover:text-indigo-400 transition cursor-pointer border border-transparent hover:border-white/5 disabled:opacity-50 text-[11px]"
+                        >
+                          {p.icon}
+                          <span className="truncate">{p.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* AI Status / Output Notice */}
+                  {aiBusy && (
+                    <div className="flex items-center gap-2 p-2.5 rounded-lg bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs animate-pulse">
+                      <Loader2 className="w-4 h-4 animate-spin text-indigo-400 shrink-0" />
+                      <span>AI đang suy nghĩ và tạo mã LaTeX...</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* AI Input Form Footer */}
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!aiPromptText.trim() || aiBusy) return;
+                    handleAI('custom', aiPromptText.trim());
+                    setAiPromptText('');
+                  }}
+                  className="p-2 border-t border-slate-200 dark:border-white/10 shrink-0 bg-slate-50/50 dark:bg-slate-950/30"
+                >
+                  <div className="relative">
+                    <textarea
+                      rows={2}
+                      value={aiPromptText}
+                      onChange={(e) => setAiPromptText(e.target.value)}
+                      placeholder="Nhập yêu cầu cho AI (vd: tạo bài toán ma trận, vẽ hình chóp...)"
+                      className="w-full bg-slate-100 dark:bg-[#141618] border border-slate-200 dark:border-white/10 rounded-lg p-2 text-xs text-slate-800 dark:text-slate-200 outline-none pr-8 resize-none focus:border-indigo-500"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          if (aiPromptText.trim() && !aiBusy) {
+                            handleAI('custom', aiPromptText.trim());
+                            setAiPromptText('');
+                          }
+                        }
+                      }}
+                    />
+                    <button
+                      type="submit"
+                      disabled={!aiPromptText.trim() || aiBusy}
+                      className="absolute right-2 bottom-2.5 p-1 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white disabled:opacity-40 transition cursor-pointer"
+                      title="Gửi yêu cầu"
+                    >
+                      {aiBusy ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Send className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
           </div>
         )}
 
@@ -1935,12 +2281,16 @@ export default function LaTeXStudio({
           <div className="absolute left-11 top-1/2 -translate-y-1/2 z-30 group/sbexp">
             <button
               type="button"
-              onMouseDown={(e) => e.stopPropagation()}
+              onMouseDown={(e) => {
+                e.stopPropagation();
+                handleMouseDownSidebarDivider(e);
+              }}
               onClick={(e) => {
                 e.stopPropagation();
                 setIsSidebarOpen(true);
+                if (sidebarWidth < 180) setSidebarWidth(260);
               }}
-              className="w-3 h-10 rounded-r-[2px] bg-[#20262b] hover:bg-[#2c333a] text-neutral-400 hover:text-white flex items-center justify-center border border-l-0 border-white/10 shadow-xs transition-colors cursor-pointer pointer-events-auto"
+              className="w-3 h-10 rounded-r-[2px] bg-[#20262b] border border-l-0 border-white/10 text-neutral-400 flex items-center justify-center shadow-xs cursor-pointer pointer-events-auto z-30 transition-all duration-150 hover:bg-emerald-500/20 hover:border-emerald-500 hover:text-emerald-300 hover:shadow-[0_0_8px_rgba(34,197,94,0.45)]"
               title="Mở rộng bảng điều khiển"
             >
               <ChevronRight className="w-2.5 h-2.5" />
@@ -1970,7 +2320,7 @@ export default function LaTeXStudio({
                   e.stopPropagation();
                   setIsSidebarOpen(false);
                 }}
-                className="w-3 h-10 bg-[#20262b] hover:bg-[#2c333a] border border-white/10 rounded-[2px] text-neutral-400 hover:text-white flex items-center justify-center cursor-pointer pointer-events-auto z-30 shadow-xs transition-colors"
+                className="w-3 h-10 bg-[#20262b] border border-white/10 rounded-[2px] text-neutral-400 flex items-center justify-center cursor-pointer pointer-events-auto z-30 shadow-xs transition-all duration-150 hover:bg-emerald-500/20 hover:border-emerald-500 hover:text-emerald-300 hover:shadow-[0_0_8px_rgba(34,197,94,0.45)]"
                 title="Thu gọn bảng điều khiển"
               >
                 <ChevronLeft className="w-2.5 h-2.5" />
@@ -1992,13 +2342,16 @@ export default function LaTeXStudio({
             <div className="absolute right-0 top-1/2 -translate-y-1/2 z-30 group/pdfexp">
               <button
                 type="button"
-                onMouseDown={(e) => e.stopPropagation()}
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                  handleMouseDownEditorPdfDivider(e);
+                }}
                 onClick={(e) => {
                   e.stopPropagation();
                   setLayoutMode('split');
                   setEditorRatio(0.5);
                 }}
-                className="w-3 h-10 rounded-l-[2px] bg-[#20262b] hover:bg-[#2c333a] text-neutral-400 hover:text-white flex items-center justify-center border border-r-0 border-white/10 shadow-xs transition-colors cursor-pointer pointer-events-auto"
+                className="w-3 h-10 rounded-l-[2px] bg-[#20262b] border border-r-0 border-white/10 text-neutral-400 flex items-center justify-center shadow-xs cursor-pointer pointer-events-auto z-30 transition-all duration-150 hover:bg-emerald-500/20 hover:border-emerald-500 hover:text-emerald-300 hover:shadow-[0_0_8px_rgba(34,197,94,0.45)]"
                 title="Mở rộng khung PDF"
               >
                 <ChevronLeft className="w-2.5 h-2.5" />
@@ -2298,10 +2651,10 @@ export default function LaTeXStudio({
                     e.stopPropagation();
                     handleSyncCodeToPDF(cursorLine || targetLine || 1);
                   }}
-                  className="w-5 h-5 bg-[#252a2e] hover:bg-neutral-700 border border-white/10 rounded-[3px] text-neutral-300 hover:text-white flex items-center justify-center cursor-pointer pointer-events-auto shadow-xs transition-colors"
+                  className="w-5 h-5 bg-[#20262b] border border-white/10 rounded-[3px] text-neutral-400 flex items-center justify-center cursor-pointer pointer-events-auto shadow-xs transition-all duration-150 hover:bg-emerald-500/20 hover:border-emerald-500 hover:text-emerald-300 hover:shadow-[0_0_8px_rgba(34,197,94,0.45)]"
                   title="Nhảy đến vị trí trong PDF"
                 >
-                  <ArrowRight className="w-3 h-3 text-neutral-300 group-hover:text-white" />
+                  <ArrowRight className="w-3 h-3 text-neutral-400 group-hover/synctop:text-emerald-300 transition-colors" />
                 </button>
                 <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-[#111315] border border-white/10 rounded text-[11px] text-white whitespace-nowrap shadow-lg pointer-events-none opacity-0 group-hover/synctop:opacity-100 transition-opacity duration-150 z-50">
                   Nhảy đến vị trí trong PDF
@@ -2317,10 +2670,10 @@ export default function LaTeXStudio({
                     e.stopPropagation();
                     handleSyncPDFToCode(pdfCurrentPage || 1, 0.2);
                   }}
-                  className="w-5 h-5 bg-[#252a2e] hover:bg-neutral-700 border border-white/10 rounded-[3px] text-neutral-300 hover:text-white flex items-center justify-center cursor-pointer pointer-events-auto shadow-xs transition-colors"
+                  className="w-5 h-5 bg-[#20262b] border border-white/10 rounded-[3px] text-neutral-400 flex items-center justify-center cursor-pointer pointer-events-auto shadow-xs transition-all duration-150 hover:bg-emerald-500/20 hover:border-emerald-500 hover:text-emerald-300 hover:shadow-[0_0_8px_rgba(34,197,94,0.45)]"
                   title="Nhảy đến dòng mã nguồn"
                 >
-                  <ArrowLeft className="w-3 h-3 text-neutral-300 group-hover:text-white" />
+                  <ArrowLeft className="w-3 h-3 text-neutral-400 group-hover/syncbot:text-emerald-300 transition-colors" />
                 </button>
                 <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-[#111315] border border-white/10 rounded text-[11px] text-white whitespace-nowrap shadow-lg pointer-events-none opacity-0 group-hover/syncbot:opacity-100 transition-opacity duration-150 z-50">
                   Nhảy đến dòng mã nguồn
@@ -2337,7 +2690,7 @@ export default function LaTeXStudio({
                   e.stopPropagation();
                   setLayoutMode('code');
                 }}
-                className="w-3 h-10 bg-[#20262b] hover:bg-[#2c333a] border border-white/10 rounded-[2px] text-neutral-400 hover:text-white flex items-center justify-center cursor-pointer pointer-events-auto shadow-xs transition-colors"
+                className="w-3 h-10 bg-[#20262b] border border-white/10 rounded-[2px] text-neutral-400 flex items-center justify-center cursor-pointer pointer-events-auto shadow-xs transition-all duration-150 hover:bg-emerald-500/20 hover:border-emerald-500 hover:text-emerald-300 hover:shadow-[0_0_8px_rgba(34,197,94,0.45)]"
                 title="Thu gọn khung PDF"
               >
                 <ChevronRight className="w-2.5 h-2.5" />

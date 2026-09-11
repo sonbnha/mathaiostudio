@@ -152,6 +152,22 @@ export default function LaTeXStudio({
 
   // Resizer dragging state
   const isDraggingRef = useRef(false);
+  const mainContainerRef = useRef<HTMLElement>(null);
+  const pdfSectionRef = useRef<HTMLElement>(null);
+  const [pdfWidth, setPdfWidth] = useState<number>(600);
+
+  // Measure PDF panel width for responsive toolbar
+  useEffect(() => {
+    const el = pdfSectionRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      if (entries[0]) {
+        setPdfWidth(entries[0].contentRect.width);
+      }
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   // Topbar and utility state
   const { resolvedTheme, toggleTheme } = useTheme();
@@ -617,19 +633,37 @@ export default function LaTeXStudio({
     setJumpToPage(page);
   };
 
-  // Divider dragging
+  // Divider dragging with min-width constraints (Editor >= 350px, PDF >= 320px)
   const handleMouseDownDivider = (e: React.MouseEvent) => {
     e.preventDefault();
     isDraggingRef.current = true;
     const startX = e.clientX;
     const initialRatio = splitRatio;
 
+    const mainEl = mainContainerRef.current;
+    const sidebarEl = mainEl?.querySelector('.file-tree-sidebar') as HTMLElement | null;
+    const sidebarWidth = sidebarEl ? sidebarEl.offsetWidth : (isFileTreeCollapsed ? 48 : 240);
+    const availWidth = mainEl ? mainEl.clientWidth - sidebarWidth - 16 : window.innerWidth - sidebarWidth - 16;
+    const minEditorWidth = 350;
+    const minPdfWidth = 320;
+
+    let minPercent = 25;
+    let maxPercent = 75;
+    if (availWidth > 0) {
+      minPercent = Math.max(15, (minEditorWidth / availWidth) * 100);
+      maxPercent = Math.min(85, 100 - (minPdfWidth / availWidth) * 100);
+      if (minPercent > maxPercent) {
+        minPercent = 50;
+        maxPercent = 50;
+      }
+    }
+
     const onMouseMove = (moveEvent: MouseEvent) => {
       if (!isDraggingRef.current) return;
       const deltaX = moveEvent.clientX - startX;
-      const containerWidth = window.innerWidth;
-      const deltaPercent = (deltaX / containerWidth) * 100;
-      setSplitRatio(Math.min(75, Math.max(25, initialRatio + deltaPercent)));
+      const deltaPercent = availWidth > 0 ? (deltaX / availWidth) * 100 : (deltaX / window.innerWidth) * 100;
+      const targetRatio = initialRatio + deltaPercent;
+      setSplitRatio(Math.min(maxPercent, Math.max(minPercent, targetRatio)));
     };
 
     const onMouseUp = () => {
@@ -893,9 +927,12 @@ export default function LaTeXStudio({
       </header>
 
       {/* 3. Main Overleaf Authentic Workspace */}
-      <main className="relative z-10 flex-1 min-h-0 w-full px-2 sm:px-3 pb-1 flex flex-row overflow-hidden gap-1.5">
+      <main
+        ref={mainContainerRef}
+        className="relative z-10 flex-1 min-h-0 w-full px-2 sm:px-3 pb-1 flex flex-row overflow-hidden gap-1.5"
+      >
         {/* COLUMN 1: LEFT SIDEBAR (File tree + File outline) */}
-        <div className="h-full rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-2xs flex shrink-0">
+        <div className="file-tree-sidebar h-full rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-2xs flex shrink-0">
           <FileTreeExplorer
             files={files}
             activeFileName={activeFileName}
@@ -918,7 +955,7 @@ export default function LaTeXStudio({
             display: layoutMode === 'pdf' ? 'none' : 'flex',
             width: layoutMode === 'code' ? '100%' : `${splitRatio}%`,
           }}
-          className="min-w-0 flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xs overflow-hidden h-full flex"
+          className="min-w-[350px] flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xs overflow-hidden h-full flex shrink-0"
         >
           {/* File Tabs Bar */}
           <div className="flex items-center justify-between px-2 bg-slate-100/90 dark:bg-slate-950/90 border-b border-slate-200 dark:border-slate-800 text-xs shrink-0 h-9">
@@ -1202,42 +1239,49 @@ export default function LaTeXStudio({
 
         {/* COLUMN 4: PDF PREVIEW & VIEWER TOOLBAR (Right) */}
         <section
+          ref={pdfSectionRef}
           aria-label="Khung xem trước PDF và Nhật ký Overleaf"
           style={{
             display: layoutMode === 'code' ? 'none' : 'flex',
             width: layoutMode === 'pdf' ? '100%' : `${100 - splitRatio}%`,
           }}
-          className="min-w-0 flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xs overflow-hidden h-full flex"
+          className="min-w-[320px] flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xs overflow-hidden h-full flex shrink-0"
         >
           {/* Overleaf Authentic Viewer Toolbar */}
-          <div className="flex items-center justify-between px-2.5 bg-slate-100/90 dark:bg-slate-950/90 border-b border-slate-200 dark:border-slate-800 shrink-0 h-9 text-xs">
+          <div className="flex items-center justify-between px-2 bg-slate-100/90 dark:bg-slate-950/90 border-b border-slate-200 dark:border-slate-800 shrink-0 h-9 text-xs overflow-hidden flex-nowrap gap-1 select-none">
             {/* Left: Green Recompile Button + Engine Picker + Quick Download */}
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1 shrink-0">
               {/* Overleaf Green Recompile Button */}
               <div className="inline-flex items-center rounded-md shadow-xs overflow-hidden bg-[#2d884d] hover:bg-[#246e3e] transition">
                 <button
                   type="button"
                   onClick={() => void compile()}
                   disabled={status === 'compiling'}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold text-white cursor-pointer active:bg-[#1f5f36] transition"
+                  className={`inline-flex items-center justify-center text-xs font-bold text-white cursor-pointer active:bg-[#1f5f36] transition ${
+                    pdfWidth < 380 ? 'p-1.5' : 'px-2.5 py-1 gap-1.5'
+                  }`}
                   title="Biên dịch tài liệu (Ctrl+Enter)"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${status === 'compiling' ? 'animate-spin' : ''}`} />
-                  <span>{status === 'compiling' ? 'Đang dịch…' : 'Recompile'}</span>
+                  {pdfWidth >= 380 && (
+                    <span>{status === 'compiling' ? 'Đang dịch…' : 'Recompile'}</span>
+                  )}
                 </button>
 
                 {/* Engine Dropdown */}
-                <select
-                  aria-label="Chọn engine biên dịch"
-                  value={engine}
-                  onChange={(e) => setEngine(e.target.value as any)}
-                  className="bg-[#246e3e] hover:bg-[#1f5f36] text-white border-l border-emerald-700/50 text-[10px] font-bold px-1.5 py-1 outline-none cursor-pointer"
-                  title="Trình biên dịch TeX Engine"
-                >
-                  <option value="xelatex" className="text-slate-900 bg-white">XeLaTeX</option>
-                  <option value="pdflatex" className="text-slate-900 bg-white">pdfLaTeX</option>
-                  <option value="lualatex" className="text-slate-900 bg-white">LuaLaTeX</option>
-                </select>
+                {pdfWidth >= 360 && (
+                  <select
+                    aria-label="Chọn engine biên dịch"
+                    value={engine}
+                    onChange={(e) => setEngine(e.target.value as any)}
+                    className="bg-[#246e3e] hover:bg-[#1f5f36] text-white border-l border-emerald-700/50 text-[10px] font-bold px-1.5 py-1 outline-none cursor-pointer"
+                    title="Trình biên dịch TeX Engine"
+                  >
+                    <option value="xelatex" className="text-slate-900 bg-white">{pdfWidth < 440 ? 'Xe' : 'XeLaTeX'}</option>
+                    <option value="pdflatex" className="text-slate-900 bg-white">{pdfWidth < 440 ? 'pdf' : 'pdfLaTeX'}</option>
+                    <option value="lualatex" className="text-slate-900 bg-white">{pdfWidth < 440 ? 'Lua' : 'LuaLaTeX'}</option>
+                  </select>
+                )}
               </div>
 
               {/* Quick Download PDF */}
@@ -1245,7 +1289,7 @@ export default function LaTeXStudio({
                 <a
                   href={pdf}
                   download={`${docTitle.replace(/\.tex$/, '')}.pdf`}
-                  className="p-1 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition"
+                  className="p-1 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition shrink-0"
                   title="Tải PDF nhanh về máy"
                 >
                   <Download className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
@@ -1254,11 +1298,11 @@ export default function LaTeXStudio({
             </div>
 
             {/* Center: Overleaf Logs Button with Badge */}
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1 shrink-0">
               <button
                 type="button"
                 onClick={() => setOutputView(outputView === 'console' ? 'pdf' : 'console')}
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold transition cursor-pointer border ${
+                className={`inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md text-xs font-bold transition cursor-pointer border shrink-0 ${
                   errors.length > 0 || status === 'error'
                     ? 'bg-rose-500/15 border-rose-500/40 text-rose-700 dark:text-rose-300 hover:bg-rose-500/25'
                     : 'bg-emerald-500/15 border-emerald-500/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/25'
@@ -1266,19 +1310,23 @@ export default function LaTeXStudio({
                 title={outputView === 'console' ? 'Quay lại xem PDF' : 'Mở bảng nhật ký & lỗi biên dịch'}
               >
                 {errors.length > 0 || status === 'error' ? (
-                  <AlertCircle className="w-3.5 h-3.5 text-rose-500" />
+                  <AlertCircle className="w-3.5 h-3.5 text-rose-500 shrink-0" />
                 ) : (
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                 )}
-                <span>Logs</span>
+                {pdfWidth >= 400 && <span>Logs</span>}
                 <span
-                  className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                  className={`px-1 sm:px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
                     errors.length > 0 || status === 'error'
                       ? 'bg-rose-500 text-white'
                       : 'bg-emerald-600 text-white'
                   }`}
                 >
-                  {errors.length > 0 ? `${errors.length} Errors` : status === 'error' ? '1 Error' : '0 Errors'}
+                  {errors.length > 0
+                    ? (pdfWidth < 460 ? `${errors.length}` : `${errors.length} Errors`)
+                    : status === 'error'
+                    ? (pdfWidth < 460 ? '1' : '1 Error')
+                    : (pdfWidth < 460 ? '0' : '0 Errors')}
                 </span>
               </button>
 
@@ -1286,7 +1334,7 @@ export default function LaTeXStudio({
                 <button
                   type="button"
                   onClick={() => setOutputView('pdf')}
-                  className="px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-semibold transition cursor-pointer"
+                  className="px-1.5 py-0.5 rounded-md bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-semibold transition cursor-pointer shrink-0"
                 >
                   Xem PDF
                 </button>
@@ -1294,56 +1342,62 @@ export default function LaTeXStudio({
             </div>
 
             {/* Right: History + Layout Switcher + Horizontal Page Counter + Zoom */}
-            <div className="flex items-center gap-1.5">
-              {/* History Button */}
-              <button
-                type="button"
-                onClick={() => setIsHistoryOpen(true)}
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-medium transition cursor-pointer"
-                title="Xem lịch sử phiên bản (History)"
-              >
-                <History className="w-3.5 h-3.5 text-slate-500" />
-                <span className="hidden sm:inline">History</span>
-              </button>
+            <div className="flex items-center gap-1 shrink-0">
+              {/* History Button (shown if width >= 520) */}
+              {pdfWidth >= 520 && (
+                <button
+                  type="button"
+                  onClick={() => setIsHistoryOpen(true)}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-medium transition cursor-pointer"
+                  title="Xem lịch sử phiên bản (History)"
+                >
+                  <History className="w-3.5 h-3.5 text-slate-500" />
+                  <span>History</span>
+                </button>
+              )}
 
-              {/* Layout Switcher: Split / Code / PDF */}
-              <div className="hidden md:flex items-center p-0.5 rounded-lg bg-slate-200/80 dark:bg-slate-800/80 border border-slate-300/60 dark:border-slate-700">
-                <button
-                  type="button"
-                  onClick={() => setLayoutMode('split')}
-                  className={`p-1 rounded transition cursor-pointer ${
-                    layoutMode === 'split' ? 'bg-white dark:bg-slate-900 text-cyan-600 shadow-2xs' : 'text-slate-400'
-                  }`}
-                  title="Chia 2 cột (Split)"
-                >
-                  <Columns className="w-3 h-3" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setLayoutMode('code')}
-                  className={`p-1 rounded transition cursor-pointer ${
-                    layoutMode === 'code' ? 'bg-white dark:bg-slate-900 text-cyan-600 shadow-2xs' : 'text-slate-400'
-                  }`}
-                  title="Toàn màn hình Code"
-                >
-                  <Code2 className="w-3 h-3" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setLayoutMode('pdf')}
-                  className={`p-1 rounded transition cursor-pointer ${
-                    layoutMode === 'pdf' ? 'bg-white dark:bg-slate-900 text-cyan-600 shadow-2xs' : 'text-slate-400'
-                  }`}
-                  title="Toàn màn hình PDF"
-                >
-                  <Maximize2 className="w-3 h-3" />
-                </button>
-              </div>
+              {/* Layout Switcher: Split / Code / PDF (shown if width >= 580) */}
+              {pdfWidth >= 580 && (
+                <div className="hidden md:flex items-center p-0.5 rounded-lg bg-slate-200/80 dark:bg-slate-800/80 border border-slate-300/60 dark:border-slate-700">
+                  <button
+                    type="button"
+                    onClick={() => setLayoutMode('split')}
+                    className={`p-1 rounded transition cursor-pointer ${
+                      layoutMode === 'split' ? 'bg-white dark:bg-slate-900 text-cyan-600 shadow-2xs' : 'text-slate-400'
+                    }`}
+                    title="Chia 2 cột (Split)"
+                  >
+                    <Columns className="w-3 h-3" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLayoutMode('code')}
+                    className={`p-1 rounded transition cursor-pointer ${
+                      layoutMode === 'code' ? 'bg-white dark:bg-slate-900 text-cyan-600 shadow-2xs' : 'text-slate-400'
+                    }`}
+                    title="Toàn màn hình Code"
+                  >
+                    <Code2 className="w-3 h-3" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLayoutMode('pdf')}
+                    className={`p-1 rounded transition cursor-pointer ${
+                      layoutMode === 'pdf' ? 'bg-white dark:bg-slate-900 text-cyan-600 shadow-2xs' : 'text-slate-400'
+                    }`}
+                    title="Toàn màn hình PDF"
+                  >
+                    <Maximize2 className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
 
-              <span className="h-3.5 w-px bg-slate-200 dark:bg-slate-800 hidden sm:inline" />
+              {pdfWidth >= 520 && (
+                <span className="h-3.5 w-px bg-slate-200 dark:bg-slate-800 hidden sm:inline" />
+              )}
 
               {/* Horizontal Page Counter: < 1 / X > */}
-              <div className="flex items-center gap-0.5 bg-slate-200/80 dark:bg-slate-800/80 rounded-lg p-0.5 border border-slate-300/60 dark:border-slate-700">
+              <div className="flex items-center gap-0.5 bg-slate-200/80 dark:bg-slate-800/80 rounded-md p-0.5 border border-slate-300/60 dark:border-slate-700 shrink-0">
                 <button
                   type="button"
                   disabled={pdfCurrentPage <= 1}
@@ -1358,7 +1412,10 @@ export default function LaTeXStudio({
                   <ChevronLeft className="w-3.5 h-3.5" />
                 </button>
 
-                <div className="flex items-center px-1 font-mono text-[11px] text-slate-700 dark:text-slate-200 font-bold">
+                <div className="flex items-center px-0.5 sm:px-1 font-mono text-[11px] text-slate-700 dark:text-slate-200 font-bold">
+                  {pdfWidth >= 440 && (
+                    <span className="text-[10px] text-slate-500 mr-1 hidden sm:inline">Trang</span>
+                  )}
                   <input
                     type="number"
                     min={1}
@@ -1371,10 +1428,10 @@ export default function LaTeXStudio({
                         setJumpToPage(val);
                       }
                     }}
-                    className="w-6 text-center bg-transparent border-0 outline-none text-[11px] font-mono font-bold"
+                    className="w-5 text-center bg-transparent border-0 outline-none text-[11px] font-mono font-bold"
                   />
                   <span className="text-slate-400">/</span>
-                  <span className="ml-1 text-slate-500">{pdfTotalPages || 1}</span>
+                  <span className="ml-0.5 text-slate-500">{pdfTotalPages || 1}</span>
                 </div>
 
                 <button
@@ -1392,49 +1449,51 @@ export default function LaTeXStudio({
                 </button>
               </div>
 
-              {/* Zoom Controls: - [%] + */}
-              <div className="flex items-center gap-0.5 bg-slate-200/80 dark:bg-slate-800/80 rounded-lg p-0.5 border border-slate-300/60 dark:border-slate-700">
-                <button
-                  type="button"
-                  disabled={!pdf}
-                  onClick={() => setZoom((z) => Math.max(25, (typeof z === 'number' ? z : 100) - 25))}
-                  className="p-1 rounded hover:bg-white dark:hover:bg-slate-900 text-slate-600 dark:text-slate-300 disabled:opacity-30 cursor-pointer"
-                  title="Thu nhỏ"
-                >
-                  <ZoomOut className="w-3.5 h-3.5" />
-                </button>
+              {/* Zoom Controls: - [%] + (shown if width >= 460) */}
+              {pdfWidth >= 460 && (
+                <div className="flex items-center gap-0.5 bg-slate-200/80 dark:bg-slate-800/80 rounded-md p-0.5 border border-slate-300/60 dark:border-slate-700 shrink-0">
+                  <button
+                    type="button"
+                    disabled={!pdf}
+                    onClick={() => setZoom((z) => Math.max(25, (typeof z === 'number' ? z : 100) - 25))}
+                    className="p-1 rounded hover:bg-white dark:hover:bg-slate-900 text-slate-600 dark:text-slate-300 disabled:opacity-30 cursor-pointer"
+                    title="Thu nhỏ"
+                  >
+                    <ZoomOut className="w-3.5 h-3.5" />
+                  </button>
 
-                <span className="font-mono text-[10px] font-bold px-1 text-slate-700 dark:text-slate-300 min-w-8 text-center">
-                  {typeof zoom === 'number' ? `${zoom}%` : 'Rộng'}
-                </span>
+                  <span className="font-mono text-[10px] font-bold px-1 text-slate-700 dark:text-slate-300 min-w-7 text-center">
+                    {typeof zoom === 'number' ? `${zoom}%` : 'Rộng'}
+                  </span>
 
-                <button
-                  type="button"
-                  disabled={!pdf}
-                  onClick={() => setZoom((z) => Math.min(300, (typeof z === 'number' ? z : 100) + 25))}
-                  className="p-1 rounded hover:bg-white dark:hover:bg-slate-900 text-slate-600 dark:text-slate-300 disabled:opacity-30 cursor-pointer"
-                  title="Phóng to"
-                >
-                  <ZoomIn className="w-3.5 h-3.5" />
-                </button>
-              </div>
+                  <button
+                    type="button"
+                    disabled={!pdf}
+                    onClick={() => setZoom((z) => Math.min(300, (typeof z === 'number' ? z : 100) + 25))}
+                    className="p-1 rounded hover:bg-white dark:hover:bg-slate-900 text-slate-600 dark:text-slate-300 disabled:opacity-30 cursor-pointer"
+                    title="Phóng to"
+                  >
+                    <ZoomIn className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Main Output Body */}
-          <div className="flex-1 min-h-0 flex flex-col relative overflow-hidden bg-[#525659] dark:bg-[#3a3d40]">
+          <div className="flex-1 min-h-0 w-full h-full flex flex-col relative overflow-hidden bg-[#525659] dark:bg-[#3a3d40]">
             {outputView === 'pdf' ? (
               pdf ? (
-                <div className="flex-1 min-h-0 flex flex-col">
+                <div className="flex-1 min-h-0 w-full h-full overflow-auto flex flex-col">
                   {source !== compiledSource && (
                     <div
                       role="status"
                       className="text-xs px-3 py-1 bg-amber-500/20 border-b border-amber-500/30 text-amber-200 flex items-center justify-between shrink-0"
                     >
-                      <span>Mã nguồn đã sửa đổi. Bấm Recompile để cập nhật PDF.</span>
+                      <span className="truncate">Mã nguồn đã sửa đổi. Bấm Recompile để cập nhật PDF.</span>
                       <button
                         onClick={() => void compile()}
-                        className="underline font-bold hover:text-white cursor-pointer ml-2"
+                        className="underline font-bold hover:text-white cursor-pointer ml-2 shrink-0"
                       >
                         Cập nhật
                       </button>
@@ -1455,24 +1514,26 @@ export default function LaTeXStudio({
                   />
                 </div>
               ) : (
-                <div className="flex-1 flex flex-col justify-center items-center p-8 text-center text-slate-300 bg-[#525659] dark:bg-[#3a3d40]">
-                  <div className="w-14 h-14 rounded-2xl border border-slate-500 bg-slate-700/80 flex items-center justify-center mb-3 shadow-md">
-                    <FileText className="w-7 h-7 text-slate-300" />
+                <div className="flex-1 w-full h-full overflow-auto flex flex-col justify-center items-center p-4 text-center text-slate-300 bg-[#525659] dark:bg-[#3a3d40]">
+                  <div className="w-full max-w-xs flex flex-col items-center px-4 text-center">
+                    <div className="w-12 h-12 rounded-2xl border border-slate-500 bg-slate-700/80 flex items-center justify-center mb-3 shadow-md shrink-0">
+                      <FileText className="w-6 h-6 text-slate-300" />
+                    </div>
+                    <p className="text-sm font-bold text-white mb-1">
+                      Chưa có tài liệu PDF
+                    </p>
+                    <p className="text-xs leading-relaxed text-slate-300 mb-4 max-w-full">
+                      Bấm nút <strong className="text-emerald-400">“Recompile”</strong> màu xanh phía trên (Ctrl+Enter) để biên dịch tài liệu PDF.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => void compile()}
+                      className="px-3.5 py-1.5 rounded-xl bg-[#2d884d] hover:bg-[#246e3e] text-white font-bold text-xs shadow-md flex items-center gap-1.5 transition cursor-pointer shrink-0"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>Recompile ngay</span>
+                    </button>
                   </div>
-                  <p className="text-sm font-bold text-white mb-1">
-                    Chưa có tài liệu PDF
-                  </p>
-                  <p className="text-xs max-w-xs leading-relaxed text-slate-300 mb-4">
-                    Bấm nút <strong className="text-emerald-400">“Recompile”</strong> màu xanh phía trên (Ctrl+Enter) để biên dịch tài liệu PDF.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => void compile()}
-                    className="px-4 py-1.5 rounded-xl bg-[#2d884d] hover:bg-[#257341] text-white font-bold text-xs shadow-md flex items-center gap-1.5 transition cursor-pointer"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5" />
-                    <span>Recompile ngay</span>
-                  </button>
                 </div>
               )
             ) : (

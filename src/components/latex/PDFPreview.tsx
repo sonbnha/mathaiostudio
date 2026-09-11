@@ -282,7 +282,7 @@ export default function PDFPreview({
   }
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col">
+    <div className="flex-1 min-h-0 w-full h-full flex flex-col overflow-hidden">
       {/* Sub-toolbar for preview options (optional) */}
       {showSubToolbar && (
         <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2 border-b border-slate-200 dark:border-slate-800 text-xs bg-slate-50/80 dark:bg-slate-900/50 shrink-0">
@@ -342,7 +342,7 @@ export default function PDFPreview({
       {/* Main PDF Scroll Container */}
       <div
         ref={host}
-        className="flex-1 min-h-0 overflow-auto p-4 flex flex-col items-center bg-[#525659] dark:bg-[#3a3d40] transition-colors"
+        className="flex-1 min-h-0 w-full h-full overflow-auto p-4 flex flex-col items-center bg-[#525659] dark:bg-[#3a3d40] transition-colors"
         aria-label="Tài liệu PDF đã biên dịch"
       >
         <Document

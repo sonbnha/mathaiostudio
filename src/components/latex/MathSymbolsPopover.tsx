@@ -182,11 +182,11 @@ const ALL_MATH_SYMBOLS: MathItem[] = [
 ];
 
 const CATEGORIES = [
-  { id: 'greek', name: 'Greek' },
-  { id: 'arrows', name: 'Arrows' },
-  { id: 'operators', name: 'Operators' },
-  { id: 'relations', name: 'Relations' },
-  { id: 'misc', name: 'Misc' },
+  { id: 'greek', name: 'Chữ Hy Lạp' },
+  { id: 'arrows', name: 'Mũi tên' },
+  { id: 'operators', name: 'Phép toán' },
+  { id: 'relations', name: 'Quan hệ' },
+  { id: 'misc', name: 'Khác' },
 ] as const;
 
 export default function MathSymbolsPopover({
@@ -260,7 +260,7 @@ export default function MathSymbolsPopover({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search symbols..."
+              placeholder="Tìm ký hiệu..."
               className="bg-[#2a2e33] text-white text-xs rounded-md pl-7 pr-2 py-1 outline-none border border-white/10 focus:border-cyan-500 w-36 sm:w-44 font-mono placeholder:text-neutral-500"
             />
           </div>
@@ -316,8 +316,8 @@ export default function MathSymbolsPopover({
       </div>
 
       {/* Bottom Status Bar */}
-      <div className="px-3 py-1 border-t border-white/5 bg-[#141618] flex items-center justify-between text-[10px] text-neutral-400 font-mono shrink-0">
-        <span>Click để chèn ký hiệu vào vị trí con trỏ</span>
+      <div className="px-3 py-1 border-t border-white/5 bg-[#141618] flex items-center justify-between text-[10px] text-neutral-400 shrink-0">
+        <span>Nhấn để chèn ký hiệu vào vị trí con trỏ</span>
         <span>Phím Esc để đóng</span>
       </div>
     </div>

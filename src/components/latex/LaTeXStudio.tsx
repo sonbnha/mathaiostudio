@@ -302,7 +302,7 @@ export default function LaTeXStudio({
   const [titleInput, setTitleInput] = useState(docTitle);
   const [activeDesktopMenu, setActiveDesktopMenu] = useState<'file' | 'edit' | 'insert' | 'view' | 'format' | 'help' | null>(null);
   const [isLayoutMenuOpen, setIsLayoutMenuOpen] = useState(false);
-  const [activeToolbarPopover, setActiveToolbarPopover] = useState<'heading' | 'math' | 'symbols' | 'image' | 'table' | null>(null);
+  const [activeToolbarPopover, setActiveToolbarPopover] = useState<'heading' | 'math' | 'image' | 'table' | null>(null);
   const [tableHoverSize, setTableHoverSize] = useState<{ rows: number; cols: number }>({ rows: 0, cols: 0 });
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [copiedShareLink, setCopiedShareLink] = useState(false);
@@ -1205,30 +1205,46 @@ export default function LaTeXStudio({
               </button>
 
               {activeDesktopMenu === 'insert' && (
-                <div className="absolute left-0 top-full mt-1 w-56 bg-[#1e2226] border border-white/10 rounded shadow-xl py-1 text-[13px] text-neutral-300 z-50 select-none animate-in fade-in duration-100">
+                <div className="absolute left-0 top-full mt-1 w-60 bg-[#1e2226] border border-white/10 rounded shadow-xl py-1 text-[13px] text-neutral-300 z-50 select-none animate-in fade-in duration-100">
                   <button
                     type="button"
                     onClick={() => {
                       setActiveDesktopMenu(null);
-                      setIsSymbolsOpen(true);
+                      setIsSymbolsOpen((prev) => !prev);
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Ký hiệu toán học</span>
+                    <span>Ký hiệu toán học (Bottom Panel)</span>
                     <span className="text-neutral-500 font-mono text-[11px]">Ω</span>
+                  </button>
+
+                  <div className="border-b border-white/10 my-1 mx-1" />
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveDesktopMenu(null);
+                      handleInsert('\\( ${1:} \\)');
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
+                  >
+                    <span>Công thức trong dòng (Inline)</span>
+                    <span className="text-neutral-500 font-mono text-[11px]">\( ... \)</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => {
                       setActiveDesktopMenu(null);
-                      handleInsert(' $x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$ ');
+                      handleInsert('\n\\[\n  ${1:}\n\\]\n');
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Công thức toán</span>
-                    <span className="text-neutral-500 font-mono text-[11px]">Ctrl+M</span>
+                    <span>Công thức hiển thị (Display)</span>
+                    <span className="text-neutral-500 font-mono text-[11px]">\[ ... \]</span>
                   </button>
+
+                  <div className="border-b border-white/10 my-1 mx-1" />
 
                   <button
                     type="button"
@@ -2618,84 +2634,19 @@ export default function LaTeXStudio({
                       )}
                     </div>
 
-                    {/* Symbol Button (Ω) with Popover */}
-                    <div className="relative">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setActiveToolbarPopover(
-                            activeToolbarPopover === 'symbols' ? null : 'symbols'
-                          )
-                        }
-                        className={`p-1 h-6 w-6 flex items-center justify-center rounded-sm font-serif font-bold text-xs transition cursor-pointer ${
-                          activeToolbarPopover === 'symbols' || isSymbolsOpen
-                            ? 'bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/40 shadow-xs'
-                            : 'hover:bg-white/10 text-neutral-300'
-                        }`}
-                        title="Chèn ký hiệu toán học (Symbols - Ω)"
-                      >
-                        Ω
-                      </button>
-
-                      {activeToolbarPopover === 'symbols' && (
-                        <div className="absolute left-0 top-full mt-1.5 w-64 bg-[#1e2227] border border-white/10 rounded shadow-xl p-2 text-xs text-neutral-300 z-50 select-none animate-in fade-in duration-100">
-                          <div className="text-neutral-400 text-xs px-1 pb-1.5 font-medium flex items-center justify-between">
-                            <span>Ký hiệu toán học (Symbols)</span>
-                            <span className="text-[10px] text-neutral-500">21 ký hiệu</span>
-                          </div>
-                          <div className="grid grid-cols-7 gap-1">
-                            {[
-                              { sym: 'α', latex: '\\alpha' },
-                              { sym: 'β', latex: '\\beta' },
-                              { sym: 'γ', latex: '\\gamma' },
-                              { sym: 'θ', latex: '\\theta' },
-                              { sym: 'π', latex: '\\pi' },
-                              { sym: 'σ', latex: '\\sigma' },
-                              { sym: 'λ', latex: '\\lambda' },
-                              { sym: 'ω', latex: '\\omega' },
-                              { sym: 'Δ', latex: '\\Delta' },
-                              { sym: '∑', latex: '\\sum' },
-                              { sym: '∫', latex: '\\int' },
-                              { sym: '∞', latex: '\\infty' },
-                              { sym: '≈', latex: '\\approx' },
-                              { sym: '≠', latex: '\\neq' },
-                              { sym: '≤', latex: '\\le' },
-                              { sym: '≥', latex: '\\ge' },
-                              { sym: '±', latex: '\\pm' },
-                              { sym: '×', latex: '\\times' },
-                              { sym: '÷', latex: '\\div' },
-                              { sym: '∈', latex: '\\in' },
-                              { sym: '⊂', latex: '\\subset' },
-                            ].map((item) => (
-                              <button
-                                key={item.latex}
-                                type="button"
-                                onClick={() => {
-                                  setActiveToolbarPopover(null);
-                                  handleInsert(item.latex + ' ');
-                                }}
-                                className="h-7 w-7 flex items-center justify-center rounded hover:bg-emerald-500/20 hover:text-emerald-400 text-neutral-200 text-sm font-serif transition-colors cursor-pointer border border-transparent hover:border-emerald-500/30"
-                                title={`${item.sym} (${item.latex})`}
-                              >
-                                {item.sym}
-                              </button>
-                            ))}
-                          </div>
-                          <div className="border-t border-white/5 pt-1.5 mt-1.5">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setActiveToolbarPopover(null);
-                                setIsSymbolsOpen(true);
-                              }}
-                              className="w-full text-center text-[11px] text-emerald-400 hover:text-emerald-300 transition-colors py-0.5 cursor-pointer font-medium"
-                            >
-                              Mở bảng ký hiệu đầy đủ (MathType) →
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                    {/* Symbol Button (Ω) - Directly toggles Bottom Panel */}
+                    <button
+                      type="button"
+                      onClick={() => setIsSymbolsOpen((prev) => !prev)}
+                      className={`p-1 h-6 w-6 flex items-center justify-center rounded-sm font-serif font-bold text-xs transition cursor-pointer ${
+                        isSymbolsOpen
+                          ? 'bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/40 shadow-xs'
+                          : 'hover:bg-white/10 text-neutral-300'
+                      }`}
+                      title="Bảng ký hiệu toán học MathType (Omega Ω)"
+                    >
+                      Ω
+                    </button>
 
                     {/* Image Button with Popover */}
                     <div className="relative">

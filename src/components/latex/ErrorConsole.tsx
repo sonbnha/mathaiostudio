@@ -34,46 +34,54 @@ export function parseTeXLog(
 
   const lines = logText.split('\n');
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
+    const line = lines[i].trim();
 
-    // Detect LaTeX errors: lines starting with '!' or file:line: error
+    // 1. Check for standard file:line:message format
     const fileLineMatch = line.match(/(?:(?:\.\/)?([a-zA-Z0-9_\-.]+\.tex)):(\d+):\s*(.*)$/);
-
     if (fileLineMatch) {
       const fileName = fileLineMatch[1] || currentFile;
       const lineNum = parseInt(fileLineMatch[2], 10);
       const msg = fileLineMatch[3] || line;
       errors.push({
-        id: `err-${i}-${Date.now()}`,
+        id: `err-${i}-${lineNum}`,
         type: 'error',
         line: lineNum,
         file: fileName,
         message: msg.trim(),
         rawSnippet: line,
       });
-    } else if (line.startsWith('!') || line.includes('Error:') || line.includes('Fatal error')) {
+      continue;
+    }
+
+    // 2. Check for TeX exclamation mark error line: "! Missing $ inserted.", "! LaTeX Error: ...", "! Undefined control sequence."
+    if (line.startsWith('!') || line.startsWith('LaTeX Error:') || line.startsWith('Fatal error')) {
       let message = line.replace(/^!\s*/, '');
       let lineNum: number | undefined;
+      let rawSnippet = line;
 
-      // Look ahead for "l.<line_number>"
-      for (let j = i + 1; j < Math.min(lines.length, i + 8); j++) {
-        const match = lines[j].match(/^l\.(\d+)\s*(.*)$/);
-        if (match) {
-          lineNum = parseInt(match[1], 10);
-          if (match[2] && !message.includes(match[2])) {
-            message += ` (${match[2].trim()})`;
+      // Look ahead up to 12 lines for "l.<line_number> ..."
+      for (let j = i + 1; j < Math.min(lines.length, i + 12); j++) {
+        const aheadLine = lines[j];
+        if (aheadLine.startsWith('!')) break;
+
+        const lineMatch = aheadLine.match(/^\s*l\.(\d+)\s*(.*)$/);
+        if (lineMatch) {
+          lineNum = parseInt(lineMatch[1], 10);
+          const codePart = lineMatch[2]?.trim();
+          if (codePart && !message.includes(codePart)) {
+            rawSnippet = `${line}\n${aheadLine}`;
           }
           break;
         }
       }
 
       errors.push({
-        id: `err-${i}-${Date.now()}`,
+        id: `err-${i}-${lineNum || 'gen'}`,
         type: 'error',
         line: lineNum,
         file: currentFile,
         message: message.trim(),
-        rawSnippet: line,
+        rawSnippet,
       });
     } else if (
       line.includes('LaTeX Warning:') ||
@@ -89,7 +97,7 @@ export function parseTeXLog(
       const lineNum = matchLine ? parseInt(matchLine[1], 10) : undefined;
 
       warnings.push({
-        id: `warn-${i}-${Date.now()}`,
+        id: `warn-${i}-${lineNum || 'gen'}`,
         type: 'warning',
         line: lineNum,
         file: currentFile,
@@ -99,8 +107,25 @@ export function parseTeXLog(
     }
   }
 
-  if (errors.length === 0 && (logText.toLowerCase().includes('lỗi') || logText.toLowerCase().includes('fail') || logText.toLowerCase().includes('emergency stop'))) {
-    errors.push({
+  // Deduplicate errors by line and message
+  const uniqueErrors: ParsedTeXIssue[] = [];
+  const seenErrorKeys = new Set<string>();
+  for (const err of errors) {
+    const key = `${err.line || 0}-${err.message}`;
+    if (!seenErrorKeys.has(key)) {
+      seenErrorKeys.add(key);
+      uniqueErrors.push(err);
+    }
+  }
+
+  if (
+    uniqueErrors.length === 0 &&
+    (logText.toLowerCase().includes('lỗi') ||
+      logText.toLowerCase().includes('fail') ||
+      logText.toLowerCase().includes('emergency stop') ||
+      logText.toLowerCase().includes('fatal error'))
+  ) {
+    uniqueErrors.push({
       id: `err-general-${Date.now()}`,
       type: 'error',
       message: logText.slice(0, 400),
@@ -108,7 +133,7 @@ export function parseTeXLog(
     });
   }
 
-  return { errors, warnings };
+  return { errors: uniqueErrors, warnings };
 }
 
 export interface ErrorConsoleProps {

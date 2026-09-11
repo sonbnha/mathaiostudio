@@ -72,6 +72,11 @@ import ErrorConsole, { parseTeXLog } from '@/components/latex/ErrorConsole';
 import MathSymbolsPopover from '@/components/latex/MathSymbolsPopover';
 import AIAssistantDropdown from '@/components/latex/AIAssistantDropdown';
 import { LATEX_TEMPLATES, DEFAULT_TEMPLATE_ID, getTemplateById } from '@/components/latex/LaTeXTemplates';
+import {
+  EDITOR_COMMANDS,
+  LATEX_SNIPPETS,
+  type EditorExecutionContext,
+} from '@/components/latex/editorCommands';
 import { getDocumentById, saveDocument, type LatexDocumentItem } from '@/lib/latexStorage';
 import {
   getProjectById,
@@ -480,29 +485,14 @@ export default function LaTeXStudio({
   const insertLatexCode = handleInsert;
 
   const generateTableLatex = useCallback((rows: number = 3, cols: number = 3) => {
-    const colAlign = Array(cols).fill('c').join('|');
-    const headerRow = Array.from({ length: cols }, (_, i) => `Cột ${i + 1}`).join(' & ') + ' \\\\';
-    const dataRows = Array.from({ length: Math.max(0, rows - 1) }, (_, r) =>
-      Array.from({ length: cols }, (_, c) => `Dữ liệu ${r + 1},${c + 1}`).join(' & ') + ' \\\\'
-    ).join('\n    ');
-
-    return `\n\\begin{table}[htbp]
-  \\centering
-  \\begin{tabular}{|${colAlign}|}
-    \\hline
-    ${headerRow}
-    \\hline
-    ${dataRows ? dataRows + '\n    \\hline' : ''}
-  \\end{tabular}
-  \\caption{Bảng mẫu}
-  \\label{tab:table}
-\\end{table}\n`;
+    return LATEX_SNIPPETS.table(rows, cols);
   }, []);
 
   // Trigger Ribbon action
-  const triggerEditorAction = (action: string) => {
+  const triggerEditorAction = useCallback((action: string) => {
     setEditorActionRequest({ id: Date.now(), action });
-  };
+  }, []);
+
 
   // Compile LaTeX to PDF
   const compile = useCallback(
@@ -770,6 +760,31 @@ export default function LaTeXStudio({
       reader.readAsDataURL(file);
     }
   };
+
+  // Centralized Command Execution Context
+  const editorCtx: EditorExecutionContext = useMemo(
+    () => ({
+      insert: handleInsert,
+      triggerAction: triggerEditorAction,
+      openPopover: setActiveToolbarPopover,
+      toggleSymbols: () => setIsSymbolsOpen((prev) => !prev),
+      files,
+      uploadAsset: handleUploadAsset,
+    }),
+    [handleInsert, triggerEditorAction, files, handleUploadAsset]
+  );
+
+  // Centralized runner for any command from Menu Bar or Toolbar
+  const runCommand = useCallback(
+    (commandId: string, params?: any) => {
+      setActiveDesktopMenu(null);
+      const cmd = EDITOR_COMMANDS[commandId];
+      if (cmd) {
+        cmd.execute(editorCtx, params);
+      }
+    },
+    [editorCtx]
+  );
 
   // SyncTeX Handlers
   const handleSyncPDFToCode = (page: number, ratio: number) => {
@@ -1136,10 +1151,7 @@ export default function LaTeXStudio({
                 <div className="absolute left-0 top-full mt-1 w-56 bg-[#1e2226] border border-white/10 rounded shadow-xl py-1 text-[13px] text-neutral-300 z-50 select-none animate-in fade-in duration-100">
                   <button
                     type="button"
-                    onClick={() => {
-                      setActiveDesktopMenu(null);
-                      triggerEditorAction('undo');
-                    }}
+                    onClick={() => runCommand('undo')}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
                     <span>Hoàn tác</span>
@@ -1148,10 +1160,7 @@ export default function LaTeXStudio({
 
                   <button
                     type="button"
-                    onClick={() => {
-                      setActiveDesktopMenu(null);
-                      triggerEditorAction('redo');
-                    }}
+                    onClick={() => runCommand('redo')}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
                     <span>Làm lại</span>
@@ -1162,10 +1171,7 @@ export default function LaTeXStudio({
 
                   <button
                     type="button"
-                    onClick={() => {
-                      setActiveDesktopMenu(null);
-                      triggerEditorAction('find');
-                    }}
+                    onClick={() => runCommand('find')}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
                     <span>Tìm kiếm & Thay thế</span>
@@ -1174,10 +1180,7 @@ export default function LaTeXStudio({
 
                   <button
                     type="button"
-                    onClick={() => {
-                      setActiveDesktopMenu(null);
-                      triggerEditorAction('select-all');
-                    }}
+                    onClick={() => runCommand('selectAll')}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
                     <span>Chọn tất cả</span>
@@ -1208,10 +1211,7 @@ export default function LaTeXStudio({
                 <div className="absolute left-0 top-full mt-1 w-60 bg-[#1e2226] border border-white/10 rounded shadow-xl py-1 text-[13px] text-neutral-300 z-50 select-none animate-in fade-in duration-100">
                   <button
                     type="button"
-                    onClick={() => {
-                      setActiveDesktopMenu(null);
-                      setIsSymbolsOpen((prev) => !prev);
-                    }}
+                    onClick={() => runCommand('symbols')}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
                     <span>Ký hiệu toán học</span>
@@ -1233,10 +1233,7 @@ export default function LaTeXStudio({
                     <div className="absolute left-full top-0 ml-1 w-52 bg-[#1e2226] border border-white/10 rounded shadow-xl py-1 text-[13px] text-neutral-300 z-50 select-none hidden group-hover/math:block animate-in fade-in duration-100">
                       <button
                         type="button"
-                        onClick={() => {
-                          setActiveDesktopMenu(null);
-                          handleInsert('\\( ${1:} \\)');
-                        }}
+                        onClick={() => runCommand('mathInline')}
                         className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                       >
                         <span>Trên dòng (Inline)</span>
@@ -1244,10 +1241,7 @@ export default function LaTeXStudio({
                       </button>
                       <button
                         type="button"
-                        onClick={() => {
-                          setActiveDesktopMenu(null);
-                          handleInsert('\n\\[\n  ${1:}\n\\]\n');
-                        }}
+                        onClick={() => runCommand('mathDisplay')}
                         className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                       >
                         <span>Dòng riêng (Display)</span>
@@ -1260,10 +1254,7 @@ export default function LaTeXStudio({
 
                   <button
                     type="button"
-                    onClick={() => {
-                      setActiveDesktopMenu(null);
-                      handleInsert('\n\\begin{figure}[htbp]\n  \\centering\n  \\includegraphics[width=0.7\\linewidth]{example-image}\n  \\caption{Caption}\n  \\label{fig:sample}\n\\end{figure}\n');
-                    }}
+                    onClick={() => runCommand('figure')}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
                     <span>Hình ảnh</span>
@@ -1273,10 +1264,7 @@ export default function LaTeXStudio({
                   <div className="relative group/table">
                     <button
                       type="button"
-                      onClick={() => {
-                        setActiveDesktopMenu(null);
-                        handleInsert(generateTableLatex(3, 3));
-                      }}
+                      onClick={() => runCommand('table', { rows: 3, cols: 3 })}
                       className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                     >
                       <span>Bảng biểu</span>
@@ -1289,10 +1277,7 @@ export default function LaTeXStudio({
                       </div>
                       <button
                         type="button"
-                        onClick={() => {
-                          setActiveDesktopMenu(null);
-                          handleInsert(generateTableLatex(3, 3));
-                        }}
+                        onClick={() => runCommand('table', { rows: 3, cols: 3 })}
                         className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 transition-colors text-left cursor-pointer mb-2.5 border border-emerald-500/20"
                       >
                         <Sparkles className="w-3.5 h-3.5 shrink-0" />
@@ -1325,10 +1310,7 @@ export default function LaTeXStudio({
                                 onMouseEnter={() =>
                                   setTableHoverSize({ rows: r, cols: c })
                                 }
-                                onClick={() => {
-                                  setActiveDesktopMenu(null);
-                                  handleInsert(generateTableLatex(r, c));
-                                }}
+                                onClick={() => runCommand('table', { rows: r, cols: c })}
                                 className={`w-4 h-4 rounded-xs border cursor-pointer transition-colors ${
                                   isHighlighted
                                     ? 'bg-emerald-500/40 border-emerald-500'
@@ -1345,10 +1327,7 @@ export default function LaTeXStudio({
 
                   <button
                     type="button"
-                    onClick={() => {
-                      setActiveDesktopMenu(null);
-                      handleInsert('\\cite{key}');
-                    }}
+                    onClick={() => runCommand('cite')}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
                     <span>Trích dẫn</span>
@@ -1357,10 +1336,7 @@ export default function LaTeXStudio({
 
                   <button
                     type="button"
-                    onClick={() => {
-                      setActiveDesktopMenu(null);
-                      triggerEditorAction('link');
-                    }}
+                    onClick={() => runCommand('link')}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
                     <span>Liên kết</span>
@@ -1598,7 +1574,7 @@ export default function LaTeXStudio({
                     type="button"
                     onClick={() => {
                       setActiveDesktopMenu(null);
-                      triggerEditorAction('bold');
+                      runCommand('bold');
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
@@ -1610,7 +1586,7 @@ export default function LaTeXStudio({
                     type="button"
                     onClick={() => {
                       setActiveDesktopMenu(null);
-                      triggerEditorAction('italic');
+                      runCommand('italic');
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
@@ -1622,7 +1598,7 @@ export default function LaTeXStudio({
                     type="button"
                     onClick={() => {
                       setActiveDesktopMenu(null);
-                      handleInsert('\\underline{text}');
+                      runCommand('underline');
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
@@ -1634,7 +1610,7 @@ export default function LaTeXStudio({
                     type="button"
                     onClick={() => {
                       setActiveDesktopMenu(null);
-                      handleInsert('\\texttt{code}');
+                      runCommand('typewriter');
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
@@ -1648,7 +1624,7 @@ export default function LaTeXStudio({
                     type="button"
                     onClick={() => {
                       setActiveDesktopMenu(null);
-                      handleInsert('\n\\begin{itemize}\n  \\item \n\\end{itemize}\n');
+                      runCommand('listBullet');
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
@@ -1659,7 +1635,7 @@ export default function LaTeXStudio({
                     type="button"
                     onClick={() => {
                       setActiveDesktopMenu(null);
-                      handleInsert('\n\\begin{enumerate}\n  \\item \n\\end{enumerate}\n');
+                      runCommand('listNumbered');
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
@@ -1672,7 +1648,7 @@ export default function LaTeXStudio({
                     type="button"
                     onClick={() => {
                       setActiveDesktopMenu(null);
-                      handleInsert('\n\\section{Tiêu đề Section}\n');
+                      runCommand('section');
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
@@ -1684,7 +1660,7 @@ export default function LaTeXStudio({
                     type="button"
                     onClick={() => {
                       setActiveDesktopMenu(null);
-                      handleInsert('\n\\subsection{Tiêu đề Subsection}\n');
+                      runCommand('subsection');
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
@@ -1696,7 +1672,7 @@ export default function LaTeXStudio({
                     type="button"
                     onClick={() => {
                       setActiveDesktopMenu(null);
-                      handleInsert('\n\\subsubsection{Tiêu đề Subsubsection}\n');
+                      runCommand('subsubsection');
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
@@ -1708,7 +1684,7 @@ export default function LaTeXStudio({
                     type="button"
                     onClick={() => {
                       setActiveDesktopMenu(null);
-                      handleInsert('\n\\paragraph{Đoạn văn:}\n');
+                      runCommand('paragraph');
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
@@ -2534,7 +2510,7 @@ export default function LaTeXStudio({
                     {/* Undo & Redo */}
                     <button
                       type="button"
-                      onClick={() => triggerEditorAction('undo')}
+                      onClick={() => runCommand('undo')}
                       className="p-1 h-6 w-6 flex items-center justify-center rounded-sm hover:bg-white/10 text-neutral-300 transition cursor-pointer"
                       title="Hoàn tác (Undo / Ctrl+Z)"
                     >
@@ -2542,7 +2518,7 @@ export default function LaTeXStudio({
                     </button>
                     <button
                       type="button"
-                      onClick={() => triggerEditorAction('redo')}
+                      onClick={() => runCommand('redo')}
                       className="p-1 h-6 w-6 flex items-center justify-center rounded-sm hover:bg-white/10 text-neutral-300 transition cursor-pointer"
                       title="Làm lại (Redo / Ctrl+Y)"
                     >
@@ -2584,7 +2560,7 @@ export default function LaTeXStudio({
                             type="button"
                             onClick={() => {
                               setActiveToolbarPopover(null);
-                              handleInsert('\n\\section{${1:Tiêu đề Section}}\n');
+                              runCommand('section');
                             }}
                             className="w-full px-3 py-1.5 text-left hover:bg-[#2c3238] hover:text-white transition-colors cursor-pointer font-bold text-sm text-neutral-100"
                           >
@@ -2594,7 +2570,7 @@ export default function LaTeXStudio({
                             type="button"
                             onClick={() => {
                               setActiveToolbarPopover(null);
-                              handleInsert('\n\\subsection{${1:Tiêu đề Subsection}}\n');
+                              runCommand('subsection');
                             }}
                             className="w-full px-3 py-1.5 text-left hover:bg-[#2c3238] hover:text-white transition-colors cursor-pointer font-semibold text-xs text-neutral-200"
                           >
@@ -2604,7 +2580,7 @@ export default function LaTeXStudio({
                             type="button"
                             onClick={() => {
                               setActiveToolbarPopover(null);
-                              handleInsert('\n\\subsubsection{${1:Tiêu đề Subsubsection}}\n');
+                              runCommand('subsubsection');
                             }}
                             className="w-full px-3 py-1.5 text-left hover:bg-[#2c3238] hover:text-white transition-colors cursor-pointer font-medium text-[11px] text-neutral-300"
                           >
@@ -2619,7 +2595,7 @@ export default function LaTeXStudio({
                     {/* Bold */}
                     <button
                       type="button"
-                      onClick={() => triggerEditorAction('bold')}
+                      onClick={() => runCommand('bold')}
                       className="p-1 h-6 w-6 flex items-center justify-center rounded-sm font-bold hover:bg-white/10 text-neutral-300 font-serif text-xs transition cursor-pointer"
                       title="In đậm (\textbf{...})"
                     >
@@ -2629,7 +2605,7 @@ export default function LaTeXStudio({
                     {/* Italic */}
                     <button
                       type="button"
-                      onClick={() => triggerEditorAction('italic')}
+                      onClick={() => runCommand('italic')}
                       className="p-1 h-6 w-6 flex items-center justify-center rounded-sm italic font-serif hover:bg-white/10 text-neutral-300 text-xs transition cursor-pointer"
                       title="In nghiêng (\textit{...})"
                     >
@@ -2669,7 +2645,7 @@ export default function LaTeXStudio({
                             type="button"
                             onClick={() => {
                               setActiveToolbarPopover(null);
-                              setIsSymbolsOpen(true);
+                              runCommand('symbols');
                             }}
                             className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded hover:bg-emerald-500/15 hover:text-emerald-400 text-neutral-200 transition-colors text-left cursor-pointer text-xs font-medium"
                           >
@@ -2681,7 +2657,7 @@ export default function LaTeXStudio({
                             type="button"
                             onClick={() => {
                               setActiveToolbarPopover(null);
-                              handleInsert('\\( ${1:} \\)');
+                              runCommand('mathInline');
                             }}
                             className="w-full flex items-center justify-between px-2 py-1.5 rounded hover:bg-[#2c3238] hover:text-white transition-colors text-left cursor-pointer text-xs"
                           >
@@ -2695,7 +2671,7 @@ export default function LaTeXStudio({
                             type="button"
                             onClick={() => {
                               setActiveToolbarPopover(null);
-                              handleInsert('\n\\[\n  ${1:}\n\\]\n');
+                              runCommand('mathDisplay');
                             }}
                             className="w-full flex items-center justify-between px-2 py-1.5 rounded hover:bg-[#2c3238] hover:text-white transition-colors text-left cursor-pointer text-xs"
                           >
@@ -2712,7 +2688,7 @@ export default function LaTeXStudio({
                     {/* Symbol Button (Ω) - Directly toggles Bottom Panel */}
                     <button
                       type="button"
-                      onClick={() => setIsSymbolsOpen((prev) => !prev)}
+                      onClick={() => runCommand('symbols')}
                       className={`p-1 h-6 w-6 flex items-center justify-center rounded-sm font-serif font-bold text-xs transition cursor-pointer ${
                         isSymbolsOpen
                           ? 'bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/40 shadow-xs'
@@ -2751,14 +2727,7 @@ export default function LaTeXStudio({
                             type="button"
                             onClick={() => {
                               setActiveToolbarPopover(null);
-                              const input = document.createElement('input');
-                              input.type = 'file';
-                              input.accept = '.png,.jpg,.jpeg,.svg,.pdf';
-                              input.onchange = (e) => {
-                                const file = (e.target as HTMLInputElement).files?.[0];
-                                if (file) handleUploadAsset(file);
-                              };
-                              input.click();
+                              runCommand('imageUpload');
                             }}
                             className="w-full flex items-center gap-2.5 px-3 py-2 text-neutral-200 hover:bg-[#2c3238] hover:text-white transition-colors text-left cursor-pointer"
                           >
@@ -2769,16 +2738,7 @@ export default function LaTeXStudio({
                             type="button"
                             onClick={() => {
                               setActiveToolbarPopover(null);
-                              const imgFiles = files.filter((f) =>
-                                /\.(png|jpe?g|svg|webp|pdf)$/i.test(f.name)
-                              );
-                              const imgName =
-                                imgFiles.length > 0 ? imgFiles[0].name : 'example-image.png';
-                              handleInsert(
-                                `\n\\begin{figure}[htbp]\n  \\centering\n  \\includegraphics[width=0.7\\linewidth]{${imgName}}\n  \\caption{Caption}\n  \\label{fig:${
-                                  imgName.split('.')[0]
-                                }}\n\\end{figure}\n`
-                              );
+                              runCommand('imageFromProject');
                             }}
                             className="w-full flex items-center gap-2.5 px-3 py-2 text-neutral-200 hover:bg-[#2c3238] hover:text-white transition-colors text-left cursor-pointer"
                           >
@@ -2789,9 +2749,7 @@ export default function LaTeXStudio({
                             type="button"
                             onClick={() => {
                               setActiveToolbarPopover(null);
-                              handleInsert(
-                                `\n\\begin{figure}[htbp]\n  \\centering\n  \\includegraphics[width=0.7\\linewidth]{example-image}\n  \\caption{Caption}\n  \\label{fig:external_image}\n\\end{figure}\n`
-                              );
+                              runCommand('figure');
                             }}
                             className="w-full flex items-center gap-2.5 px-3 py-2 text-neutral-200 hover:bg-[#2c3238] hover:text-white transition-colors text-left cursor-pointer"
                           >
@@ -2802,12 +2760,7 @@ export default function LaTeXStudio({
                             type="button"
                             onClick={() => {
                               setActiveToolbarPopover(null);
-                              const url = prompt('Nhập URL hình ảnh:');
-                              if (url) {
-                                handleInsert(
-                                  `\n\\begin{figure}[htbp]\n  \\centering\n  \\includegraphics[width=0.7\\linewidth]{${url}}\n  \\caption{Caption}\n  \\label{fig:url_image}\n\\end{figure}\n`
-                                );
-                              }
+                              runCommand('imageFromUrl');
                             }}
                             className="w-full flex items-center gap-2.5 px-3 py-2 text-neutral-200 hover:bg-[#2c3238] hover:text-white transition-colors text-left cursor-pointer"
                           >
@@ -2846,7 +2799,7 @@ export default function LaTeXStudio({
                             type="button"
                             onClick={() => {
                               setActiveToolbarPopover(null);
-                              handleInsert(generateTableLatex(3, 3));
+                              runCommand('table', { rows: 3, cols: 3 });
                             }}
                             className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 transition-colors text-left cursor-pointer mb-2.5 border border-emerald-500/20"
                           >
@@ -2882,7 +2835,7 @@ export default function LaTeXStudio({
                                     }
                                     onClick={() => {
                                       setActiveToolbarPopover(null);
-                                      handleInsert(generateTableLatex(r, c));
+                                      runCommand('table', { rows: r, cols: c });
                                     }}
                                     className={`w-4 h-4 rounded-xs border cursor-pointer transition-colors ${
                                       isHighlighted
@@ -2902,7 +2855,7 @@ export default function LaTeXStudio({
                     {/* Link */}
                     <button
                       type="button"
-                      onClick={() => triggerEditorAction('link')}
+                      onClick={() => runCommand('link')}
                       className="p-1 h-6 w-6 flex items-center justify-center rounded-sm hover:bg-white/10 text-neutral-300 transition cursor-pointer"
                       title="Chèn liên kết (\href{...})"
                     >
@@ -2912,7 +2865,7 @@ export default function LaTeXStudio({
                     {/* Quote */}
                     <button
                       type="button"
-                      onClick={() => triggerEditorAction('quote')}
+                      onClick={() => runCommand('quote')}
                       className="p-1 h-6 w-6 flex items-center justify-center rounded-sm hover:bg-white/10 text-neutral-300 transition cursor-pointer"
                       title="Trích dẫn (\begin{quote}...)"
                     >
@@ -2922,7 +2875,7 @@ export default function LaTeXStudio({
                     {/* Code */}
                     <button
                       type="button"
-                      onClick={() => triggerEditorAction('code')}
+                      onClick={() => runCommand('typewriter')}
                       className="p-1 h-6 w-6 flex items-center justify-center rounded-sm hover:bg-white/10 text-neutral-300 transition cursor-pointer"
                       title="Đoạn mã (\texttt{...})"
                     >
@@ -2932,7 +2885,7 @@ export default function LaTeXStudio({
                     {/* More (...) */}
                     <button
                       type="button"
-                      onClick={() => setIsSymbolsOpen(true)}
+                      onClick={() => runCommand('symbols')}
                       className="p-1 h-6 w-6 flex items-center justify-center rounded-sm hover:bg-white/10 text-neutral-300 transition cursor-pointer"
                       title="Thêm công cụ / Bảng ký hiệu"
                     >
@@ -2982,7 +2935,7 @@ export default function LaTeXStudio({
                     {/* Search in File */}
                     <button
                       type="button"
-                      onClick={() => triggerEditorAction('find')}
+                      onClick={() => runCommand('find')}
                       className="p-1 h-6 w-6 flex items-center justify-center rounded text-neutral-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
                       title="Tìm kiếm trong tệp (Ctrl+F)"
                     >

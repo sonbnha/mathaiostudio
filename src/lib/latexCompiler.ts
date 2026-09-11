@@ -30,14 +30,53 @@ export async function compileLatex(source: string, signal?: AbortSignal): Promis
   if (process.env.LATEX_COMPILER_TOKEN) headers.Authorization = `Bearer ${process.env.LATEX_COMPILER_TOKEN}`;
   let response: Response;
   try {
-    response = await fetch(url, { method: 'POST', headers, cache: 'no-store', redirect: 'error',
+    response = await fetch(url, {
+      method: 'POST',
+      headers,
+      cache: 'no-store',
+      redirect: 'error',
       signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(45000)]) : AbortSignal.timeout(45000),
-      body: JSON.stringify({compiler: 'xelatex', resources: [{main: true, path: 'document.tex', content: source}]}) });
+      body: JSON.stringify({
+        compiler: 'xelatex',
+        options: {
+          compiler: {
+            halt_on_error: true,
+            force: false,
+          },
+          response: {
+            log_files_on_failure: true,
+          },
+        },
+        resources: [{ main: true, path: 'document.tex', content: source }],
+      }),
+    });
     if (!response.ok) {
       const raw = new TextDecoder().decode(await boundedBody(response, 200_000));
       let log = raw;
-      try { const detail = JSON.parse(raw); log = typeof detail.logs === 'string' ? detail.logs : typeof detail.log === 'string' ? detail.log : JSON.stringify(detail, null, 2); } catch { /* Engine may return a plain TeX log. */ }
-      throw new CompileError(response.status === 429 ? 'Engine đang bận. Vui lòng thử lại sau.' : 'Không thể biên dịch tài liệu.', response.status >= 500 ? 502 : response.status === 429 ? 429 : 422, log.slice(-16000));
+      try {
+        const detail = JSON.parse(raw);
+        if (detail.log_files && typeof detail.log_files === 'object') {
+          const filesContent = Object.values(detail.log_files).filter((v) => typeof v === 'string').join('\n');
+          log = filesContent || detail.logs || detail.log || raw;
+        } else if (typeof detail.logs === 'string') {
+          log = detail.logs;
+        } else if (typeof detail.log === 'string') {
+          log = detail.log;
+        } else if (typeof detail.stderr === 'string') {
+          log = detail.stderr;
+        } else if (typeof detail.stdout === 'string') {
+          log = detail.stdout;
+        } else {
+          log = JSON.stringify(detail, null, 2);
+        }
+      } catch {
+        /* Engine may return a plain TeX log. */
+      }
+      throw new CompileError(
+        response.status === 429 ? 'Engine đang bận. Vui lòng thử lại sau.' : 'Không thể biên dịch tài liệu.',
+        response.status >= 500 ? 502 : response.status === 429 ? 429 : 422,
+        log.slice(-32000)
+      );
     }
     const bytes = await boundedBody(response, PDF_LIMIT);
     if (new TextDecoder().decode(bytes.slice(0,5)) !== '%PDF-') throw new CompileError('Engine không trả về PDF hợp lệ.', 502);

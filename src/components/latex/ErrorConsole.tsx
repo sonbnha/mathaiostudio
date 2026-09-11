@@ -39,7 +39,10 @@ export function parseTeXLog(
     // 1. Check for standard file:line:message format
     const fileLineMatch = line.match(/(?:(?:\.\/)?([a-zA-Z0-9_\-.]+\.tex)):(\d+):\s*(.*)$/);
     if (fileLineMatch) {
-      const fileName = fileLineMatch[1] || currentFile;
+      let fileName = fileLineMatch[1] || currentFile;
+      if (fileName.includes('__main_document__')) {
+        fileName = currentFile;
+      }
       const lineNum = parseInt(fileLineMatch[2], 10);
       const msg = fileLineMatch[3] || line;
       errors.push({
@@ -54,7 +57,13 @@ export function parseTeXLog(
     }
 
     // 2. Check for TeX exclamation mark error line: "! Missing $ inserted.", "! LaTeX Error: ...", "! Undefined control sequence."
-    if (line.startsWith('!') || line.startsWith('LaTeX Error:') || line.startsWith('Fatal error')) {
+    if (
+      line.startsWith('!') ||
+      line.startsWith('LaTeX Error:') ||
+      line.startsWith('Fatal error') ||
+      line.includes('Missing $ inserted') ||
+      line.includes('Undefined control sequence')
+    ) {
       let message = line.replace(/^!\s*/, '');
       let lineNum: number | undefined;
       let rawSnippet = line;

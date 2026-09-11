@@ -152,6 +152,8 @@ export default function LaTeXStudio({
 
   // Resizer dragging state
   const isDraggingRef = useRef(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const monacoEditorRef = useRef<any>(null);
   const mainContainerRef = useRef<HTMLElement>(null);
   const workspaceRef = useRef<HTMLDivElement>(null);
   const pdfSectionRef = useRef<HTMLElement>(null);
@@ -638,10 +640,11 @@ export default function LaTeXStudio({
     setJumpToPage(page);
   };
 
-  // Divider dragging with strict min-width constraints (Editor >= 350px, PDF >= 350px, 30% - 70%)
+  // Divider dragging with Overleaf-standard split pane mechanism (20% - 80% leftWidthPercent, safe min-widths)
   const handleMouseDownDivider = (e: React.MouseEvent) => {
     e.preventDefault();
     isDraggingRef.current = true;
+    setIsDragging(true);
     const startX = e.clientX;
     const initialRatio = splitRatio;
 
@@ -654,17 +657,15 @@ export default function LaTeXStudio({
       const deltaPercent = wsWidth > 0 ? (deltaX / wsWidth) * 100 : 0;
       let targetRatio = initialRatio + deltaPercent;
 
-      // Bound between 30% and 70%
-      targetRatio = Math.min(70, Math.max(30, targetRatio));
+      // Bound between 20% and 80%
+      targetRatio = Math.min(80, Math.max(20, targetRatio));
 
-      // Strictly ensure Editor >= 350px and PDF >= 350px
+      // Ensure neither column ever collapses to 0px
       if (wsWidth > 0) {
-        const minPercent = (350 / wsWidth) * 100;
-        const maxPercent = 100 - (350 / wsWidth) * 100;
+        const minPercent = (200 / wsWidth) * 100;
+        const maxPercent = 100 - (200 / wsWidth) * 100;
         if (minPercent < maxPercent) {
           targetRatio = Math.min(maxPercent, Math.max(minPercent, targetRatio));
-        } else {
-          targetRatio = 50;
         }
       }
 
@@ -673,8 +674,13 @@ export default function LaTeXStudio({
 
     const onMouseUp = () => {
       isDraggingRef.current = false;
+      setIsDragging(false);
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
+
+      // Trigger editor.layout() of Monaco Editor to adapt immediately to new size
+      monacoEditorRef.current?.layout();
+      window.dispatchEvent(new Event('resize'));
     };
 
     window.addEventListener('mousemove', onMouseMove);
@@ -1051,7 +1057,9 @@ export default function LaTeXStudio({
               display: layoutMode === 'pdf' ? 'none' : 'flex',
               width: layoutMode === 'code' ? '100%' : `${splitRatio}%`,
             }}
-            className="min-w-[350px] flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xs overflow-hidden h-full flex flex-shrink-0 shrink-0"
+            className={`min-w-[200px] flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xs overflow-hidden h-full flex flex-shrink-0 shrink-0 transition-opacity duration-150 ${
+              isDragging ? 'pointer-events-none opacity-80 select-none' : ''
+            }`}
           >
             {/* File Tabs Bar */}
             <div className="flex items-center justify-between px-2 bg-slate-100/90 dark:bg-slate-950/90 border-b border-slate-200 dark:border-slate-800 text-xs shrink-0 h-8">
@@ -1273,6 +1281,9 @@ export default function LaTeXStudio({
                 onCursorLine={handleSyncCodeToPDF}
                 targetLine={targetLine}
                 errors={errors}
+                onMount={(editor) => {
+                  monacoEditorRef.current = editor;
+                }}
               />
             ) : (
               <div className="h-full flex flex-col items-center justify-center p-8 text-center bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400">
@@ -1295,27 +1306,28 @@ export default function LaTeXStudio({
           </div>
         </section>
 
-        {/* COLUMN 3: SPLIT RESIZER & SYNCTEX ARROWS */}
+        {/* COLUMN 3: SPLIT RESIZER & SYNCTEX ARROWS (Overleaf Split Gutter) */}
         {layoutMode === 'split' && (
           <div
             onMouseDown={handleMouseDownDivider}
-            className="relative w-3 flex-shrink-0 shrink-0 flex flex-col items-center justify-center cursor-col-resize group select-none hover:bg-cyan-500/10 transition-colors"
-            title="Kéo giãn tỷ lệ giữa Code và PDF"
+            className={`relative w-2 flex-shrink-0 shrink-0 flex flex-col items-center justify-center cursor-col-resize select-none transition-colors z-20 group ${
+              isDragging
+                ? 'bg-neutral-600/50'
+                : 'bg-[#1e2124] hover:bg-neutral-600/50 border-x border-white/5'
+            }`}
+            title="Kéo giãn tỷ lệ giữa Code và PDF (Overleaf Split Gutter)"
           >
-            <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-0.5 bg-slate-200 dark:bg-slate-800 group-hover:bg-cyan-500 transition-colors" />
-
-            {/* SyncTeX Navigation Circles */}
-            <div className="relative z-20 flex flex-col items-center gap-2 py-2">
+            <div className="flex flex-col items-center gap-1.5 py-1 z-10">
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleSyncCodeToPDF(cursorLine || targetLine || 1);
                 }}
-                className="w-5.5 h-5.5 rounded-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 shadow-md flex items-center justify-center text-slate-700 dark:text-slate-200 hover:bg-cyan-500 hover:text-white dark:hover:bg-cyan-600 hover:border-cyan-500 transition cursor-pointer"
+                className="w-4.5 h-4.5 rounded-full bg-[#2a2e33] hover:bg-[#383e45] text-neutral-300 hover:text-white flex items-center justify-center transition shadow-xs border border-white/10 cursor-pointer"
                 title="Chuyển từ con trỏ Code sang vị trí PDF (SyncTeX ->)"
               >
-                <ArrowRight className="w-3 h-3" />
+                <ArrowRight className="w-3 h-3 text-neutral-300 group-hover:text-white" />
               </button>
 
               <button
@@ -1324,10 +1336,10 @@ export default function LaTeXStudio({
                   e.stopPropagation();
                   handleSyncPDFToCode(pdfCurrentPage || 1, 0.2);
                 }}
-                className="w-5.5 h-5.5 rounded-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 shadow-md flex items-center justify-center text-slate-700 dark:text-slate-200 hover:bg-cyan-500 hover:text-white dark:hover:bg-cyan-600 hover:border-cyan-500 transition cursor-pointer"
+                className="w-4.5 h-4.5 rounded-full bg-[#2a2e33] hover:bg-[#383e45] text-neutral-300 hover:text-white flex items-center justify-center transition shadow-xs border border-white/10 cursor-pointer"
                 title="Chuyển từ trang PDF sang dòng Code tương ứng (SyncTeX <-)"
               >
-                <ArrowLeft className="w-3 h-3" />
+                <ArrowLeft className="w-3 h-3 text-neutral-300 group-hover:text-white" />
               </button>
             </div>
           </div>
@@ -1340,7 +1352,9 @@ export default function LaTeXStudio({
           style={{
             display: layoutMode === 'code' ? 'none' : 'flex',
           }}
-          className="flex-1 min-w-[350px] overflow-hidden relative flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xs h-full"
+          className={`flex-1 min-w-[200px] overflow-hidden relative flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xs h-full transition-opacity duration-150 ${
+            isDragging ? 'pointer-events-none opacity-80 select-none' : ''
+          }`}
         >
           {/* Overleaf Authentic Viewer Toolbar */}
           <div className="flex justify-between items-center px-2.5 h-8 border-b border-white/10 bg-[#1e2124] shrink-0 text-xs overflow-hidden select-none">
@@ -1635,6 +1649,14 @@ export default function LaTeXStudio({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Fullscreen Pointer Shield during Dragging */}
+      {isDragging && (
+        <div
+          className="fixed inset-0 z-50 cursor-col-resize select-none bg-black/10 dark:bg-black/20"
+          style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
+        />
       )}
 
       {/* 5. Footer Status Bar */}

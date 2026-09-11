@@ -14,6 +14,7 @@ export default function TeXEditor({
   onCursorLine,
   targetLine,
   errors,
+  onMount: onMountProp,
 }: {
   source: string;
   onChange: (s: string) => void;
@@ -24,6 +25,7 @@ export default function TeXEditor({
   onCursorLine?: (line: number) => void;
   targetLine?: number;
   errors?: ParsedTeXIssue[];
+  onMount?: (editor: Parameters<OnMount>[0]) => void;
 }) {
   const [ready, setReady] = useState(false);
   const [fallback, setFallback] = useState(false);
@@ -175,6 +177,7 @@ export default function TeXEditor({
     setReady(true);
     setEditorRef(editor);
     setMonacoRef(monaco);
+    onMountProp?.(editor);
 
     editor.onDidChangeCursorPosition((event) => {
       onCursorLine?.(event.position.lineNumber);

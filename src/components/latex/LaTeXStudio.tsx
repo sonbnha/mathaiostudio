@@ -59,6 +59,10 @@ import {
   FileCheck,
   Shapes,
   Send,
+  Quote,
+  FolderPlus,
+  MoreHorizontal,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { APP_VERSION } from '@/config/version';
 import { useTheme } from '@/context/ThemeContext';
@@ -298,11 +302,14 @@ export default function LaTeXStudio({
   const [titleInput, setTitleInput] = useState(docTitle);
   const [activeDesktopMenu, setActiveDesktopMenu] = useState<'file' | 'edit' | 'insert' | 'view' | 'format' | 'help' | null>(null);
   const [isLayoutMenuOpen, setIsLayoutMenuOpen] = useState(false);
+  const [activeToolbarPopover, setActiveToolbarPopover] = useState<'heading' | 'math' | 'image' | 'table' | null>(null);
+  const [tableHoverSize, setTableHoverSize] = useState<{ rows: number; cols: number }>({ rows: 0, cols: 0 });
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [copiedShareLink, setCopiedShareLink] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const desktopMenuRef = useRef<HTMLDivElement>(null);
   const layoutMenuRef = useRef<HTMLDivElement>(null);
+  const toolbarRef = useRef<HTMLDivElement>(null);
 
   // Sync titleInput when docTitle changes
   useEffect(() => {
@@ -318,10 +325,13 @@ export default function LaTeXStudio({
       if (isLayoutMenuOpen && layoutMenuRef.current && !layoutMenuRef.current.contains(e.target as Node)) {
         setIsLayoutMenuOpen(false);
       }
+      if (activeToolbarPopover && toolbarRef.current && !toolbarRef.current.contains(e.target as Node)) {
+        setActiveToolbarPopover(null);
+      }
     };
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
-  }, [activeDesktopMenu, isLayoutMenuOpen]);
+  }, [activeDesktopMenu, isLayoutMenuOpen, activeToolbarPopover]);
 
   // Fullscreen toggle handler
   const toggleFullscreen = useCallback(() => {
@@ -466,6 +476,27 @@ export default function LaTeXStudio({
   // Insert helper
   const handleInsert = useCallback((text: string) => {
     setInsertRequest({ id: Date.now(), text });
+  }, []);
+  const insertLatexCode = handleInsert;
+
+  const generateTableLatex = useCallback((rows: number, cols: number) => {
+    const colAlign = Array(cols).fill('c').join('|');
+    const headerRow = Array.from({ length: cols }, (_, i) => `Header ${i + 1}`).join(' & ') + ' \\\\';
+    const dataRows = Array.from({ length: Math.max(0, rows - 1) }, (_, r) =>
+      Array.from({ length: cols }, (_, c) => `Cell ${r + 1},${c + 1}`).join(' & ') + ' \\\\'
+    ).join('\n    ');
+
+    return `\n\\begin{table}[htbp]
+  \\centering
+  \\begin{tabular}{|${colAlign}|}
+    \\hline
+    ${headerRow}
+    \\hline
+    ${dataRows ? dataRows + '\n    \\hline' : ''}
+  \\end{tabular}
+  \\caption{Bảng dữ liệu}
+  \\label{tab:table_${Date.now()}}
+\\end{table}\n`;
   }, []);
 
   // Trigger Ribbon action
@@ -2069,15 +2100,15 @@ export default function LaTeXStudio({
             {activeActivityTab === 'search' && (
               <div className="h-full flex flex-col overflow-hidden text-xs select-none">
                 {/* Search Header */}
-                <div className="flex items-center justify-between px-2.5 py-2 bg-slate-50/90 dark:bg-[#181a1d] border-b border-white/5 shrink-0 font-semibold text-[11px] uppercase tracking-wider text-neutral-400">
+                <div className="w-full h-8 flex items-center justify-between px-2 border-b border-white/5 bg-[#181a1d] select-none flex-shrink-0">
                   <div className="flex items-center gap-1.5 text-neutral-300">
                     <Search className="w-3.5 h-3.5 text-neutral-400" />
-                    <span>Tìm kiếm</span>
+                    <span className="font-semibold text-[11px] uppercase tracking-wider text-neutral-300">Tìm kiếm</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => setIsSidebarOpen(false)}
-                    className="w-3.5 h-3.5 text-neutral-400 hover:text-white cursor-pointer p-0.5 rounded hover:bg-white/10 transition-colors flex-shrink-0"
+                    className="w-4 h-4 flex items-center justify-center text-neutral-400 hover:text-white cursor-pointer rounded hover:bg-white/10 transition-colors flex-shrink-0"
                     title="Đóng bảng điều khiển"
                   >
                     <X className="w-3.5 h-3.5" />
@@ -2183,15 +2214,15 @@ export default function LaTeXStudio({
             {activeActivityTab === 'ai' && (
               <div className="h-full flex flex-col overflow-hidden text-xs select-none">
                 {/* AI Header */}
-                <div className="flex items-center justify-between px-2.5 py-2 bg-slate-50/90 dark:bg-[#181a1d] border-b border-white/5 shrink-0 font-semibold text-[11px] uppercase tracking-wider text-neutral-400">
+                <div className="w-full h-8 flex items-center justify-between px-2 border-b border-white/5 bg-[#181a1d] select-none flex-shrink-0">
                   <div className="flex items-center gap-1.5 text-indigo-400">
                     <Sparkles className="w-3.5 h-3.5" />
-                    <span>TRỢ LÝ AI SOẠN THẢO</span>
+                    <span className="font-semibold text-[11px] uppercase tracking-wider">TRỢ LÝ AI SOẠN THẢO</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => setIsSidebarOpen(false)}
-                    className="w-3.5 h-3.5 text-neutral-400 hover:text-white cursor-pointer p-0.5 rounded hover:bg-white/10 transition-colors flex-shrink-0"
+                    className="w-4 h-4 flex items-center justify-center text-neutral-400 hover:text-white cursor-pointer rounded hover:bg-white/10 transition-colors flex-shrink-0"
                     title="Đóng bảng điều khiển"
                   >
                     <X className="w-3.5 h-3.5" />
@@ -2403,155 +2434,459 @@ export default function LaTeXStudio({
 
               <div className={`flex flex-col h-full w-full overflow-hidden ${isResizing ? 'invisible pointer-events-none' : ''}`}>
                 {/* Overleaf Flat Editor Ribbon */}
-                <div className="h-8 px-2 bg-slate-50 dark:bg-slate-950/80 border-b border-slate-200 dark:border-white/10 flex items-center justify-between gap-1 text-xs shrink-0 select-none overflow-x-auto">
-                  {/* Left icons group */}
-                  <div className="flex items-center gap-0.5">
+                <div
+                  ref={toolbarRef}
+                  className="h-9 bg-[#1e2227] border-b border-white/10 flex items-center justify-between px-2 select-none z-30 relative shrink-0"
+                >
+                  {/* Left tools group */}
+                  <div className="flex items-center gap-0.5 relative">
+                    {/* Undo & Redo */}
                     <button
                       type="button"
                       onClick={() => triggerEditorAction('undo')}
-                  className="p-1 rounded-sm hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 transition"
-                  title="Hoàn tác (Undo / Ctrl+Z)"
-                >
-                  <Undo2 className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => triggerEditorAction('redo')}
-                  className="p-1 rounded-sm hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 transition"
-                  title="Làm lại (Redo / Ctrl+Y)"
-                >
-                  <Redo2 className="w-3.5 h-3.5" />
-                </button>
+                      className="p-1 h-6 w-6 flex items-center justify-center rounded-sm hover:bg-white/10 text-neutral-300 transition cursor-pointer"
+                      title="Hoàn tác (Undo / Ctrl+Z)"
+                    >
+                      <Undo2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => triggerEditorAction('redo')}
+                      className="p-1 h-6 w-6 flex items-center justify-center rounded-sm hover:bg-white/10 text-neutral-300 transition cursor-pointer"
+                      title="Làm lại (Redo / Ctrl+Y)"
+                    >
+                      <Redo2 className="w-3.5 h-3.5" />
+                    </button>
 
-                <span className="h-3 w-px bg-slate-200 dark:bg-slate-800 mx-0.5" />
+                    <span className="h-3 w-px bg-white/10 mx-0.5" />
 
-                <button
-                  type="button"
-                  onClick={() => triggerEditorAction('find')}
-                  className="p-1 rounded-sm hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 transition"
-                  title="Tìm kiếm & Thay thế (Ctrl+F)"
-                >
-                  <Search className="w-3.5 h-3.5" />
-                </button>
+                    {/* Heading Dropdown (T^v) */}
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setActiveToolbarPopover(
+                            activeToolbarPopover === 'heading' ? null : 'heading'
+                          )
+                        }
+                        className={`px-1.5 h-6 flex items-center gap-0.5 rounded-sm transition cursor-pointer text-xs ${
+                          activeToolbarPopover === 'heading'
+                            ? 'bg-white/15 text-white font-medium'
+                            : 'hover:bg-white/10 text-neutral-300'
+                        }`}
+                        title="Tiêu đề & Đề mục (Heading)"
+                      >
+                        <Type className="w-3.5 h-3.5" />
+                        <ChevronDown className="w-2.5 h-2.5 opacity-70" />
+                      </button>
 
-                <span className="h-3 w-px bg-slate-200 dark:bg-slate-800 mx-0.5" />
+                      {activeToolbarPopover === 'heading' && (
+                        <div className="absolute left-0 top-full mt-1.5 w-48 bg-[#1e2226] border border-white/10 rounded-lg shadow-2xl py-1 text-xs text-neutral-300 z-50 select-none animate-in fade-in duration-100">
+                          <button
+                            type="button"
+                            onClick={() => setActiveToolbarPopover(null)}
+                            className="w-full px-3 py-1.5 text-left hover:bg-[#2c3238] hover:text-white transition-colors cursor-pointer text-xs"
+                          >
+                            Văn bản thường (Normal)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveToolbarPopover(null);
+                              handleInsert('\n\\section{${1:Tiêu đề Section}}\n');
+                            }}
+                            className="w-full px-3 py-1.5 text-left hover:bg-[#2c3238] hover:text-white transition-colors cursor-pointer font-bold text-sm text-neutral-100"
+                          >
+                            Section
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveToolbarPopover(null);
+                              handleInsert('\n\\subsection{${1:Tiêu đề Subsection}}\n');
+                            }}
+                            className="w-full px-3 py-1.5 text-left hover:bg-[#2c3238] hover:text-white transition-colors cursor-pointer font-semibold text-xs text-neutral-200"
+                          >
+                            Subsection
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveToolbarPopover(null);
+                              handleInsert('\n\\subsubsection{${1:Tiêu đề Subsubsection}}\n');
+                            }}
+                            className="w-full px-3 py-1.5 text-left hover:bg-[#2c3238] hover:text-white transition-colors cursor-pointer font-medium text-[11px] text-neutral-300"
+                          >
+                            Subsubsection
+                          </button>
+                        </div>
+                      )}
+                    </div>
 
-                {/* Font size TT */}
-                <div className="flex items-center gap-0.5 px-0.5 text-slate-600 dark:text-slate-300">
-                  <Type className="w-3.5 h-3.5 text-slate-400" />
-                  <select
-                    aria-label="Cỡ chữ soạn thảo"
-                    value={fontSize}
-                    onChange={(e) => setFontSize(Number(e.target.value))}
-                    className="bg-transparent border-0 text-[11px] font-medium text-slate-700 dark:text-slate-200 outline-none cursor-pointer pr-0.5"
-                    title="Cỡ chữ soạn thảo (TT)"
-                  >
-                    {[12, 13, 14, 15, 16, 18, 20].map((s) => (
-                      <option key={s} value={s} className="dark:bg-slate-900">
-                        {s}px
-                      </option>
-                    ))}
-                  </select>
+                    <span className="h-3 w-px bg-white/10 mx-0.5" />
+
+                    {/* Bold */}
+                    <button
+                      type="button"
+                      onClick={() => triggerEditorAction('bold')}
+                      className="p-1 h-6 w-6 flex items-center justify-center rounded-sm font-bold hover:bg-white/10 text-neutral-300 font-serif text-xs transition cursor-pointer"
+                      title="In đậm (\textbf{...})"
+                    >
+                      B
+                    </button>
+
+                    {/* Italic */}
+                    <button
+                      type="button"
+                      onClick={() => triggerEditorAction('italic')}
+                      className="p-1 h-6 w-6 flex items-center justify-center rounded-sm italic font-serif hover:bg-white/10 text-neutral-300 text-xs transition cursor-pointer"
+                      title="In nghiêng (\textit{...})"
+                    >
+                      I
+                    </button>
+
+                    <span className="h-3 w-px bg-white/10 mx-0.5" />
+
+                    {/* Math Button (Ω) with Popover */}
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setActiveToolbarPopover(
+                            activeToolbarPopover === 'math' ? null : 'math'
+                          )
+                        }
+                        className={`p-1 h-6 w-6 flex items-center justify-center rounded-sm font-serif font-bold text-xs transition cursor-pointer ${
+                          activeToolbarPopover === 'math' || isSymbolsOpen
+                            ? 'bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/40 shadow-xs'
+                            : 'hover:bg-white/10 text-neutral-300'
+                        }`}
+                        title="Chèn công thức toán (Omega Ω)"
+                      >
+                        Ω
+                      </button>
+
+                      {activeToolbarPopover === 'math' && (
+                        <div className="absolute left-0 top-full mt-1.5 w-60 bg-[#1e2226] border border-white/10 rounded-lg shadow-2xl py-1.5 text-xs text-neutral-300 z-50 select-none animate-in fade-in duration-100">
+                          <div className="px-3 py-1 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider border-b border-white/5 mb-1">
+                            Insert math
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveToolbarPopover(null);
+                              setIsSymbolsOpen(true);
+                            }}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-neutral-200 hover:bg-emerald-500/10 hover:text-emerald-400 transition-colors text-left cursor-pointer"
+                          >
+                            <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
+                            <div>
+                              <div className="font-medium">✨ From text or image</div>
+                              <div className="text-[10px] text-neutral-400">Bảng ký hiệu & OCR công thức</div>
+                            </div>
+                          </button>
+                          <div className="border-t border-white/5 my-1" />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveToolbarPopover(null);
+                              handleInsert('\\( ${1:x} \\)');
+                            }}
+                            className="w-full flex items-center justify-between px-3 py-2 text-neutral-200 hover:bg-[#2c3238] hover:text-white transition-colors text-left cursor-pointer font-mono"
+                          >
+                            <div className="flex items-center gap-2 font-sans">
+                              <span className="text-emerald-400 font-bold">\(x\)</span>
+                              <span>Inline</span>
+                            </div>
+                            <span className="text-[11px] text-neutral-500 font-mono">\( ... \)</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveToolbarPopover(null);
+                              handleInsert('\n\\[\n  ${1:f(x) = y}\n\\]\n');
+                            }}
+                            className="w-full flex items-center justify-between px-3 py-2 text-neutral-200 hover:bg-[#2c3238] hover:text-white transition-colors text-left cursor-pointer font-mono"
+                          >
+                            <div className="flex items-center gap-2 font-sans">
+                              <span className="text-emerald-400 font-bold">\[x\]</span>
+                              <span>Display</span>
+                            </div>
+                            <span className="text-[11px] text-neutral-500 font-mono">\[ ... \]</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Image Button with Popover */}
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setActiveToolbarPopover(
+                            activeToolbarPopover === 'image' ? null : 'image'
+                          )
+                        }
+                        className={`p-1 h-6 w-6 flex items-center justify-center rounded-sm transition cursor-pointer ${
+                          activeToolbarPopover === 'image'
+                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-xs'
+                            : 'hover:bg-white/10 text-neutral-300'
+                        }`}
+                        title="Chèn hình ảnh (Insert image)"
+                      >
+                        <ImageIcon className="w-3.5 h-3.5" />
+                      </button>
+
+                      {activeToolbarPopover === 'image' && (
+                        <div className="absolute left-0 top-full mt-1.5 w-60 bg-[#1e2226] border border-white/10 rounded-lg shadow-2xl py-1.5 text-xs text-neutral-300 z-50 select-none animate-in fade-in duration-100">
+                          <div className="px-3 py-1 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider border-b border-white/5 mb-1">
+                            Insert image
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveToolbarPopover(null);
+                              const input = document.createElement('input');
+                              input.type = 'file';
+                              input.accept = '.png,.jpg,.jpeg,.svg,.pdf';
+                              input.onchange = (e) => {
+                                const file = (e.target as HTMLInputElement).files?.[0];
+                                if (file) handleUploadAsset(file);
+                              };
+                              input.click();
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-neutral-200 hover:bg-[#2c3238] hover:text-white transition-colors text-left cursor-pointer"
+                          >
+                            <Upload className="w-4 h-4 text-emerald-400 shrink-0" />
+                            <span>Upload from computer</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveToolbarPopover(null);
+                              const imgFiles = files.filter((f) =>
+                                /\.(png|jpe?g|svg|webp|pdf)$/i.test(f.name)
+                              );
+                              const imgName =
+                                imgFiles.length > 0 ? imgFiles[0].name : 'example-image.png';
+                              handleInsert(
+                                `\n\\begin{figure}[htbp]\n  \\centering\n  \\includegraphics[width=0.7\\linewidth]{${imgName}}\n  \\caption{Caption}\n  \\label{fig:${
+                                  imgName.split('.')[0]
+                                }}\n\\end{figure}\n`
+                              );
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-neutral-200 hover:bg-[#2c3238] hover:text-white transition-colors text-left cursor-pointer"
+                          >
+                            <Files className="w-4 h-4 text-cyan-400 shrink-0" />
+                            <span>From project files</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveToolbarPopover(null);
+                              handleInsert(
+                                `\n\\begin{figure}[htbp]\n  \\centering\n  \\includegraphics[width=0.7\\linewidth]{example-image}\n  \\caption{Caption}\n  \\label{fig:external_image}\n\\end{figure}\n`
+                              );
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-neutral-200 hover:bg-[#2c3238] hover:text-white transition-colors text-left cursor-pointer"
+                          >
+                            <FolderPlus className="w-4 h-4 text-amber-400 shrink-0" />
+                            <span>From another project</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveToolbarPopover(null);
+                              const url = prompt('Nhập URL hình ảnh:');
+                              if (url) {
+                                handleInsert(
+                                  `\n\\begin{figure}[htbp]\n  \\centering\n  \\includegraphics[width=0.7\\linewidth]{${url}}\n  \\caption{Caption}\n  \\label{fig:url_image}\n\\end{figure}\n`
+                                );
+                              }
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-neutral-200 hover:bg-[#2c3238] hover:text-white transition-colors text-left cursor-pointer"
+                          >
+                            <LinkIcon className="w-4 h-4 text-indigo-400 shrink-0" />
+                            <span>From URL</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Table Button with 10x10 Matrix Popover */}
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setActiveToolbarPopover(
+                            activeToolbarPopover === 'table' ? null : 'table'
+                          )
+                        }
+                        className={`p-1 h-6 w-6 flex items-center justify-center rounded-sm transition cursor-pointer ${
+                          activeToolbarPopover === 'table'
+                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-xs'
+                            : 'hover:bg-white/10 text-neutral-300'
+                        }`}
+                        title="Chèn bảng (Insert table)"
+                      >
+                        <Table className="w-3.5 h-3.5" />
+                      </button>
+
+                      {activeToolbarPopover === 'table' && (
+                        <div className="absolute left-0 top-full mt-1.5 w-64 bg-[#1e2226] border border-white/10 rounded-lg shadow-2xl p-3 text-xs text-neutral-300 z-50 select-none animate-in fade-in duration-100">
+                          <div className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider mb-2">
+                            Insert table
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveToolbarPopover(null);
+                              handleInsert(
+                                `\n\\begin{table}[htbp]\n  \\centering\n  \\begin{tabular}{|c|c|c|}\n    \\hline\n    Cột 1 & Cột 2 & Cột 3 \\\\\n    \\hline\n    Dữ liệu 1 & Dữ liệu 2 & Dữ liệu 3 \\\\\n    \\hline\n  \\end{tabular}\n  \\caption{Bảng tự động}\n  \\label{tab:ai_table}\n\\end{table}\n`
+                              );
+                            }}
+                            className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 transition-colors text-left cursor-pointer mb-2.5 border border-emerald-500/20"
+                          >
+                            <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                            <span className="font-medium text-[11px]">✨ From text or image</span>
+                          </button>
+
+                          <div className="flex items-center justify-between text-[11px] text-neutral-400 mb-1.5 font-medium">
+                            <span>Select size</span>
+                            <span className="font-mono text-emerald-400 font-bold">
+                              {tableHoverSize.rows > 0 && tableHoverSize.cols > 0
+                                ? `${tableHoverSize.rows} × ${tableHoverSize.cols}`
+                                : '10 × 10'}
+                            </span>
+                          </div>
+
+                          {/* 10x10 Matrix Grid */}
+                          <div
+                            className="grid grid-cols-10 gap-1 p-1.5 bg-[#141618] rounded border border-white/5"
+                            onMouseLeave={() => setTableHoverSize({ rows: 0, cols: 0 })}
+                          >
+                            {Array.from({ length: 10 }).map((_, rIdx) =>
+                              Array.from({ length: 10 }).map((_, cIdx) => {
+                                const r = rIdx + 1;
+                                const c = cIdx + 1;
+                                const isHighlighted =
+                                  r <= tableHoverSize.rows && c <= tableHoverSize.cols;
+                                return (
+                                  <div
+                                    key={`${r}-${c}`}
+                                    onMouseEnter={() =>
+                                      setTableHoverSize({ rows: r, cols: c })
+                                    }
+                                    onClick={() => {
+                                      setActiveToolbarPopover(null);
+                                      handleInsert(generateTableLatex(r, c));
+                                    }}
+                                    className={`w-4 h-4 rounded-xs border cursor-pointer transition-colors ${
+                                      isHighlighted
+                                        ? 'bg-emerald-500/40 border-emerald-500'
+                                        : 'bg-white/5 border-white/10 hover:border-emerald-500/50'
+                                    }`}
+                                    title={`${r} hàng × ${c} cột`}
+                                  />
+                                );
+                              })
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Link */}
+                    <button
+                      type="button"
+                      onClick={() => triggerEditorAction('link')}
+                      className="p-1 h-6 w-6 flex items-center justify-center rounded-sm hover:bg-white/10 text-neutral-300 transition cursor-pointer"
+                      title="Chèn liên kết (\href{...})"
+                    >
+                      <LinkIcon className="w-3.5 h-3.5" />
+                    </button>
+
+                    {/* Quote */}
+                    <button
+                      type="button"
+                      onClick={() => triggerEditorAction('quote')}
+                      className="p-1 h-6 w-6 flex items-center justify-center rounded-sm hover:bg-white/10 text-neutral-300 transition cursor-pointer"
+                      title="Trích dẫn (\begin{quote}...)"
+                    >
+                      <Quote className="w-3.5 h-3.5" />
+                    </button>
+
+                    {/* Code */}
+                    <button
+                      type="button"
+                      onClick={() => triggerEditorAction('code')}
+                      className="p-1 h-6 w-6 flex items-center justify-center rounded-sm hover:bg-white/10 text-neutral-300 transition cursor-pointer"
+                      title="Đoạn mã (\texttt{...})"
+                    >
+                      <Code2 className="w-3.5 h-3.5" />
+                    </button>
+
+                    {/* More (...) */}
+                    <button
+                      type="button"
+                      onClick={() => setIsSymbolsOpen(true)}
+                      className="p-1 h-6 w-6 flex items-center justify-center rounded-sm hover:bg-white/10 text-neutral-300 transition cursor-pointer"
+                      title="Thêm công cụ / Bảng ký hiệu"
+                    >
+                      <MoreHorizontal className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  {/* Right tools group: [ Code | Visual ], [ Editing / Reviewing ], Search */}
+                  <div className="flex items-center gap-2">
+                    {/* Pill Toggle Code | Visual */}
+                    <div className="flex items-center bg-[#181a1d] p-0.5 rounded border border-white/10">
+                      <button
+                        type="button"
+                        onClick={() => setEditorMode('code')}
+                        className={`px-2.5 py-0.5 rounded text-xs font-medium transition-colors cursor-pointer ${
+                          editorMode === 'code'
+                            ? 'bg-emerald-600 text-white font-semibold shadow-xs'
+                            : 'text-neutral-400 hover:text-white'
+                        }`}
+                      >
+                        Code
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditorMode('visual')}
+                        className={`px-2.5 py-0.5 rounded text-xs font-medium transition-colors cursor-pointer ${
+                          editorMode === 'visual'
+                            ? 'bg-emerald-600 text-white font-semibold shadow-xs'
+                            : 'text-neutral-400 hover:text-white'
+                        }`}
+                      >
+                        Visual
+                      </button>
+                    </div>
+
+                    {/* Review Mode Dropdown */}
+                    <select
+                      aria-label="Chế độ làm việc"
+                      value={reviewMode}
+                      onChange={(e) => setReviewMode(e.target.value as any)}
+                      className="h-6 bg-[#181a1d] border border-white/10 rounded px-1.5 text-xs font-medium text-neutral-300 outline-none cursor-pointer hover:border-white/20"
+                    >
+                      <option value="editing" className="bg-[#1e2226]">Editing ▾</option>
+                      <option value="reviewing" className="bg-[#1e2226]">Reviewing</option>
+                    </select>
+
+                    {/* Search in File */}
+                    <button
+                      type="button"
+                      onClick={() => triggerEditorAction('find')}
+                      className="p-1 h-6 w-6 flex items-center justify-center rounded text-neutral-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
+                      title="Tìm kiếm trong tệp (Ctrl+F)"
+                    >
+                      <Search className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
-
-                <span className="h-3 w-px bg-slate-200 dark:bg-slate-800 mx-0.5" />
-
-                <button
-                  type="button"
-                  onClick={() => triggerEditorAction('bold')}
-                  className="p-1 h-6 w-6 flex items-center justify-center rounded-sm font-bold hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 font-serif text-xs transition"
-                  title="In đậm (\textbf{...})"
-                >
-                  B
-                </button>
-                <button
-                  type="button"
-                  onClick={() => triggerEditorAction('italic')}
-                  className="p-1 h-6 w-6 flex items-center justify-center rounded-sm italic font-serif hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 text-xs transition"
-                  title="In nghiêng (\textit{...})"
-                >
-                  I
-                </button>
-
-                {/* Math symbols palette launcher (Omega Ω) */}
-                <button
-                  type="button"
-                  onClick={() => setIsSymbolsOpen((prev) => !prev)}
-                  className={`p-1 h-6 w-6 flex items-center justify-center rounded-sm font-serif font-bold text-xs transition cursor-pointer ${
-                    isSymbolsOpen
-                      ? 'bg-cyan-500/20 text-cyan-400 font-bold border border-cyan-500/40 shadow-2xs'
-                      : 'hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300'
-                  }`}
-                  title="Bảng ký hiệu toán học MathType (Omega Ω)"
-                >
-                  Ω
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => triggerEditorAction('link')}
-                  className="p-1 rounded-sm hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 transition"
-                  title="Chèn liên kết (\href{...})"
-                >
-                  <LinkIcon className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => triggerEditorAction('table')}
-                  className="p-1 rounded-sm hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 transition"
-                  title="Chèn bảng (\begin{tabular}...)"
-                >
-                  <Table className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              {/* Right icons group: [ Code | Visual ], [ Editing / Reviewing ], Search */}
-              <div className="flex items-center gap-1.5">
-                <div className="flex items-center h-6 p-0.5 rounded bg-slate-200/80 dark:bg-slate-800/80 text-[11px] font-medium border border-slate-300/60 dark:border-slate-700">
-                  <button
-                    type="button"
-                    onClick={() => setEditorMode('code')}
-                    className={`h-5 px-2 flex items-center rounded transition cursor-pointer text-[11px] ${
-                      editorMode === 'code'
-                        ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold shadow-2xs'
-                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                    }`}
-                  >
-                    Code
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setEditorMode('visual')}
-                    className={`h-5 px-2 flex items-center rounded transition cursor-pointer text-[11px] ${
-                      editorMode === 'visual'
-                        ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold shadow-2xs'
-                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                    }`}
-                  >
-                    Visual
-                  </button>
-                </div>
-
-                <select
-                  aria-label="Chế độ làm việc"
-                  value={reviewMode}
-                  onChange={(e) => setReviewMode(e.target.value as any)}
-                  className="h-6 bg-transparent border border-slate-200 dark:border-slate-700 rounded px-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 outline-none cursor-pointer"
-                >
-                  <option value="editing" className="dark:bg-slate-900">Editing ▾</option>
-                  <option value="reviewing" className="dark:bg-slate-900">Reviewing</option>
-                </select>
-
-                <button
-                  type="button"
-                  onClick={() => triggerEditorAction('find')}
-                  className="p-1 rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition"
-                  title="Tìm kiếm trong tệp"
-                >
-                  <Search className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
 
           {/* Monaco Editor Canvas or Visual Mode */}
           <div className="flex-1 min-h-0 relative">

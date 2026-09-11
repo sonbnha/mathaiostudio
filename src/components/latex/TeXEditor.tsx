@@ -124,6 +124,18 @@ export default function TeXEditor({
         const tableSnippet = `\\begin{table}[h!]\n\\centering\n\\begin{tabular}{|c|c|c|}\n\\hline\nCột 1 & Cột 2 & Cột 3 \\\\\n\\hline\nA & B & C \\\\\nD & E & F \\\\\n\\hline\n\\end{tabular}\n\\caption{Bảng mẫu}\n\\end{table}\n`;
         editorRef.executeEdits('ribbon-table', [{ range: sel, text: tableSnippet, forceMoveMarkers: true }]);
       }
+    } else if (action === 'code') {
+      if (sel && model) {
+        const text = model.getValueInRange(sel);
+        const replacement = text ? `\\texttt{${text}}` : `\\texttt{}`;
+        editorRef.executeEdits('ribbon-code', [{ range: sel, text: replacement, forceMoveMarkers: true }]);
+      }
+    } else if (action === 'quote') {
+      if (sel && model) {
+        const text = model.getValueInRange(sel);
+        const replacement = text ? `\\begin{quote}\n  ${text}\n\\end{quote}` : `\\begin{quote}\n  \n\\end{quote}`;
+        editorRef.executeEdits('ribbon-quote', [{ range: sel, text: replacement, forceMoveMarkers: true }]);
+      }
     } else if (action === 'select-all') {
       editorRef.getAction('editor.action.selectAll')?.run();
     }

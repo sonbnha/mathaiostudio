@@ -220,18 +220,18 @@ const getThemeExtensions = (
         }
       : {},
     '.cm-gutters': {
-      backgroundColor: isDark ? '#020617' : '#f8fafc',
-      color: isDark ? '#475569' : '#94a3b8',
-      borderRight: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.08)'}`,
+      backgroundColor: isDark ? '#0f172a' : '#f8fafc',
+      borderRight: isDark ? '1px solid #1e293b' : '1px solid #e2e8f0',
+      color: isDark ? '#64748b' : '#94a3b8',
       minWidth: '40px',
       fontFamily: fontStack,
     },
     '.cm-activeLineGutter': {
-      backgroundColor: isDark ? 'rgba(34, 211, 238, 0.1)' : 'rgba(6, 182, 212, 0.1)',
+      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#e2e8f0 !important',
       color: isDark ? '#22d3ee' : '#0284c7',
     },
     '.cm-activeLine': {
-      backgroundColor: isDark ? 'rgba(15, 23, 42, 0.6)' : 'rgba(241, 245, 249, 0.8)',
+      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#f1f5f9 !important',
     },
     '.cm-selectionBackground, ::selection': {
       backgroundColor: isDark ? 'rgba(22, 78, 99, 0.6) !important' : '#bae6fd !important',

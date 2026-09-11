@@ -19,10 +19,9 @@ export const LATEX_TEMPLATES: LaTeXTemplate[] = [
     description: 'Đề thi 3 phần chuẩn BGD: Nhiều lựa chọn, Đúng/Sai, Trả lời ngắn',
     source: `\\documentclass[12pt,a4paper]{article}
 \\usepackage{fontspec}
-\\setmainfont{Noto Serif}
-\\usepackage{babel}
-\\babelprovide[main,import]{vietnamese}
-\\babelfont{rm}{Noto Serif}
+\\setmainfont{Times New Roman}
+\\usepackage[vietnamese]{babel}
+\\babelfont{rm}{Times New Roman}
 \\usepackage{amsmath,amssymb,amsthm}
 \\usepackage{geometry}
 \\usepackage{enumitem}
@@ -135,10 +134,9 @@ export const LATEX_TEMPLATES: LaTeXTemplate[] = [
     description: 'Cấu trúc đề thi Đánh giá năng lực phần Tư duy Toán học',
     source: `\\documentclass[12pt,a4paper]{article}
 \\usepackage{fontspec}
-\\setmainfont{Noto Serif}
-\\usepackage{babel}
-\\babelprovide[main,import]{vietnamese}
-\\babelfont{rm}{Noto Serif}
+\\setmainfont{Times New Roman}
+\\usepackage[vietnamese]{babel}
+\\babelfont{rm}{Times New Roman}
 \\usepackage{amsmath,amssymb}
 \\usepackage{geometry}
 \\usepackage{enumitem}
@@ -209,10 +207,9 @@ Trung vị $M_e$ của mẫu số liệu ghép nhóm trên bằng bao nhiêu?
     description: 'Chuyên đề câu hỏi đúng sai 4 ý chuẩn Thông tư mới',
     source: `\\documentclass[12pt,a4paper]{article}
 \\usepackage{fontspec}
-\\setmainfont{Noto Serif}
-\\usepackage{babel}
-\\babelprovide[main,import]{vietnamese}
-\\babelfont{rm}{Noto Serif}
+\\setmainfont{Times New Roman}
+\\usepackage[vietnamese]{babel}
+\\babelfont{rm}{Times New Roman}
 \\usepackage{amsmath,amssymb}
 \\usepackage{geometry}
 \\usepackage{enumitem}
@@ -256,10 +253,9 @@ Trung vị $M_e$ của mẫu số liệu ghép nhóm trên bằng bao nhiêu?
     description: 'Mẫu đề kiểm tra kết hợp tự luận và trắc nghiệm truyền thống',
     source: `\\documentclass[12pt,a4paper]{article}
 \\usepackage{fontspec}
-\\setmainfont{Noto Serif}
-\\usepackage{babel}
-\\babelprovide[main,import]{vietnamese}
-\\babelfont{rm}{Noto Serif}
+\\setmainfont{Times New Roman}
+\\usepackage[vietnamese]{babel}
+\\babelfont{rm}{Times New Roman}
 \\usepackage{amsmath,amssymb}
 \\usepackage{geometry}
 \\usepackage{enumitem}
@@ -323,10 +319,9 @@ Trung vị $M_e$ của mẫu số liệu ghép nhóm trên bằng bao nhiêu?
     description: 'Mẫu chuyên đề định lý, bổ đề, ví dụ minh họa và bài tập',
     source: `\\documentclass[12pt,a4paper]{article}
 \\usepackage{fontspec}
-\\setmainfont{Noto Serif}
-\\usepackage{babel}
-\\babelprovide[main,import]{vietnamese}
-\\babelfont{rm}{Noto Serif}
+\\setmainfont{Times New Roman}
+\\usepackage[vietnamese]{babel}
+\\babelfont{rm}{Times New Roman}
 \\usepackage{amsmath,amssymb,amsthm}
 \\usepackage{geometry}
 \\usepackage{enumitem}
@@ -373,10 +368,9 @@ $$P = \\frac{1}{a} + \\frac{1}{b} + \\frac{1}{c} \\geq \\frac{(1+1+1)^2}{a+b+c} 
     description: 'Mẫu tài liệu vẽ hình học phẳng và hình không gian TikZ sắc nét',
     source: `\\documentclass[12pt,a4paper]{article}
 \\usepackage{fontspec}
-\\setmainfont{Noto Serif}
-\\usepackage{babel}
-\\babelprovide[main,import]{vietnamese}
-\\babelfont{rm}{Noto Serif}
+\\setmainfont{Times New Roman}
+\\usepackage[vietnamese]{babel}
+\\babelfont{rm}{Times New Roman}
 \\usepackage{amsmath,amssymb}
 \\usepackage{tikz}
 \\usepackage{geometry}
@@ -429,10 +423,9 @@ $$P = \\frac{1}{a} + \\frac{1}{b} + \\frac{1}{c} \\geq \\frac{(1+1+1)^2}{a+b+c} 
     description: 'Khung tài liệu LaTeX tinh gọn chuẩn tiếng Việt và gói toán',
     source: `\\documentclass[12pt,a4paper]{article}
 \\usepackage{fontspec}
-\\setmainfont{Noto Serif}
-\\usepackage{babel}
-\\babelprovide[main,import]{vietnamese}
-\\babelfont{rm}{Noto Serif}
+\\setmainfont{Times New Roman}
+\\usepackage[vietnamese]{babel}
+\\babelfont{rm}{Times New Roman}
 \\usepackage{amsmath,amssymb,amsthm}
 \\usepackage{geometry}
 \\geometry{margin=2.5cm}

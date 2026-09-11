@@ -287,6 +287,10 @@ export default function FileTreeExplorer({
   const [treeHeightPercent, setTreeHeightPercent] = useState<number>(55);
   const [isTreeExpanded, setIsTreeExpanded] = useState<boolean>(true);
   const [isOutlineExpanded, setIsOutlineExpanded] = useState<boolean>(true);
+  const isTreeExpandedRef = useRef(isTreeExpanded);
+  isTreeExpandedRef.current = isTreeExpanded;
+  const isOutlineExpandedRef = useRef(isOutlineExpanded);
+  isOutlineExpandedRef.current = isOutlineExpanded;
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleMouseDownHorizontalSplitter = (e: React.MouseEvent) => {
@@ -300,8 +304,33 @@ export default function FileTreeExplorer({
       const currentY = moveEvent.clientY - containerRect.top;
       const totalH = containerRect.height;
       if (totalH <= 0) return;
-      const percent = (currentY / totalH) * 100;
-      setTreeHeightPercent(Math.min(80, Math.max(20, percent)));
+      const newPercent = (currentY / totalH) * 100;
+
+      const isTreeOpen = isTreeExpandedRef.current;
+      const isOutlineOpen = isOutlineExpandedRef.current;
+
+      // Case 1: Tree is collapsed, drag downwards past header (> 32 + 20 = 52px)
+      if (!isTreeOpen) {
+        if (currentY > 52) {
+          setIsTreeExpanded(true);
+          isTreeExpandedRef.current = true;
+          setTreeHeightPercent(Math.min(80, Math.max(20, newPercent)));
+        }
+        return;
+      }
+
+      // Case 2: Outline is collapsed, drag upwards past outline header (> 32 + 20 = 52px from bottom)
+      if (!isOutlineOpen) {
+        if (totalH - currentY > 52) {
+          setIsOutlineExpanded(true);
+          isOutlineExpandedRef.current = true;
+          setTreeHeightPercent(Math.min(80, Math.max(20, newPercent)));
+        }
+        return;
+      }
+
+      // Case 3: Both are open
+      setTreeHeightPercent(Math.min(80, Math.max(20, newPercent)));
     };
 
     const onMouseUp = () => {
@@ -356,8 +385,6 @@ export default function FileTreeExplorer({
     );
   }
 
-  const bothExpanded = isTreeExpanded && isOutlineExpanded;
-
   return (
     <aside
       ref={containerRef}
@@ -366,14 +393,14 @@ export default function FileTreeExplorer({
     >
       {/* SECTION 1 (TOP TIER): FILE TREE */}
       <div
-        style={bothExpanded ? { height: `${treeHeightPercent}%` } : undefined}
-        className={
-          bothExpanded
-            ? 'flex flex-col overflow-hidden flex-shrink-0'
-            : isTreeExpanded
-            ? 'flex-1 min-h-0 h-full flex flex-col overflow-hidden'
-            : 'h-8 flex-shrink-0 border-b border-white/5 overflow-hidden flex flex-col'
-        }
+        style={{
+          height: isTreeExpanded
+            ? isOutlineExpanded
+              ? `${treeHeightPercent}%`
+              : 'calc(100% - 32px)'
+            : '32px',
+        }}
+        className="flex flex-col flex-shrink-0 overflow-hidden"
       >
         {/* File Tree Header */}
         <div className="flex items-center justify-between px-2 h-8 border-b border-white/5 bg-[#181a1d] overflow-hidden select-none shrink-0">
@@ -612,25 +639,23 @@ export default function FileTreeExplorer({
         )}
       </div>
 
-      {/* HORIZONTAL RESIZER BETWEEN TREE AND OUTLINE */}
-      {bothExpanded && (
-        <div
-          onMouseDown={handleMouseDownHorizontalSplitter}
-          className="h-1.5 w-full bg-[#181a1d] hover:bg-emerald-500/40 cursor-row-resize flex-shrink-0 border-y border-white/5 transition-colors z-20"
-          title="Kéo phân chia tỷ lệ chiều cao Cây thư mục và Dàn ý"
-        />
-      )}
+      {/* HORIZONTAL RESIZER BETWEEN TREE AND OUTLINE (ALWAYS MOUNTED) */}
+      <div
+        onMouseDown={handleMouseDownHorizontalSplitter}
+        className="h-1 w-full bg-[#181a1d] hover:bg-emerald-500/40 cursor-row-resize flex-shrink-0 border-y border-white/5 transition-colors z-20"
+        title="Kéo phân chia tỷ lệ chiều cao hoặc kéo để mở rộng"
+      />
 
       {/* SECTION 2 (BOTTOM TIER): FILE OUTLINE */}
       <div
-        className={`flex flex-col border-t border-white/5 bg-[#181a1d] select-none ${
-          bothExpanded
-            ? 'flex-shrink-0 overflow-hidden'
-            : isOutlineExpanded
-            ? 'flex-1 min-h-0 h-full overflow-hidden'
-            : 'h-8 flex-shrink-0 overflow-hidden'
-        }`}
-        style={bothExpanded ? { height: `calc(${100 - treeHeightPercent}% - 6px)` } : undefined}
+        style={{
+          height: isOutlineExpanded
+            ? isTreeExpanded
+              ? `calc(${100 - treeHeightPercent}% - 4px)`
+              : 'calc(100% - 32px)'
+            : '32px',
+        }}
+        className="flex flex-col flex-shrink-0 overflow-hidden border-t border-white/5 bg-[#181a1d] select-none"
       >
         {/* Header luôn luôn render, không nằm trong điều kiện */}
         <div

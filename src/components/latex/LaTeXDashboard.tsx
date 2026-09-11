@@ -25,8 +25,7 @@ import {
   BookOpen,
 } from 'lucide-react';
 import { APP_VERSION } from '@/config/version';
-import WorkspaceHeader, { WorkspaceBrand } from '@/components/header/WorkspaceHeader';
-import ThemeToggleButton from '@/components/header/ThemeToggleButton';
+import AppHeader from '@/components/header/AppHeader';
 import { LATEX_TEMPLATES, getTemplateById } from '@/components/latex/LaTeXTemplates';
 import {
   getStoredDocuments,
@@ -122,26 +121,13 @@ export default function LaTeXDashboard() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors duration-200">
-      {/* 1. Global Header Bar */}
-      <header className="shrink-0 z-30 backdrop-blur-md bg-white/85 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800/80 px-4 lg:px-8 py-2.5 sm:py-3 flex flex-wrap items-center justify-between gap-3 shadow-xs dark:shadow-xl dark:shadow-slate-950/50 transition-colors">
-        <div className="flex flex-wrap items-center gap-3">
-          <WorkspaceBrand
-            badge="LaTeX Studio"
-            subtitle="Quản lý dự án &amp; Biên soạn xuất bản PDF A4"
-          />
-          <WorkspaceHeader />
-        </div>
+      {/* Unified Global Header */}
+      <AppHeader
+        badge="LaTeX Studio"
+        subtitle="Quản lý dự án &amp; Biên soạn xuất bản PDF A4"
+      />
 
-        <div className="flex items-center gap-2.5">
-          <span className="hidden xl:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80">
-            <FileCode className="w-3.5 h-3.5 text-cyan-500" />
-            Workspace Dashboard
-          </span>
-          <ThemeToggleButton />
-        </div>
-      </header>
-
-      {/* 2. Main Dashboard Content Container */}
+      {/* Main Dashboard Content Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* Hero Section & Quick Start */}
         <div className="relative rounded-3xl p-6 sm:p-8 bg-gradient-to-br from-cyan-600 via-blue-700 to-indigo-800 text-white overflow-hidden shadow-xl shadow-cyan-900/10">
@@ -462,7 +448,7 @@ export default function LaTeXDashboard() {
         </div>
       </main>
 
-      {/* 3. Modal: Tạo Tài Liệu Mới */}
+      {/* Modal: Tạo Tài Liệu Mới */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="w-full max-w-lg rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
@@ -554,7 +540,7 @@ export default function LaTeXDashboard() {
         </div>
       )}
 
-      {/* 4. Modal: Đổi Tên Tài Liệu */}
+      {/* Modal: Đổi Tên Tài Liệu */}
       {renamingDoc && (
         <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="w-full max-w-md rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-6 space-y-4">

@@ -367,30 +367,35 @@ export default function FileTreeExplorer({
       {/* SECTION 1 (TOP TIER): FILE TREE */}
       <div
         style={{
-          height: bothExpanded ? `${treeHeightPercent}%` : isTreeExpanded ? '100%' : 'auto',
+          height: isOutlineExpanded
+            ? isTreeExpanded
+              ? `${treeHeightPercent}%`
+              : '32px'
+            : isTreeExpanded
+            ? 'calc(100% - 32px)'
+            : '32px',
         }}
         className="flex flex-col overflow-hidden flex-shrink-0"
       >
         {/* File Tree Header */}
-        <div className="flex items-center justify-between px-2 py-1.5 border-b border-white/5 bg-[#181a1d] overflow-hidden select-none">
+        <div className="flex items-center justify-between px-2 h-8 border-b border-white/5 bg-[#181a1d] overflow-hidden select-none shrink-0">
           {/* Left Title Group (Truncates on shrink) */}
           <div className="flex items-center gap-1.5 min-w-0 flex-1 mr-1">
             <button
               type="button"
               onClick={() => setIsTreeExpanded(!isTreeExpanded)}
-              className="flex items-center gap-1 text-neutral-400 hover:text-white transition flex-shrink-0 cursor-pointer"
+              className="flex items-center text-neutral-400 hover:text-white transition flex-shrink-0 cursor-pointer p-0.5 rounded hover:bg-white/5"
               title="Đóng/Mở File Tree"
             >
-              {isTreeExpanded ? (
-                <ChevronDown className="w-3 h-3 flex-shrink-0 text-neutral-400" />
-              ) : (
-                <ChevronRight className="w-3 h-3 flex-shrink-0 text-neutral-400" />
-              )}
-              <Layers className="w-3.5 h-3.5 flex-shrink-0 text-cyan-500" />
+              <ChevronRight
+                className={`w-3.5 h-3.5 text-neutral-400 transition-transform ${
+                  isTreeExpanded ? 'rotate-90' : ''
+                }`}
+              />
             </button>
             <span
               onClick={() => setIsTreeExpanded(!isTreeExpanded)}
-              className="truncate overflow-hidden whitespace-nowrap text-xs font-semibold text-neutral-300 cursor-pointer"
+              className="truncate overflow-hidden whitespace-nowrap text-xs font-semibold text-neutral-300 cursor-pointer uppercase tracking-wider"
               title="CÂY THƯ MỤC"
             >
               CÂY THƯ MỤC
@@ -610,7 +615,7 @@ export default function FileTreeExplorer({
       </div>
 
       {/* HORIZONTAL RESIZER BETWEEN TREE AND OUTLINE */}
-      {bothExpanded && (
+      {isOutlineExpanded && (
         <div
           onMouseDown={handleMouseDownHorizontalSplitter}
           className="h-1.5 w-full bg-[#181a1d] hover:bg-emerald-500/40 cursor-row-resize flex-shrink-0 border-y border-white/5 transition-colors z-20"
@@ -620,35 +625,36 @@ export default function FileTreeExplorer({
 
       {/* SECTION 2 (BOTTOM TIER): FILE OUTLINE */}
       <div
+        className={`flex flex-col border-t border-white/5 bg-[#181a1d] select-none ${
+          isOutlineExpanded ? 'flex-shrink-0' : 'h-8 flex-shrink-0'
+        }`}
         style={{
-          height: bothExpanded ? `calc(${100 - treeHeightPercent}% - 6px)` : isOutlineExpanded ? '100%' : 'auto',
+          height: isOutlineExpanded ? `calc(${100 - treeHeightPercent}% - 6px)` : '32px',
         }}
-        className="flex flex-col overflow-hidden flex-shrink-0 bg-slate-50/40 dark:bg-slate-950/20"
       >
-        {/* File Outline Header */}
-        <div className="flex items-center justify-between px-2 py-1.5 w-full overflow-hidden flex-nowrap bg-slate-50/90 dark:bg-slate-950/60 border-y border-slate-200 dark:border-slate-800 shrink-0 select-none">
-          <button
-            type="button"
-            onClick={() => setIsOutlineExpanded(!isOutlineExpanded)}
-            className="flex items-center gap-1 font-semibold text-[11px] uppercase tracking-wider text-neutral-400 hover:text-white transition flex-shrink-0 mr-1 cursor-pointer"
-            title="Đóng/Mở File Outline"
-          >
-            {isOutlineExpanded ? (
-              <ChevronDown className="w-3 h-3 text-neutral-400" />
-            ) : (
-              <ChevronRight className="w-3 h-3 text-neutral-400" />
-            )}
-            <ListTree className="w-3.5 h-3.5 text-indigo-500" />
-            <span>DÀN Ý TÀI LIỆU</span>
-          </button>
-          <span className="text-[10px] font-mono text-neutral-400 flex-shrink-0">
-            {outlineItems.length} mục
-          </span>
+        {/* Header luôn luôn render, không nằm trong điều kiện */}
+        <div
+          onClick={() => setIsOutlineExpanded(!isOutlineExpanded)}
+          className="h-8 px-2 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors select-none shrink-0"
+        >
+          <div className="flex items-center gap-1.5 min-w-0">
+            <ChevronRight
+              className={`w-3.5 h-3.5 text-neutral-400 transition-transform ${
+                isOutlineExpanded ? 'rotate-90' : ''
+              }`}
+            />
+            <span className="text-[11px] font-semibold tracking-wider text-neutral-300 uppercase truncate">
+              Dàn ý tài liệu
+            </span>
+          </div>
+          {outlineItems.length > 0 && (
+            <span className="text-[10px] text-neutral-500 pr-1 shrink-0">{outlineItems.length} mục</span>
+          )}
         </div>
 
         {/* Outline Items List */}
         {isOutlineExpanded && (
-          <div className="flex-1 min-h-0 overflow-y-auto p-1.5 space-y-0.5 scrollbar-thin">
+          <div className="flex-1 min-h-0 overflow-y-auto px-1 py-1 scrollbar-thin">
             {outlineItems.length > 0 ? (
               outlineItems.map((item) => {
                 const paddingLeft =

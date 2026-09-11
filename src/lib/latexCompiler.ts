@@ -1,3 +1,5 @@
+import { preprocessLatex } from '@/lib/latexPreprocessor';
+
 /** LaTeX-on-HTTP adapter. Source is sent only to the configured server, never as a URL. */
 export const SOURCE_LIMIT = 200_000;
 const PDF_LIMIT = 4_000_000;
@@ -21,6 +23,7 @@ async function boundedBody(response: Response, limit: number): Promise<Uint8Arra
   return result;
 }
 export async function compileLatex(source: string, signal?: AbortSignal): Promise<Uint8Array> {
+  const sanitizedSource = preprocessLatex(source);
   const endpoint = process.env.LATEX_COMPILER_URL || 'https://latex.ytotech.com/builds/sync';
   const url = new URL(endpoint);
   if (url.protocol !== 'https:' && !(process.env.NODE_ENV !== 'production' && ['localhost', '127.0.0.1'].includes(url.hostname))) {
@@ -32,7 +35,7 @@ export async function compileLatex(source: string, signal?: AbortSignal): Promis
   try {
     response = await fetch(url, { method: 'POST', headers, cache: 'no-store', redirect: 'error',
       signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(45000)]) : AbortSignal.timeout(45000),
-      body: JSON.stringify({compiler: 'xelatex', resources: [{main: true, path: 'document.tex', content: source}]}) });
+      body: JSON.stringify({compiler: 'xelatex', resources: [{main: true, path: 'document.tex', content: sanitizedSource}]}) });
     if (!response.ok) {
       const raw = new TextDecoder().decode(await boundedBody(response, 200_000));
       let log = raw;

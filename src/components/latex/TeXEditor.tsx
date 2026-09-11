@@ -32,13 +32,40 @@ export default function TeXEditor({
     return () => clearTimeout(timer);
   }, [ready]);
 
-  // Insert text at cursor position (from ribbon or tools)
+  // Insert text at cursor position (from ribbon or tools) with smart cursor placement
   useEffect(() => {
     if (!editorRef || !insertRequest) return;
     const selection = editorRef.getSelection();
-    editorRef.executeEdits('math-tools', [
-      { range: selection!, text: insertRequest.text, forceMoveMarkers: true },
-    ]);
+    if (!selection) return;
+
+    const snippetController = (editorRef as any).getContribution?.(
+      'snippetController2'
+    );
+
+    if (
+      snippetController &&
+      typeof snippetController.insert === 'function' &&
+      /\$\{\d+(?::[^\}]*)?\}|\$\d+/.test(insertRequest.text)
+    ) {
+      snippetController.insert(insertRequest.text);
+    } else {
+      const cleanText = insertRequest.text.replace(/\$\{\d+:?([^\}]*)\}|\$\d+/g, '$1');
+      editorRef.executeEdits('math-tools', [
+        { range: selection, text: cleanText, forceMoveMarkers: true },
+      ]);
+
+      // Jump cursor into first bracket/brace
+      const firstBracketIdx = cleanText.search(/[\{\[\(]/);
+      if (firstBracketIdx !== -1) {
+        const linesBefore = cleanText.substring(0, firstBracketIdx).split('\n');
+        const targetLine = selection.startLineNumber + linesBefore.length - 1;
+        const targetCol =
+          linesBefore.length === 1
+            ? selection.startColumn + firstBracketIdx + 1
+            : linesBefore[linesBefore.length - 1].length + 1;
+        editorRef.setPosition({ lineNumber: targetLine, column: targetCol });
+      }
+    }
     editorRef.focus();
   }, [editorRef, insertRequest]);
 

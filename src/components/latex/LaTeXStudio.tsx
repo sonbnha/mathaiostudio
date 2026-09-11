@@ -2069,91 +2069,78 @@ export default function LaTeXStudio({
             {activeActivityTab === 'search' && (
               <div className="h-full flex flex-col overflow-hidden text-xs select-none">
                 {/* Search Header */}
-                <div className="flex items-center justify-between px-2.5 py-2 bg-slate-50/90 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800 shrink-0 font-semibold text-[11px] uppercase tracking-wider text-neutral-400">
-                  <div className="flex items-center gap-1.5">
-                    <Search className="w-3.5 h-3.5 text-cyan-500" />
-                    <span>TÌM KIẾM TOÀN DỰ ÁN</span>
+                <div className="flex items-center justify-between px-2.5 py-2 bg-slate-50/90 dark:bg-[#181a1d] border-b border-white/5 shrink-0 font-semibold text-[11px] uppercase tracking-wider text-neutral-400">
+                  <div className="flex items-center gap-1.5 text-neutral-300">
+                    <Search className="w-3.5 h-3.5 text-neutral-400" />
+                    <span>Tìm kiếm</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => setIsSidebarOpen(false)}
-                    className="p-1 text-slate-400 hover:text-white rounded transition cursor-pointer"
-                    title="Thu gọn"
+                    className="w-3.5 h-3.5 text-neutral-400 hover:text-white cursor-pointer p-0.5 rounded hover:bg-white/10 transition-colors flex-shrink-0"
+                    title="Đóng bảng điều khiển"
                   >
-                    <ChevronLeft className="w-3.5 h-3.5" />
+                    <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
 
-                {/* Search Inputs Form */}
-                <div className="p-2 space-y-2 border-b border-slate-200 dark:border-white/10 shrink-0">
-                  <div className="relative flex items-center">
+                {/* Search Form (Overleaf Style) */}
+                <div className="border-b border-white/5 shrink-0">
+                  {/* Row 1: Input + Green Search Button */}
+                  <div className="flex items-center gap-1.5 px-2 pt-2">
                     <input
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Tìm kiếm trong tài liệu..."
-                      className="w-full bg-slate-100 dark:bg-[#141618] border border-slate-200 dark:border-white/10 rounded px-2 py-1.5 text-xs text-slate-800 dark:text-slate-200 outline-none pr-16 focus:border-cyan-500"
+                      placeholder="Tìm kiếm trong tất cả tệp..."
+                      className="flex-1 bg-[#1e2227] border border-white/10 rounded px-2 py-1 text-xs text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-emerald-500"
                     />
-                    <div className="absolute right-1 flex items-center gap-0.5">
-                      <button
-                        type="button"
-                        onClick={() => setMatchCase(!matchCase)}
-                        className={`px-1 py-0.5 text-[10px] font-mono rounded transition cursor-pointer ${
-                          matchCase ? 'bg-cyan-500 text-white' : 'text-neutral-400 hover:text-white'
-                        }`}
-                        title="Khớp chữ hoa/thường (Match Case)"
-                      >
-                        Aa
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setWholeWord(!wholeWord)}
-                        className={`px-1 py-0.5 text-[10px] font-mono rounded transition cursor-pointer ${
-                          wholeWord ? 'bg-cyan-500 text-white' : 'text-neutral-400 hover:text-white'
-                        }`}
-                        title="Khớp nguyên từ (Whole Word)"
-                      >
-                        \b
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setUseRegex(!useRegex)}
-                        className={`px-1 py-0.5 text-[10px] font-mono rounded transition cursor-pointer ${
-                          useRegex ? 'bg-cyan-500 text-white' : 'text-neutral-400 hover:text-white'
-                        }`}
-                        title="Biểu thức chính quy (Regex)"
-                      >
-                        .*
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-1">
-                    <input
-                      type="text"
-                      value={replaceQuery}
-                      onChange={(e) => setReplaceQuery(e.target.value)}
-                      placeholder="Thay thế bằng..."
-                      className="flex-1 bg-slate-100 dark:bg-[#141618] border border-slate-200 dark:border-white/10 rounded px-2 py-1.5 text-xs text-slate-800 dark:text-slate-200 outline-none focus:border-cyan-500"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between gap-1.5 pt-0.5">
                     <button
                       type="button"
-                      disabled={!searchQuery}
-                      onClick={handleReplaceNext}
-                      className="flex-1 py-1 px-2 rounded bg-slate-200 dark:bg-neutral-800 hover:bg-slate-300 dark:hover:bg-neutral-700 text-slate-700 dark:text-neutral-300 text-[11px] font-medium transition cursor-pointer disabled:opacity-40"
+                      onClick={() => {}}
+                      className="flex-shrink-0 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium px-2.5 py-1 rounded transition-colors cursor-pointer"
                     >
-                      Thay thế
+                      Tìm kiếm
+                    </button>
+                  </div>
+
+                  {/* Row 2: Aa, .*, W filter toggle buttons */}
+                  <div className="flex items-center gap-1 px-2 pt-1.5 pb-2">
+                    <button
+                      type="button"
+                      onClick={() => setMatchCase(!matchCase)}
+                      className={`px-1.5 py-0.5 text-[11px] rounded font-mono border transition-colors cursor-pointer ${
+                        matchCase
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
+                          : 'border-white/10 bg-transparent text-neutral-400 hover:text-neutral-200 hover:bg-white/5'
+                      }`}
+                      title="Khớp chữ hoa/thường (Match Case)"
+                    >
+                      Aa
                     </button>
                     <button
                       type="button"
-                      disabled={!searchQuery}
-                      onClick={handleReplaceAll}
-                      className="flex-1 py-1 px-2 rounded bg-cyan-600 hover:bg-cyan-500 text-white text-[11px] font-semibold transition cursor-pointer disabled:opacity-40 shadow-xs"
+                      onClick={() => setUseRegex(!useRegex)}
+                      className={`px-1.5 py-0.5 text-[11px] rounded font-mono border transition-colors cursor-pointer ${
+                        useRegex
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
+                          : 'border-white/10 bg-transparent text-neutral-400 hover:text-neutral-200 hover:bg-white/5'
+                      }`}
+                      title="Biểu thức chính quy (Regex)"
                     >
-                      Thay tất cả
+                      .*
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setWholeWord(!wholeWord)}
+                      className={`px-1.5 py-0.5 text-[11px] rounded font-mono border transition-colors cursor-pointer ${
+                        wholeWord
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
+                          : 'border-white/10 bg-transparent text-neutral-400 hover:text-neutral-200 hover:bg-white/5'
+                      }`}
+                      title="Khớp nguyên từ (Whole Word)"
+                    >
+                      W
                     </button>
                   </div>
                 </div>
@@ -2196,7 +2183,7 @@ export default function LaTeXStudio({
             {activeActivityTab === 'ai' && (
               <div className="h-full flex flex-col overflow-hidden text-xs select-none">
                 {/* AI Header */}
-                <div className="flex items-center justify-between px-2.5 py-2 bg-slate-50/90 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800 shrink-0 font-semibold text-[11px] uppercase tracking-wider text-neutral-400">
+                <div className="flex items-center justify-between px-2.5 py-2 bg-slate-50/90 dark:bg-[#181a1d] border-b border-white/5 shrink-0 font-semibold text-[11px] uppercase tracking-wider text-neutral-400">
                   <div className="flex items-center gap-1.5 text-indigo-400">
                     <Sparkles className="w-3.5 h-3.5" />
                     <span>TRỢ LÝ AI SOẠN THẢO</span>
@@ -2204,10 +2191,10 @@ export default function LaTeXStudio({
                   <button
                     type="button"
                     onClick={() => setIsSidebarOpen(false)}
-                    className="p-1 text-slate-400 hover:text-white rounded transition cursor-pointer"
-                    title="Thu gọn"
+                    className="w-3.5 h-3.5 text-neutral-400 hover:text-white cursor-pointer p-0.5 rounded hover:bg-white/10 transition-colors flex-shrink-0"
+                    title="Đóng bảng điều khiển"
                   >
-                    <ChevronLeft className="w-3.5 h-3.5" />
+                    <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
 

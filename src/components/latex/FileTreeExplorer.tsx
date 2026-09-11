@@ -366,16 +366,14 @@ export default function FileTreeExplorer({
     >
       {/* SECTION 1 (TOP TIER): FILE TREE */}
       <div
-        style={{
-          height: isOutlineExpanded
-            ? isTreeExpanded
-              ? `${treeHeightPercent}%`
-              : '32px'
+        style={bothExpanded ? { height: `${treeHeightPercent}%` } : undefined}
+        className={
+          bothExpanded
+            ? 'flex flex-col overflow-hidden flex-shrink-0'
             : isTreeExpanded
-            ? 'calc(100% - 32px)'
-            : '32px',
-        }}
-        className="flex flex-col overflow-hidden flex-shrink-0"
+            ? 'flex-1 min-h-0 h-full flex flex-col overflow-hidden'
+            : 'h-8 flex-shrink-0 border-b border-white/5 overflow-hidden flex flex-col'
+        }
       >
         {/* File Tree Header */}
         <div className="flex items-center justify-between px-2 h-8 border-b border-white/5 bg-[#181a1d] overflow-hidden select-none shrink-0">
@@ -615,7 +613,7 @@ export default function FileTreeExplorer({
       </div>
 
       {/* HORIZONTAL RESIZER BETWEEN TREE AND OUTLINE */}
-      {isOutlineExpanded && (
+      {bothExpanded && (
         <div
           onMouseDown={handleMouseDownHorizontalSplitter}
           className="h-1.5 w-full bg-[#181a1d] hover:bg-emerald-500/40 cursor-row-resize flex-shrink-0 border-y border-white/5 transition-colors z-20"
@@ -626,11 +624,13 @@ export default function FileTreeExplorer({
       {/* SECTION 2 (BOTTOM TIER): FILE OUTLINE */}
       <div
         className={`flex flex-col border-t border-white/5 bg-[#181a1d] select-none ${
-          isOutlineExpanded ? 'flex-shrink-0' : 'h-8 flex-shrink-0'
+          bothExpanded
+            ? 'flex-shrink-0 overflow-hidden'
+            : isOutlineExpanded
+            ? 'flex-1 min-h-0 h-full overflow-hidden'
+            : 'h-8 flex-shrink-0 overflow-hidden'
         }`}
-        style={{
-          height: isOutlineExpanded ? `calc(${100 - treeHeightPercent}% - 6px)` : '32px',
-        }}
+        style={bothExpanded ? { height: `calc(${100 - treeHeightPercent}% - 6px)` } : undefined}
       >
         {/* Header luôn luôn render, không nằm trong điều kiện */}
         <div

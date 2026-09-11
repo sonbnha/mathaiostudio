@@ -1,21 +1,44 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import {
   Compass,
   BookOpen,
-  Shield,
-  Users,
-  Settings,
-  Key,
-  Maximize2,
+  FileCode,
+  Plus,
+  Search,
+  Copy,
+  Trash2,
+  Edit3,
+  Clock,
+  LayoutGrid,
+  List as ListIcon,
+  Sparkles,
+  ArrowRight,
+  MoreVertical,
+  Shapes,
+  GraduationCap,
+  FileText,
+  CheckCircle2,
+  X,
+  Layers,
+  ExternalLink,
+  Filter,
 } from 'lucide-react';
 import { APP_VERSION } from '@/config/version';
-import { useApiKey } from '@/context/ApiKeyContext';
-import UserProfileDropdown from '@/components/header/UserProfileDropdown';
-import ThemeToggleButton from '@/components/header/ThemeToggleButton';
+import AppHeader from '@/components/header/AppHeader';
+import { LATEX_TEMPLATES } from '@/components/latex/LaTeXTemplates';
+import {
+  getAllProjects,
+  createNewProject,
+  deleteProject,
+  duplicateProject,
+  renameProject,
+  type ProjectItem,
+  type ProjectType,
+} from '@/lib/storage/projectStore';
 
 export interface AuthenticatedToolsDashboardProps {
   user: any;
@@ -26,398 +49,765 @@ export default function AuthenticatedToolsDashboard({
   user,
   onLogout,
 }: AuthenticatedToolsDashboardProps) {
-  const pathname = usePathname();
-  const { openApiKeyModal, isCustomKeyActive } = useApiKey();
   const router = useRouter();
 
-  const handleLogoutClick = async () => {
-    await onLogout();
-    router.refresh();
+  // Projects state
+  const [projects, setProjects] = useState<ProjectItem[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [typeFilter, setTypeFilter] = useState<ProjectType | 'all'>('all');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+  // Creation Modals
+  const [createType, setCreateType] = useState<ProjectType | null>(null);
+  const [newTitle, setNewTitle] = useState('');
+  const [newGrade, setNewGrade] = useState('Toán 10');
+  const [selectedTemplateId, setSelectedTemplateId] = useState('thpt_2025');
+
+  // Rename modal
+  const [renamingProject, setRenamingProject] = useState<ProjectItem | null>(null);
+  const [renameTitleInput, setRenameTitleInput] = useState('');
+
+  // Open action menu popover tracking
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setProjects(getAllProjects());
+  }, []);
+
+  const refreshProjects = () => {
+    setProjects(getAllProjects());
   };
 
-  // Role check
-  const role = (user?.role || '').toLowerCase();
-  const isAdmin = Boolean(role === 'admin' || role === 'superadmin' || user?.is_admin);
+  const displayName =
+    user?.name || user?.username || user?.email?.split('@')[0] || 'Thầy/Cô';
 
-  const displayName = user?.name || user?.username || user?.email?.split('@')[0] || 'Thầy/Cô';
+  // Filter and search
+  const filteredProjects = useMemo(() => {
+    return projects.filter((item) => {
+      const matchesSearch =
+        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (item.metadata?.topic && item.metadata.topic.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (item.metadata?.grade && item.metadata.grade.toLowerCase().includes(searchQuery.toLowerCase()));
+
+      if (!matchesSearch) return false;
+      if (typeFilter === 'all') return true;
+      return item.type === typeFilter;
+    });
+  }, [projects, searchQuery, typeFilter]);
+
+  // Statistics
+  const stats = useMemo(() => {
+    const total = projects.length;
+    const geometry = projects.filter((p) => p.type === 'geometry').length;
+    const lessonPlan = projects.filter((p) => p.type === 'lesson-plan').length;
+    const latex = projects.filter((p) => p.type === 'latex').length;
+    return { total, geometry, lessonPlan, latex };
+  }, [projects]);
+
+  // Handle open project
+  const handleOpenProject = (item: ProjectItem) => {
+    if (item.type === 'geometry') {
+      router.push(`/geometry?id=${encodeURIComponent(item.id)}`);
+    } else if (item.type === 'lesson-plan') {
+      router.push(`/lesson-plan?id=${encodeURIComponent(item.id)}`);
+    } else if (item.type === 'latex') {
+      router.push(`/latex/${encodeURIComponent(item.id)}`);
+    }
+  };
+
+  // Handle modal submit
+  const handleCreateSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!createType) return;
+
+    let metadata: Record<string, any> = {};
+    if (createType === 'geometry') {
+      metadata = { topic: 'Hình học & Đại số trực quan', badge: 'SVG / TikZ' };
+    } else if (createType === 'lesson-plan') {
+      metadata = { grade: newGrade, badge: 'Chuẩn 5512' };
+    } else if (createType === 'latex') {
+      const tpl = LATEX_TEMPLATES.find((t) => t.id === selectedTemplateId);
+      metadata = { templateId: selectedTemplateId, badge: tpl?.badge || 'XeLaTeX' };
+    }
+
+    const created = createNewProject(createType, newTitle, metadata);
+    setCreateType(null);
+    setNewTitle('');
+    refreshProjects();
+    handleOpenProject(created);
+  };
+
+  // Format relative date
+  const formatRelativeTime = (timestamp: number) => {
+    const diffMs = Date.now() - timestamp;
+    const diffHours = diffMs / 3600000;
+    if (diffHours < 1) return 'Vừa cập nhật';
+    if (diffHours < 24) return `${Math.floor(diffHours)} giờ trước`;
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays === 1) return 'Hôm qua';
+    if (diffDays < 30) return `${diffDays} ngày trước`;
+    return new Date(timestamp).toLocaleDateString('vi-VN');
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased selection:bg-cyan-500 selection:text-slate-950 flex flex-col justify-between relative overflow-hidden transition-colors duration-200">
-      {/* Subtle Background Glows */}
+      {/* Background Decorative Glows */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[850px] h-[420px] bg-cyan-500/10 rounded-full blur-[150px]" />
         <div className="absolute top-1/3 -right-40 w-[520px] h-[520px] bg-indigo-500/10 rounded-full blur-[170px]" />
         <div className="absolute -bottom-20 -left-40 w-[480px] h-[480px] bg-emerald-500/10 rounded-full blur-[170px]" />
       </div>
 
-      {/* Top Header Bar */}
-      <header className="relative z-30 w-full border-b border-slate-200 dark:border-slate-800/60 bg-white/80 dark:bg-slate-950/60 backdrop-blur-md px-4 sm:px-8 py-3.5 flex items-center justify-between transition-colors">
-        <div className="flex items-center gap-3">
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-cyan-500/20 group-hover:scale-105 transition-transform">
-              <Compass className="w-6 h-6" />
+      {/* 1. Global Standardized Header */}
+      <AppHeader
+        badge="Workspace Hub"
+        subtitle="Trung tâm Quản lý Dự án &amp; Hệ sinh thái Toán học"
+      />
+
+      {/* 2. Main Workspace Hub Content */}
+      <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-8">
+        {/* Welcome Greeting & Summary */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xl sm:text-2xl font-black bg-gradient-to-r from-slate-900 via-cyan-900 to-indigo-900 dark:from-white dark:via-cyan-200 dark:to-indigo-300 bg-clip-text text-transparent">
+                Xin chào, {displayName}!
+              </span>
+              <span className="text-xl">👋</span>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-lg bg-gradient-to-r from-slate-900 via-slate-800 to-slate-600 dark:from-white dark:via-slate-100 dark:to-slate-400 bg-clip-text text-transparent">
-                  MathAIO
-                </span>
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">
-                  Studio
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:block">
-                Hệ Sinh Thái Ứng Dụng Toán Học Trực Quan
-              </p>
-            </div>
-          </Link>
-
-          <Link
-            href={pathname ? `/changelog?from=${encodeURIComponent(pathname)}` : '/changelog'}
-            title="Xem nhật ký phát hành (Changelog)"
-            className="text-[11px] font-mono font-medium px-2.5 py-1 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-400 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition flex items-center gap-1 cursor-pointer"
-          >
-            <span>{APP_VERSION.fullString}</span>
-          </Link>
-        </div>
-
-        {/* Right Nav Utilities */}
-        <div className="flex items-center gap-2.5">
-          {/* Badge Gemini Key */}
-          <button
-            type="button"
-            onClick={() => openApiKeyModal()}
-            className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600 shrink-0 shadow-xs transition cursor-pointer"
-            title="Cấu hình Gemini API Key"
-          >
-            <Key className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 shrink-0" />
-            <span>{isCustomKeyActive ? 'Gemini Key Cá nhân' : 'Gemini Key AUTO'}</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(52,211,153,0.8)] shrink-0" />
-          </button>
-
-          {/* Nút "Quản trị": CHỈ HIỂN THỊ KHI isAdmin === true */}
-          {isAdmin && (
-            <Link
-              href="/admin"
-              className="px-3 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900 border border-transparent hover:border-slate-200 dark:hover:border-slate-800 transition text-xs flex items-center gap-1.5"
-              title="Cổng quản trị hệ thống"
-            >
-              <Settings className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline font-medium">Quản trị</span>
-            </Link>
-          )}
-
-          {/* User Profile Dropdown */}
-          <UserProfileDropdown user={user} onLogout={handleLogoutClick} />
-
-          {/* Theme Toggle Button */}
-          <ThemeToggleButton />
-        </div>
-      </header>
-
-      {/* Main Hub Content: Minimal Launcher without Hero text (Above-the-fold) */}
-      <main className="relative z-10 flex-1 max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 w-full flex flex-col justify-center">
-        {/* Minimal Hub Header */}
-        <div className="flex items-center justify-between mb-5 pt-1 border-b border-slate-200 dark:border-slate-800/60 pb-3">
-          <div className="flex items-center gap-2 text-xs font-mono text-slate-500 dark:text-slate-400">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />
-            <span className="tracking-wide">KHÔNG GIAN LÀM VIỆC • CHỌN CÔNG CỤ ĐỂ BẮT ĐẦU</span>
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
+              Quản lý toàn bộ tệp hình học, giáo án bài dạy và tài liệu LaTeX của bạn tại một nơi tập trung.
+            </p>
           </div>
 
-          <div className="hidden sm:flex items-center gap-2 text-xs text-slate-500 font-mono">
-            <span>Tài khoản:</span>
-            <span className="text-slate-700 dark:text-slate-300 font-semibold bg-slate-100 dark:bg-slate-900 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-800">
-              {displayName}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+            <div className="px-3.5 py-1.5 rounded-2xl bg-white/80 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 shadow-2xs flex items-center gap-2 text-xs">
+              <span className="font-semibold text-slate-700 dark:text-slate-300">Tổng số tệp:</span>
+              <span className="font-bold text-cyan-600 dark:text-cyan-400 font-mono">{stats.total}</span>
+            </div>
+            <div className="px-3.5 py-1.5 rounded-2xl bg-white/80 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 shadow-2xs flex items-center gap-2 text-xs">
+              <span className="w-2 h-2 rounded-full bg-cyan-500" />
+              <span className="text-slate-600 dark:text-slate-400">Hình:</span>
+              <span className="font-bold font-mono">{stats.geometry}</span>
+            </div>
+            <div className="px-3.5 py-1.5 rounded-2xl bg-white/80 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 shadow-2xs flex items-center gap-2 text-xs">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span className="text-slate-600 dark:text-slate-400">Giáo án:</span>
+              <span className="font-bold font-mono">{stats.lessonPlan}</span>
+            </div>
+            <div className="px-3.5 py-1.5 rounded-2xl bg-white/80 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 shadow-2xs flex items-center gap-2 text-xs">
+              <span className="w-2 h-2 rounded-full bg-rose-500" />
+              <span className="text-slate-600 dark:text-slate-400">LaTeX:</span>
+              <span className="font-bold font-mono">{stats.latex}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* SECTION 1: Quick Create Ribbon / Template Launcher (3 Big Cards) */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-cyan-500" />
+              <span>Khởi tạo dự án &amp; Công cụ mới</span>
+            </h2>
+            <span className="text-xs text-slate-400 hidden sm:inline">
+              Chọn công cụ để mở không gian làm việc chuyên biệt
             </span>
           </div>
-        </div>
 
-        {/* Bento Grid: Right at the top */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {/* Bento Card 1: Geometry Canvas */}
-          <Link
-            href="/geometry"
-            className="group relative col-span-1 bg-white/90 dark:bg-slate-900 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/90 dark:border-slate-800/90 hover:border-cyan-500/50 rounded-2xl p-5 sm:p-6 transition-all duration-300 shadow-md dark:shadow-xl shadow-slate-200/60 dark:shadow-black/40 hover:shadow-cyan-500/10 dark:hover:shadow-cyan-950/20 flex flex-col justify-between backdrop-blur-sm overflow-hidden"
-          >
-            {/* Top decorative glow */}
-            <div className="absolute top-0 right-0 w-80 h-80 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none group-hover:bg-cyan-500/10 transition-colors" />
-
-            <div className="relative z-10 space-y-3.5">
-              <div className="flex flex-col items-start gap-3">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950/70 p-2.5 shrink-0 rounded-xl border border-cyan-200 dark:border-cyan-800/60 group-hover:scale-105 transition-transform">
-                    <Compass className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-300 transition-colors">
-                      Vẽ Hình Học Trực Quan AI
-                    </h2>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                      Mô hình hóa hình học phẳng, toạ độ giải tích &amp; công thức LaTeX
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-mono font-semibold px-2.5 py-0.5 rounded-full bg-cyan-100/80 dark:bg-cyan-950/80 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800/80">
-                    SVG Dynamic Engine
-                  </span>
-                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                    {APP_VERSION.version}
-                  </span>
-                </div>
-              </div>
-
-              {/* Interactive Mockup Preview Window */}
-              <div className="w-full rounded-xl bg-slate-950/90 border border-slate-800/80 p-3 sm:p-4 shadow-inner relative group/mockup overflow-hidden">
-                {/* Mini Canvas Ribbon Toolbar */}
-                <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 text-[10px] text-slate-400 font-mono">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500/80" />
-                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
-                    <span className="ml-2 text-slate-500 hidden sm:inline">canvas-preview.svg (800 × 520)</span>
-                  </div>
-                  <div className="flex items-center gap-1 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
-                    <span className="text-cyan-400 font-semibold">100% Vector</span>
-                    <Maximize2 className="w-2.5 h-2.5 text-slate-500 ml-1" />
-                  </div>
-                </div>
-
-                {/* SVG Mockup Canvas Graphic */}
-                <div className="h-40 sm:h-48 w-full flex items-center justify-center relative bg-radial from-slate-900/80 to-slate-950 rounded-lg overflow-hidden border border-slate-900">
-                  {/* Grid Lines Pattern */}
-                  <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:24px_24px] opacity-25" />
-
-                  {/* Geometric SVG Illustration */}
-                  <svg
-                    viewBox="0 0 400 240"
-                    className="w-full h-full max-h-48 relative z-10 filter drop-shadow-[0_0_12px_rgba(6,182,212,0.25)]"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <circle cx="200" cy="120" r="85" stroke="#38bdf8" strokeWidth="1.75" strokeDasharray="4 3" opacity="0.6" />
-                    
-                    <polygon
-                      points="200,38 122,175 278,175"
-                      fill="rgba(6, 182, 212, 0.06)"
-                      stroke="#06b6d4"
-                      strokeWidth="2.2"
-                      strokeLinejoin="round"
-                    />
-
-                    <line x1="200" y1="38" x2="200" y2="175" stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="3 3" opacity="0.8" />
-                    <rect x="200" y="163" width="12" height="12" stroke="#f59e0b" strokeWidth="1.2" fill="none" opacity="0.7" />
-
-                    <circle cx="200" cy="130" r="42" stroke="#ec4899" strokeWidth="1.5" strokeDasharray="2 2" opacity="0.8" />
-                    <circle cx="200" cy="130" r="3" fill="#ec4899" />
-                    <text x="208" y="132" fill="#f472b6" fontSize="10" fontFamily="monospace" fontWeight="bold">I</text>
-
-                    <line x1="200" y1="130" x2="200" y2="172" stroke="#ec4899" strokeWidth="1.2" />
-                    <text x="188" y="156" fill="#f472b6" fontSize="9" fontFamily="monospace">r</text>
-
-                    <circle cx="200" cy="38" r="4" fill="#38bdf8" />
-                    <text x="195" y="26" fill="#e0f2fe" fontSize="12" fontWeight="bold" fontFamily="sans-serif">A</text>
-
-                    <circle cx="122" cy="175" r="4" fill="#38bdf8" />
-                    <text x="105" y="185" fill="#e0f2fe" fontSize="12" fontWeight="bold" fontFamily="sans-serif">B</text>
-
-                    <circle cx="278" cy="175" r="4" fill="#38bdf8" />
-                    <text x="286" y="185" fill="#e0f2fe" fontSize="12" fontWeight="bold" fontFamily="sans-serif">C</text>
-
-                    <circle cx="200" cy="175" r="3" fill="#f59e0b" />
-                    <text x="194" y="194" fill="#fde68a" fontSize="11" fontWeight="bold" fontFamily="sans-serif">H</text>
-                  </svg>
-
-                  {/* Sample Prompt Overlay */}
-                  <div className="absolute bottom-2 left-2 right-2 bg-slate-900/90 border border-slate-800 px-2.5 py-1.5 rounded-lg flex items-center justify-between text-[11px] text-slate-300 backdrop-blur-md">
-                    <span className="truncate font-mono text-slate-400">
-                      Prompt: &quot;Cho tam giác ABC nhọn nội tiếp (O), kẻ đường cao AH...&quot;
-                    </span>
-                    <span className="shrink-0 font-mono text-[10px] text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/60 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      0.8s
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom Card Footer */}
-            <div className="relative z-10 pt-3.5 mt-2 border-t border-slate-200 dark:border-slate-800/70 flex items-center justify-between text-xs">
-              <span className="font-semibold text-cyan-600 dark:text-cyan-400 flex items-center gap-1 group-hover:translate-x-1.5 transition-transform">
-                Mở Không Gian Vẽ Canvas →
-              </span>
-              <span className="text-[11px] font-mono text-slate-500">TikZ &amp; SVG Ready</span>
-            </div>
-          </Link>
-
-          <Link href="/latex" className="group rounded-2xl p-6 border border-slate-200 dark:border-slate-800 hover:border-rose-500/60 bg-white/90 dark:bg-slate-900 hover:bg-white dark:hover:bg-slate-800 transition-colors flex flex-col justify-between gap-5 shadow-md">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-rose-400 bg-rose-950/60 p-3 rounded-xl border border-rose-800/60 font-serif font-bold text-xl">TeX</span>
-              <span className="text-xs text-rose-600 dark:text-rose-300 border border-rose-500/30 rounded-full px-2 py-1">PDF Engine v1.0</span>
-            </div>
-            <div><h2 className="text-lg font-bold mb-3">Biên Soạn &amp; Xuất Bản LaTeX</h2>
-              <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">Biên tập mã TeX/LaTeX chuyên sâu, xem trước trực quan và xuất bản đề thi, tài liệu toán học chuẩn PDF in ấn.</p>
-            </div>
-            <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-5 font-serif text-center text-xl">∫₀¹ x² dx = ⅓<p className="mt-3 font-sans text-xs text-slate-500">A4 · Toán học · Đề thi · TikZ</p></div>
-            <span className="text-rose-600 dark:text-rose-400 font-semibold text-sm">Mở LaTeX Studio →</span>
-          </Link>
-
-          {/* Bento Card 2: TOOL 2 - Soạn Giáo Án 5512 (1 CỘT: col-span-1) */}
-          <Link
-            href="/lesson-plan"
-            className="group relative col-span-1 bg-white/90 dark:bg-slate-900 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/90 dark:border-slate-800/90 hover:border-emerald-500/50 rounded-2xl p-5 sm:p-6 transition-all duration-300 shadow-md dark:shadow-xl shadow-slate-200/60 dark:shadow-black/40 hover:shadow-emerald-500/10 dark:hover:shadow-emerald-950/20 flex flex-col justify-between backdrop-blur-sm overflow-hidden"
-          >
-            <div className="space-y-3.5">
-              <div className="flex items-center justify-between">
-                <div className="text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/70 p-2.5 rounded-xl border border-emerald-200 dark:border-emerald-800/60 group-hover:scale-105 transition-transform">
-                  <BookOpen className="w-5 h-5" />
-                </div>
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-100/80 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/80">
-                  Chuẩn 5512 BGD&amp;ĐT
-                </span>
-              </div>
-
-              <div>
-                <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-300 transition-colors">
-                  Soạn Giáo Án Chuẩn 5512
-                </h2>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                  Tự động hóa tiến trình 4 hoạt động dạy học, ma trận đề thi và kế hoạch bài dạy môn Toán.
-                </p>
-              </div>
-
-              {/* 4-Step Methodology Preview Stack */}
-              <div className="space-y-1.5 pt-1">
-                <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800/80 flex items-center justify-between text-xs">
-                  <span className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-medium">
-                    <span className="w-5 h-5 rounded-md bg-cyan-500/10 dark:bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center text-[10px] font-bold">1</span>
-                    <span>HĐ Khởi động</span>
-                  </span>
-                  <span className="text-[10px] font-mono text-slate-500">Tình huống</span>
-                </div>
-
-                <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800/80 flex items-center justify-between text-xs">
-                  <span className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-medium">
-                    <span className="w-5 h-5 rounded-md bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-[10px] font-bold">2</span>
-                    <span>HĐ Hình thành kiến thức</span>
-                  </span>
-                  <span className="text-[10px] font-mono text-indigo-600 dark:text-indigo-400">Định lý + Hình</span>
-                </div>
-
-                <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800/80 flex items-center justify-between text-xs">
-                  <span className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-medium">
-                    <span className="w-5 h-5 rounded-md bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-[10px] font-bold">3</span>
-                    <span>HĐ Luyện tập</span>
-                  </span>
-                  <span className="text-[10px] font-mono text-slate-500">Phiếu bài tập</span>
-                </div>
-
-                <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800/80 flex items-center justify-between text-xs">
-                  <span className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-medium">
-                    <span className="w-5 h-5 rounded-md bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center text-[10px] font-bold">4</span>
-                    <span>HĐ Vận dụng &amp; Mở rộng</span>
-                  </span>
-                  <span className="text-[10px] font-mono text-slate-500">Thực tiễn</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom Card Footer */}
-            <div className="pt-3.5 mt-2 border-t border-slate-200 dark:border-slate-800/70 flex items-center justify-between text-xs">
-              <span className="font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 group-hover:translate-x-1.5 transition-transform">
-                Soạn Giáo Án Ngay →
-              </span>
-              <span className="text-[11px] font-mono text-slate-500">Word A4 Sync</span>
-            </div>
-          </Link>
-        </div>
-
-        {/* Hàng 2: Quản trị và cộng đồng; tự cân theo quyền tài khoản */}
-        <div className={`grid grid-cols-1 ${isAdmin ? 'md:grid-cols-2' : ''} gap-5 mt-5`}>
-          {/* Bento Card 4: Quản Trị Hệ Thống (CHỈ HIỂN THỊ NẾU LÀ ADMIN) */}
-          {isAdmin && (
-            <Link
-              href="/admin"
-              className="group relative bg-white/90 dark:bg-slate-900/40 hover:bg-white dark:hover:bg-slate-900/70 border border-slate-200 dark:border-slate-800/80 hover:border-purple-500/50 rounded-2xl p-5 transition-all duration-300 shadow-sm dark:shadow-lg dark:shadow-black/20 hover:shadow-purple-950/20 flex flex-col justify-between backdrop-blur-sm"
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-5">
+            {/* Card 1: Geometry Canvas */}
+            <div
+              onClick={() => {
+                setCreateType('geometry');
+                setNewTitle(`Hinh_hoc_${new Date().toISOString().slice(0, 10)}`);
+              }}
+              className="group relative p-6 rounded-3xl border border-cyan-200/80 dark:border-cyan-900/50 bg-gradient-to-br from-cyan-500/10 via-white to-blue-500/5 dark:from-cyan-950/40 dark:via-slate-900/70 dark:to-blue-950/30 hover:border-cyan-500/60 hover:shadow-xl hover:shadow-cyan-500/10 transition-all duration-300 cursor-pointer flex flex-col justify-between gap-5"
             >
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/60 p-2 rounded-xl border border-purple-200 dark:border-purple-800/60 group-hover:scale-105 transition-transform">
-                    <Shield className="w-4 h-4" />
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 text-white flex items-center justify-center shadow-md shadow-cyan-500/30 group-hover:scale-110 transition-transform">
+                    <Compass className="w-6 h-6" />
                   </div>
-                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/80">
-                    Super Admin
+                  <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30">
+                    SVG &amp; TikZ
                   </span>
                 </div>
 
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-300 transition-colors flex items-center gap-1.5">
-                    <span>Cổng Quản Trị Hệ Thống</span>
+                  <h3 className="text-base font-extrabold text-slate-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">
+                    Tạo Hình Học Mới
                   </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                    Cấp phát License Keys, thiết lập quota người dùng, phân quyền giáo viên và quản lý bản phát hành Changelog.
+                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mt-1">
+                    Dựng hình phẳng, không gian, tự động tính toạ độ và xuất mã TikZ &amp; SVG chuẩn nét.
                   </p>
                 </div>
               </div>
 
-              <div className="pt-3 mt-3 border-t border-slate-100 dark:border-slate-800/60 flex items-center justify-between text-xs">
-                <span className="font-semibold text-purple-600 dark:text-purple-400 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                  Vào Quản Trị →
+              <div className="pt-3 border-t border-cyan-100 dark:border-cyan-900/40 flex items-center justify-between text-xs font-bold text-cyan-600 dark:text-cyan-400 group-hover:translate-x-1 transition-transform">
+                <span className="flex items-center gap-1.5">
+                  <Plus className="w-4 h-4" />
+                  <span>Khởi tạo Canvas</span>
                 </span>
-                <span className="text-[10px] font-mono text-slate-500">Admin Portal</span>
-              </div>
-            </Link>
-          )}
-
-          {/* Bento Card 5: Cộng Đồng Chia Sẻ Giáo Án */}
-          <div className="relative bg-slate-50/80 dark:bg-slate-900/20 border border-dashed border-slate-300 dark:border-slate-800/80 rounded-2xl p-5 opacity-75 flex flex-col justify-between cursor-not-allowed">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="text-slate-500 dark:text-slate-400 bg-slate-200/60 dark:bg-slate-800/50 p-2 rounded-xl border border-slate-300/60 dark:border-slate-700/50">
-                  <Users className="w-4 h-4" />
-                </div>
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-700/80">
-                  Sắp ra mắt
-                </span>
-              </div>
-
-              <div>
-                <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                  Cộng Đồng Chia Sẻ Giáo Án
-                </h3>
-                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                  Nền tảng mở kết nối giáo viên toàn quốc chia sẻ bài giảng điện tử, tệp hình vẽ SVG và tài liệu giảng dạy.
-                </p>
+                <ArrowRight className="w-4 h-4" />
               </div>
             </div>
 
-            <div className="pt-3 mt-3 border-t border-slate-200 dark:border-slate-800/40 flex items-center justify-between text-xs text-slate-500">
-              <span>Đang hoàn thiện...</span>
-              <span className="text-[10px] font-mono text-slate-400 dark:text-slate-600">Community</span>
+            {/* Card 2: Lesson Plan 5512 */}
+            <div
+              onClick={() => {
+                setCreateType('lesson-plan');
+                setNewTitle(`Giao_an_Toan_${new Date().toISOString().slice(0, 10)}`);
+              }}
+              className="group relative p-6 rounded-3xl border border-emerald-200/80 dark:border-emerald-900/50 bg-gradient-to-br from-emerald-500/10 via-white to-teal-500/5 dark:from-emerald-950/40 dark:via-slate-900/70 dark:to-teal-950/30 hover:border-emerald-500/60 hover:shadow-xl hover:shadow-emerald-500/10 transition-all duration-300 cursor-pointer flex flex-col justify-between gap-5"
+            >
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-600 text-white flex items-center justify-center shadow-md shadow-emerald-500/30 group-hover:scale-110 transition-transform">
+                    <BookOpen className="w-6 h-6" />
+                  </div>
+                  <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                    Chuẩn 5512
+                  </span>
+                </div>
+
+                <div>
+                  <h3 className="text-base font-extrabold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                    Tạo Giáo Án Mới
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mt-1">
+                    Biên soạn kế hoạch bài dạy chuẩn 4 hoạt động BGD&amp;ĐT, tích hợp ma trận đề và xuất Word (.docx).
+                  </p>
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-emerald-100 dark:border-emerald-900/40 flex items-center justify-between text-xs font-bold text-emerald-600 dark:text-emerald-400 group-hover:translate-x-1 transition-transform">
+                <span className="flex items-center gap-1.5">
+                  <Plus className="w-4 h-4" />
+                  <span>Soạn giáo án</span>
+                </span>
+                <ArrowRight className="w-4 h-4" />
+              </div>
+            </div>
+
+            {/* Card 3: LaTeX Document Studio */}
+            <div
+              onClick={() => {
+                setCreateType('latex');
+                setNewTitle(`De_thi_Toan_${new Date().toISOString().slice(0, 10)}.tex`);
+              }}
+              className="group relative p-6 rounded-3xl border border-rose-200/80 dark:border-rose-900/50 bg-gradient-to-br from-rose-500/10 via-white to-purple-500/5 dark:from-rose-950/40 dark:via-slate-900/70 dark:to-purple-950/30 hover:border-rose-500/60 hover:shadow-xl hover:shadow-rose-500/10 transition-all duration-300 cursor-pointer flex flex-col justify-between gap-5"
+            >
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-rose-500 via-pink-600 to-indigo-600 text-white flex items-center justify-center shadow-md shadow-rose-500/30 group-hover:scale-110 transition-transform">
+                    <span className="font-serif font-bold text-xl">TeX</span>
+                  </div>
+                  <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30">
+                    XeLaTeX PDF
+                  </span>
+                </div>
+
+                <div>
+                  <h3 className="text-base font-extrabold text-slate-900 dark:text-white group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors">
+                    Tạo Tài Liệu LaTeX
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mt-1">
+                    Soạn đề thi trắc nghiệm GDPT 2018, chuyên đề bồi dưỡng, biên dịch và xuất PDF A4 tức thì.
+                  </p>
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-rose-100 dark:border-rose-900/40 flex items-center justify-between text-xs font-bold text-rose-600 dark:text-rose-400 group-hover:translate-x-1 transition-transform">
+                <span className="flex items-center gap-1.5">
+                  <Plus className="w-4 h-4" />
+                  <span>Soạn LaTeX</span>
+                </span>
+                <ArrowRight className="w-4 h-4" />
+              </div>
             </div>
           </div>
         </div>
+
+        {/* SECTION 2: Unified Recent Documents Hub */}
+        <div className="space-y-4 pt-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Layers className="w-4 h-4 text-cyan-500" />
+                <span>Quản Lý Tệp &amp; Dự Án Gần Đây</span>
+              </h2>
+              <p className="text-xs text-slate-500">
+                Hiển thị {filteredProjects.length} trên tổng số {projects.length} tệp tài liệu
+              </p>
+            </div>
+
+            {/* View Mode Toggle */}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 p-1 bg-white/80 dark:bg-slate-900/70 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`p-1.5 rounded-lg transition cursor-pointer ${
+                    viewMode === 'grid'
+                      ? 'bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-white font-bold'
+                      : 'text-slate-400 hover:text-slate-600'
+                  }`}
+                  title="Dạng lưới (Grid)"
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-1.5 rounded-lg transition cursor-pointer ${
+                    viewMode === 'list'
+                      ? 'bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-white font-bold'
+                      : 'text-slate-400 hover:text-slate-600'
+                  }`}
+                  title="Dạng danh sách (List)"
+                >
+                  <ListIcon className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Search Bar & Filter Tabs */}
+          <div className="p-3 rounded-2xl bg-white/85 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+            {/* Search Input */}
+            <div className="relative flex-1 min-w-60">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Tìm kiếm theo tên tài liệu, chủ đề hoặc khối lớp..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl pl-9 pr-3 py-1.5 text-xs focus:outline-none focus:border-cyan-500 transition-colors"
+              />
+            </div>
+
+            {/* Filter Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto">
+              {[
+                { id: 'all', label: 'Tất cả tệp', count: stats.total },
+                { id: 'geometry', label: '📐 Hình học', count: stats.geometry },
+                { id: 'lesson-plan', label: '📚 Giáo án 5512', count: stats.lessonPlan },
+                { id: 'latex', label: '📄 Tài liệu LaTeX', count: stats.latex },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setTypeFilter(tab.id as any)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer ${
+                    typeFilter === tab.id
+                      ? 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30 shadow-2xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <span>{tab.label}</span>
+                  <span className="text-[10px] opacity-70 font-mono">({tab.count})</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Render Document Grid or List */}
+          {filteredProjects.length === 0 ? (
+            <div className="p-12 text-center rounded-3xl border border-dashed border-slate-300 dark:border-slate-800 bg-white/40 dark:bg-slate-900/30 space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 text-cyan-600 mx-auto flex items-center justify-center">
+                <FileText className="w-6 h-6" />
+              </div>
+              <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                Chưa tìm thấy tệp phù hợp
+              </p>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                Hãy tạo tài liệu mới từ thanh khởi tạo phía trên hoặc điều chỉnh bộ lọc tìm kiếm.
+              </p>
+            </div>
+          ) : viewMode === 'grid' ? (
+            /* Grid View */
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+              {filteredProjects.map((item) => {
+                const isGeo = item.type === 'geometry';
+                const isLp = item.type === 'lesson-plan';
+                const isLatex = item.type === 'latex';
+
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => handleOpenProject(item)}
+                    className="group relative p-5 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/70 hover:bg-white dark:hover:bg-slate-900 hover:border-cyan-500/60 transition-all duration-200 shadow-2xs hover:shadow-xl hover:shadow-cyan-500/5 cursor-pointer flex flex-col justify-between gap-4"
+                  >
+                    <div className="space-y-3">
+                      {/* Top Row: Type Badge + Actions Menu */}
+                      <div className="flex items-center justify-between">
+                        {isGeo && (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border border-cyan-500/20">
+                            <Compass className="w-3.5 h-3.5 text-cyan-500" />
+                            Hình học
+                          </span>
+                        )}
+                        {isLp && (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
+                            <BookOpen className="w-3.5 h-3.5 text-emerald-500" />
+                            Giáo án 5512
+                          </span>
+                        )}
+                        {isLatex && (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/20">
+                            <span className="font-serif font-bold text-xs">TeX</span>
+                            LaTeX Studio
+                          </span>
+                        )}
+
+                        {/* Direct Action Icons */}
+                        <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setRenamingProject(item);
+                              setRenameTitleInput(item.title);
+                            }}
+                            className="p-1 rounded-lg text-slate-400 hover:text-cyan-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                            title="Đổi tên"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              duplicateProject(item.id);
+                              refreshProjects();
+                            }}
+                            className="p-1 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                            title="Nhân bản"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (confirm(`Bạn có chắc muốn xóa tệp "${item.title}"?`)) {
+                                deleteProject(item.id);
+                                refreshProjects();
+                              }
+                            }}
+                            className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                            title="Xóa"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Title */}
+                      <h3 className="font-bold text-sm text-slate-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors line-clamp-1">
+                        {item.title}
+                      </h3>
+
+                      {/* Content / Metadata Snippet Preview */}
+                      <div className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200/80 dark:border-slate-800/80 text-[11px] text-slate-500 dark:text-slate-400 font-mono overflow-hidden max-h-16 line-clamp-2">
+                        {item.metadata?.promptText ||
+                          item.metadata?.previewSnippet ||
+                          item.metadata?.topic ||
+                          'Dự án toán học MathAIO'}
+                      </div>
+                    </div>
+
+                    {/* Bottom Metadata Bar */}
+                    <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-[11px] text-slate-500">
+                      <span className="flex items-center gap-1.5">
+                        <Clock className="w-3 h-3 text-slate-400" />
+                        <span>{formatRelativeTime(item.updatedAt)}</span>
+                      </span>
+
+                      <span className="inline-flex items-center gap-1 text-cyan-600 dark:text-cyan-400 font-semibold group-hover:translate-x-0.5 transition-transform">
+                        <span>Mở tệp</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            /* Table / List View */
+            <div className="divide-y divide-slate-200 dark:divide-slate-800 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/70 overflow-hidden shadow-2xs">
+              {filteredProjects.map((item) => {
+                const isGeo = item.type === 'geometry';
+                const isLp = item.type === 'lesson-plan';
+                const isLatex = item.type === 'latex';
+
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => handleOpenProject(item)}
+                    className="p-4 flex items-center justify-between gap-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition"
+                  >
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      {/* Type Icon Box */}
+                      <div
+                        className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 font-bold ${
+                          isGeo
+                            ? 'bg-cyan-500/15 text-cyan-600'
+                            : isLp
+                            ? 'bg-emerald-500/15 text-emerald-600'
+                            : 'bg-rose-500/15 text-rose-600'
+                        }`}
+                      >
+                        {isGeo && <Compass className="w-5 h-5" />}
+                        {isLp && <BookOpen className="w-5 h-5" />}
+                        {isLatex && <span className="font-serif font-bold text-sm">TeX</span>}
+                      </div>
+
+                      <div className="min-w-0">
+                        <h3 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white truncate">
+                          {item.title}
+                        </h3>
+                        <p className="text-[11px] text-slate-500 flex items-center gap-2 mt-0.5">
+                          <span className="font-medium">
+                            {isGeo ? 'Hình học' : isLp ? 'Giáo án 5512' : 'Tài liệu LaTeX'}
+                          </span>
+                          <span>•</span>
+                          <span>{formatRelativeTime(item.updatedAt)}</span>
+                          {item.metadata?.grade && (
+                            <>
+                              <span>•</span>
+                              <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                                {item.metadata.grade}
+                              </span>
+                            </>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setRenamingProject(item);
+                          setRenameTitleInput(item.title);
+                        }}
+                        className="p-2 rounded-xl text-slate-400 hover:text-cyan-600 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                        title="Đổi tên"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          duplicateProject(item.id);
+                          refreshProjects();
+                        }}
+                        className="p-2 rounded-xl text-slate-400 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                        title="Nhân bản"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm(`Bạn có chắc muốn xóa tệp "${item.title}"?`)) {
+                            deleteProject(item.id);
+                            refreshProjects();
+                          }
+                        }}
+                        className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                        title="Xóa"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleOpenProject(item)}
+                        className="ml-2 px-3.5 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-2xs"
+                      >
+                        <span>Mở</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </main>
 
-      {/* Status Footer */}
-      <footer className="relative z-10 w-full border-t border-slate-200 dark:border-slate-800/60 bg-white/80 dark:bg-slate-950/60 backdrop-blur-md px-4 sm:px-8 py-3.5 text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-3 transition-colors">
+      {/* MODAL: Quick Create Modal */}
+      {createType && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="w-full max-w-lg rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/50">
+              <div className="flex items-center gap-2">
+                <div
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-sm ${
+                    createType === 'geometry'
+                      ? 'bg-cyan-500/15 text-cyan-600'
+                      : createType === 'lesson-plan'
+                      ? 'bg-emerald-500/15 text-emerald-600'
+                      : 'bg-rose-500/15 text-rose-600'
+                  }`}
+                >
+                  <Plus className="w-4 h-4" />
+                </div>
+                <h3 className="font-bold text-sm text-slate-900 dark:text-white">
+                  {createType === 'geometry' && 'Khởi Tạo Dự Án Hình Học Mới'}
+                  {createType === 'lesson-plan' && 'Khởi Tạo Kế Hoạch Bài Dạy 5512'}
+                  {createType === 'latex' && 'Khởi Tạo Tài Liệu LaTeX Mới'}
+                </h3>
+              </div>
+              <button
+                onClick={() => setCreateType(null)}
+                className="text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateSubmit} className="p-6 space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Tên tệp / Bài học:
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                  placeholder="Nhập tên tài liệu..."
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs font-medium focus:outline-none focus:border-cyan-500"
+                />
+              </div>
+
+              {/* Specific inputs for Lesson Plan */}
+              {createType === 'lesson-plan' && (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    Khối lớp áp dụng:
+                  </label>
+                  <select
+                    value={newGrade}
+                    onChange={(e) => setNewGrade(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs font-medium focus:outline-none focus:border-emerald-500"
+                  >
+                    <option>Toán 10 (Chương trình mới 2018)</option>
+                    <option>Toán 11 (Chương trình mới 2018)</option>
+                    <option>Toán 12 (Chương trình mới 2018)</option>
+                    <option>Toán THCS (Lớp 6 - 9)</option>
+                  </select>
+                </div>
+              )}
+
+              {/* Specific inputs for LaTeX */}
+              {createType === 'latex' && (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    Chọn mẫu khởi tạo sẵn:
+                  </label>
+                  <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto pr-1">
+                    {LATEX_TEMPLATES.map((tpl) => (
+                      <div
+                        key={tpl.id}
+                        onClick={() => setSelectedTemplateId(tpl.id)}
+                        className={`p-2.5 rounded-xl border text-xs cursor-pointer transition flex items-center justify-between ${
+                          selectedTemplateId === tpl.id
+                            ? 'bg-rose-500/15 border-rose-500/40 font-bold text-rose-900 dark:text-rose-200 shadow-xs'
+                            : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 hover:border-slate-300'
+                        }`}
+                      >
+                        <div>
+                          <span>{tpl.name}</span>
+                          <p className="text-[10px] text-slate-500 font-normal">{tpl.description}</p>
+                        </div>
+                        {selectedTemplateId === tpl.id && (
+                          <CheckCircle2 className="w-4 h-4 text-rose-500 shrink-0" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCreateType(null)}
+                  className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs shadow-md shadow-cyan-500/20 cursor-pointer"
+                >
+                  Khởi tạo &amp; Vào việc ngay →
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: Đổi Tên Tệp */}
+      {renamingProject && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="w-full max-w-md rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-6 space-y-4">
+            <h3 className="font-bold text-sm text-slate-900 dark:text-white">
+              Đổi Tên Dự Án
+            </h3>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (renamingProject && renameTitleInput.trim()) {
+                  renameProject(renamingProject.id, renameTitleInput);
+                  setRenamingProject(null);
+                  refreshProjects();
+                }
+              }}
+              className="space-y-4"
+            >
+              <input
+                type="text"
+                required
+                value={renameTitleInput}
+                onChange={(e) => setRenameTitleInput(e.target.value)}
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs font-medium focus:outline-none focus:border-cyan-500"
+              />
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setRenamingProject(null)}
+                  className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs cursor-pointer"
+                >
+                  Lưu thay đổi
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 3. Footer */}
+      <footer className="relative z-10 shrink-0 px-4 md:px-8 py-3.5 border-t border-slate-200 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/80 backdrop-blur text-xs text-slate-500 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <span>MathAIO Studio &copy; {new Date().getFullYear()} – Hệ thống Quản trị &amp; Nền tảng Toán học All-in-One</span>
+          <span>MathAIO Studio &copy; {new Date().getFullYear()} – Không Gian Quản Lý Dự Án Toán Học Toàn Diện</span>
           <span className="hidden sm:inline text-slate-300 dark:text-slate-700">|</span>
-          <span className="hidden sm:inline">Chuẩn Công văn 5512 BGD&amp;ĐT</span>
           <Link
-            href={pathname ? `/changelog?from=${encodeURIComponent(pathname)}` : '/changelog'}
-            className="hover:text-cyan-600 dark:hover:text-cyan-400 underline decoration-dotted transition font-mono"
-            title="Xem Changelog"
+            href="/changelog?from=%2F"
+            className="hover:text-cyan-600 dark:hover:text-cyan-400 underline decoration-dotted font-mono text-[11px]"
           >
             {APP_VERSION.fullString}
           </Link>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span>AI Engine: Gemini 3.6 Flash</span>
+
+        <div className="flex items-center gap-2 text-[11px]">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span>Hệ thống sẵn sàng</span>
         </div>
       </footer>
     </div>

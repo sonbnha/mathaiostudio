@@ -1,0 +1,273 @@
+import { LATEX_TEMPLATES, getTemplateById } from '@/components/latex/LaTeXTemplates';
+
+export type ProjectType = 'geometry' | 'lesson-plan' | 'latex';
+
+export interface ProjectItem {
+  id: string;
+  title: string;
+  type: ProjectType;
+  updatedAt: number;
+  createdAt: number;
+  metadata?: {
+    description?: string;
+    templateId?: string;
+    badge?: string;
+    grade?: string;
+    topic?: string;
+    previewSnippet?: string;
+    promptText?: string;
+    svgCode?: string;
+    tikzCode?: string;
+    lessonContent?: string;
+    source?: string;
+  };
+  content?: any;
+}
+
+const UNIFIED_STORAGE_KEY = 'mathaio_unified_projects_v1';
+const LATEX_STORAGE_KEY = 'mathaio_latex_documents_v1';
+const GEOMETRY_STORAGE_KEY = 'mathviz_history_items';
+const LESSON_STORAGE_KEY = 'mathaio_lesson_plans_v1';
+
+export function getInitialSeedProjects(): ProjectItem[] {
+  return [
+    {
+      id: 'proj-geo-1',
+      title: 'Tam giác ABC nội tiếp (O) & Đường cao AH',
+      type: 'geometry',
+      createdAt: Date.now() - 86400000 * 1,
+      updatedAt: Date.now() - 3600000 * 2,
+      metadata: {
+        topic: 'Hình học phẳng THCS/THPT',
+        badge: 'SVG Dynamic',
+        promptText: 'Cho tam giác ABC nhọn nội tiếp đường tròn (O), kẻ đường cao AH vuông góc với BC tại H...',
+        previewSnippet: 'svg-canvas-diagram-abc.svg',
+      },
+    },
+    {
+      id: 'proj-lp-1',
+      title: 'Giáo án 5512: Khái niệm Vectơ & Phép cộng Vectơ',
+      type: 'lesson-plan',
+      createdAt: Date.now() - 86400000 * 3,
+      updatedAt: Date.now() - 3600000 * 5,
+      metadata: {
+        grade: 'Toán 10',
+        topic: 'Hình học & Đo lường',
+        badge: 'Chuẩn 5512 BGD',
+        previewSnippet: '4 hoạt động: Khởi động -> Hình thành kiến thức -> Luyện tập -> Vận dụng',
+      },
+    },
+    {
+      id: 'proj-latex-1',
+      title: 'De_thi_tham_khao_TN_THPT_2025.tex',
+      type: 'latex',
+      createdAt: Date.now() - 86400000 * 2,
+      updatedAt: Date.now() - 3600000 * 1,
+      metadata: {
+        templateId: 'thpt_2025',
+        badge: 'Cấu trúc 2025',
+        previewSnippet: '\\documentclass[12pt,a4paper]{article}\n\\usepackage{amsmath,amssymb}',
+      },
+    },
+    {
+      id: 'proj-geo-2',
+      title: 'Hình chóp S.ABCD đáy hình vuông & Góc phẳng',
+      type: 'geometry',
+      createdAt: Date.now() - 86400000 * 5,
+      updatedAt: Date.now() - 86400000 * 2,
+      metadata: {
+        topic: 'Hình học không gian',
+        badge: 'TikZ & SVG',
+        promptText: 'Cho hình chóp S.ABCD có đáy ABCD là hình vuông cạnh a, SA vuông góc với đáy...',
+        previewSnippet: 'svg-pyramid-sabcd.svg',
+      },
+    },
+    {
+      id: 'proj-latex-2',
+      title: 'Chuyen_de_Bat_dang_thuc_Cauchy_Schwarz.tex',
+      type: 'latex',
+      createdAt: Date.now() - 86400000 * 6,
+      updatedAt: Date.now() - 86400000 * 3,
+      metadata: {
+        templateId: 'topic_advanced',
+        badge: 'Chuyên đề',
+        previewSnippet: 'Bất đẳng thức AM-GM và kỹ thuật chọn điểm rơi',
+      },
+    },
+  ];
+}
+
+export function getAllProjects(): ProjectItem[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    let list: ProjectItem[] = [];
+    const raw = localStorage.getItem(UNIFIED_STORAGE_KEY);
+    if (raw) {
+      list = JSON.parse(raw);
+    } else {
+      list = getInitialSeedProjects();
+      localStorage.setItem(UNIFIED_STORAGE_KEY, JSON.stringify(list));
+    }
+
+    // Sync from LaTeX store if existing
+    const rawLatex = localStorage.getItem(LATEX_STORAGE_KEY);
+    if (rawLatex) {
+      try {
+        const latexDocs = JSON.parse(rawLatex);
+        latexDocs.forEach((doc: any) => {
+          if (!list.some((p) => p.id === doc.id)) {
+            list.unshift({
+              id: doc.id,
+              title: doc.title,
+              type: 'latex',
+              createdAt: doc.createdAt || Date.now(),
+              updatedAt: doc.updatedAt || Date.now(),
+              metadata: {
+                templateId: doc.templateId,
+                previewSnippet: doc.source ? doc.source.slice(0, 120) : '',
+              },
+              content: doc.source,
+            });
+          }
+        });
+      } catch {}
+    }
+
+    // Sort newest updated first
+    list.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+    return list;
+  } catch {
+    return getInitialSeedProjects();
+  }
+}
+
+export function getProjectById(id: string): ProjectItem | null {
+  const all = getAllProjects();
+  return all.find((p) => p.id === id) || null;
+}
+
+export function saveProject(item: ProjectItem): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const list = getAllProjects();
+    const idx = list.findIndex((p) => p.id === item.id);
+    const updated = { ...item, updatedAt: Date.now() };
+
+    if (idx >= 0) {
+      list[idx] = updated;
+    } else {
+      list.unshift(updated);
+    }
+
+    localStorage.setItem(UNIFIED_STORAGE_KEY, JSON.stringify(list));
+
+    // Also mirror to LaTeX store if it's LaTeX
+    if (item.type === 'latex') {
+      try {
+        const rawLatex = localStorage.getItem(LATEX_STORAGE_KEY);
+        const latexList = rawLatex ? JSON.parse(rawLatex) : [];
+        const lIdx = latexList.findIndex((d: any) => d.id === item.id);
+        const latexDoc = {
+          id: item.id,
+          title: item.title,
+          templateId: item.metadata?.templateId || 'thpt_2025',
+          updatedAt: Date.now(),
+          createdAt: item.createdAt,
+          source: item.content || item.metadata?.source || '',
+          files: [{ name: 'main.tex', content: item.content || item.metadata?.source || '' }],
+        };
+        if (lIdx >= 0) {
+          latexList[lIdx] = latexDoc;
+        } else {
+          latexList.unshift(latexDoc);
+        }
+        localStorage.setItem(LATEX_STORAGE_KEY, JSON.stringify(latexList));
+      } catch {}
+    }
+  } catch (err) {
+    console.warn('Lỗi khi lưu project vào storage:', err);
+  }
+}
+
+export function createNewProject(
+  type: ProjectType,
+  title: string,
+  metadata?: Record<string, any>,
+  content?: any
+): ProjectItem {
+  const newId = `proj-${type}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+  let cleanTitle = title.trim();
+
+  if (type === 'latex' && !cleanTitle.endsWith('.tex')) {
+    cleanTitle = `${cleanTitle}.tex`;
+  }
+
+  const newProject: ProjectItem = {
+    id: newId,
+    title: cleanTitle,
+    type,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+    metadata: {
+      ...metadata,
+    },
+    content: content || '',
+  };
+
+  saveProject(newProject);
+  return newProject;
+}
+
+export function deleteProject(id: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const list = getAllProjects().filter((p) => p.id !== id);
+    localStorage.setItem(UNIFIED_STORAGE_KEY, JSON.stringify(list));
+
+    // Also remove from LaTeX store if matching
+    try {
+      const rawLatex = localStorage.getItem(LATEX_STORAGE_KEY);
+      if (rawLatex) {
+        const latexList = JSON.parse(rawLatex).filter((d: any) => d.id !== id);
+        localStorage.setItem(LATEX_STORAGE_KEY, JSON.stringify(latexList));
+      }
+    } catch {}
+  } catch (err) {
+    console.warn('Lỗi khi xóa project:', err);
+  }
+}
+
+export function duplicateProject(id: string): ProjectItem | null {
+  const original = getProjectById(id);
+  if (!original) return null;
+
+  let newTitle = original.title;
+  if (original.type === 'latex') {
+    newTitle = `${original.title.replace(/\.tex$/, '')}_Ban_sao.tex`;
+  } else {
+    newTitle = `${original.title} (Bản sao)`;
+  }
+
+  const duplicated: ProjectItem = {
+    ...original,
+    id: `proj-${original.type}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+    title: newTitle,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  };
+
+  saveProject(duplicated);
+  return duplicated;
+}
+
+export function renameProject(id: string, newTitle: string): void {
+  const proj = getProjectById(id);
+  if (!proj) return;
+
+  let cleanTitle = newTitle.trim();
+  if (proj.type === 'latex' && !cleanTitle.endsWith('.tex')) {
+    cleanTitle = `${cleanTitle}.tex`;
+  }
+
+  saveProject({ ...proj, title: cleanTitle });
+}

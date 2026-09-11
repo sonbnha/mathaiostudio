@@ -390,7 +390,7 @@ export default function PDFPreview({
       {/* Main PDF Scroll Container with Fixed Vertical Scrollbar & Scroll Anchoring Disabled */}
       <div
         ref={host}
-        className="flex-1 min-h-0 w-full h-full p-4 flex flex-col items-center bg-[#525659]"
+        className="flex-1 min-h-0 w-full h-full p-4 flex flex-col items-center bg-slate-200 dark:bg-[#525659]"
         style={{
           overflowY: 'scroll',
           overflowX: 'auto',
@@ -405,12 +405,12 @@ export default function PDFPreview({
             onTotalPagesChange?.(numPages);
           }}
           loading={
-            <div className="p-8 text-center text-xs text-slate-200">
+            <div className="p-8 text-center text-xs text-slate-600 dark:text-slate-200">
               Đang mở tài liệu PDF…
             </div>
           }
           error={
-            <div className="p-8 text-center text-xs text-rose-300">
+            <div className="p-8 text-center text-xs text-rose-600 dark:text-rose-300">
               Không thể hiển thị PDF trực tiếp. Hãy dùng nút Tải PDF về máy.
             </div>
           }

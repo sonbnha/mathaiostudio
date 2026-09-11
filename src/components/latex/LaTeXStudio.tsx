@@ -2496,14 +2496,14 @@ export default function LaTeXStudio({
             <div className="flex-1 min-h-0 relative flex flex-col overflow-hidden">
               {/* Solid Blank Canvas during Dragging */}
               {isResizing && (
-                <div className="absolute inset-0 z-30 bg-[#1e2327] select-none pointer-events-none" />
+                <div className="absolute inset-0 z-30 bg-slate-100 dark:bg-[#1e2327] select-none pointer-events-none" />
               )}
 
               <div className={`flex flex-col h-full w-full overflow-hidden ${isResizing ? 'invisible pointer-events-none' : ''}`}>
                 {/* Overleaf Flat Editor Ribbon */}
                 <div
                   ref={toolbarRef}
-                  className="h-9 bg-[#1e2227] border-b border-white/10 flex items-center justify-between px-2 select-none z-30 relative shrink-0"
+                  className="h-9 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-2 select-none z-30 relative shrink-0 text-slate-700 dark:text-slate-200"
                 >
                   {/* Left tools group */}
                   <div className="flex items-center gap-0.5 relative">
@@ -2511,7 +2511,7 @@ export default function LaTeXStudio({
                     <button
                       type="button"
                       onClick={() => runCommand('undo')}
-                      className="p-1 h-6 w-6 flex items-center justify-center rounded-sm hover:bg-white/10 text-neutral-300 transition cursor-pointer"
+                      className="p-1 h-6 w-6 flex items-center justify-center rounded-sm hover:bg-slate-100 dark:hover:bg-white/10 text-slate-700 dark:text-neutral-300 transition cursor-pointer"
                       title="Hoàn tác (Undo / Ctrl+Z)"
                     >
                       <Undo2 className="w-3.5 h-3.5" />
@@ -2519,13 +2519,13 @@ export default function LaTeXStudio({
                     <button
                       type="button"
                       onClick={() => runCommand('redo')}
-                      className="p-1 h-6 w-6 flex items-center justify-center rounded-sm hover:bg-white/10 text-neutral-300 transition cursor-pointer"
+                      className="p-1 h-6 w-6 flex items-center justify-center rounded-sm hover:bg-slate-100 dark:hover:bg-white/10 text-slate-700 dark:text-neutral-300 transition cursor-pointer"
                       title="Làm lại (Redo / Ctrl+Y)"
                     >
                       <Redo2 className="w-3.5 h-3.5" />
                     </button>
 
-                    <span className="h-3 w-px bg-white/10 mx-0.5" />
+                    <span className="h-3 w-px bg-slate-200 dark:bg-white/10 mx-0.5" />
 
                     {/* Heading Dropdown (T^v) */}
                     <div className="relative">
@@ -2538,8 +2538,8 @@ export default function LaTeXStudio({
                         }
                         className={`px-1.5 h-6 flex items-center gap-0.5 rounded-sm transition cursor-pointer text-xs ${
                           activeToolbarPopover === 'heading'
-                            ? 'bg-white/15 text-white font-medium'
-                            : 'hover:bg-white/10 text-neutral-300'
+                            ? 'bg-slate-100 dark:bg-white/15 text-slate-900 dark:text-white font-medium'
+                            : 'hover:bg-slate-100 dark:hover:bg-white/10 text-slate-700 dark:text-neutral-300'
                         }`}
                         title="Tiêu đề & Đề mục (Heading)"
                       >
@@ -2548,11 +2548,11 @@ export default function LaTeXStudio({
                       </button>
 
                       {activeToolbarPopover === 'heading' && (
-                        <div className="absolute left-0 top-full mt-1.5 w-48 bg-[#1e2226] border border-white/10 rounded-lg shadow-2xl py-1 text-xs text-neutral-300 z-50 select-none animate-in fade-in duration-100">
+                        <div className="absolute left-0 top-full mt-1.5 w-48 bg-white dark:bg-[#1e2226] border border-slate-200 dark:border-white/10 rounded-lg shadow-2xl py-1 text-xs text-slate-700 dark:text-neutral-300 z-50 select-none animate-in fade-in duration-100">
                           <button
                             type="button"
                             onClick={() => setActiveToolbarPopover(null)}
-                            className="w-full px-3 py-1.5 text-left hover:bg-[#2c3238] hover:text-white transition-colors cursor-pointer text-xs"
+                            className="w-full px-3 py-1.5 text-left hover:bg-slate-100 dark:hover:bg-[#2c3238] text-slate-700 dark:text-neutral-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer text-xs"
                           >
                             Văn bản thường (Normal)
                           </button>
@@ -2562,7 +2562,7 @@ export default function LaTeXStudio({
                               setActiveToolbarPopover(null);
                               runCommand('section');
                             }}
-                            className="w-full px-3 py-1.5 text-left hover:bg-[#2c3238] hover:text-white transition-colors cursor-pointer font-bold text-sm text-neutral-100"
+                            className="w-full px-3 py-1.5 text-left hover:bg-slate-100 dark:hover:bg-[#2c3238] text-slate-900 dark:text-neutral-100 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer font-bold text-sm"
                           >
                             Section
                           </button>
@@ -2572,7 +2572,7 @@ export default function LaTeXStudio({
                               setActiveToolbarPopover(null);
                               runCommand('subsection');
                             }}
-                            className="w-full px-3 py-1.5 text-left hover:bg-[#2c3238] hover:text-white transition-colors cursor-pointer font-semibold text-xs text-neutral-200"
+                            className="w-full px-3 py-1.5 text-left hover:bg-slate-100 dark:hover:bg-[#2c3238] text-slate-800 dark:text-neutral-200 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer font-semibold text-xs"
                           >
                             Subsection
                           </button>
@@ -2582,7 +2582,7 @@ export default function LaTeXStudio({
                               setActiveToolbarPopover(null);
                               runCommand('subsubsection');
                             }}
-                            className="w-full px-3 py-1.5 text-left hover:bg-[#2c3238] hover:text-white transition-colors cursor-pointer font-medium text-[11px] text-neutral-300"
+                            className="w-full px-3 py-1.5 text-left hover:bg-slate-100 dark:hover:bg-[#2c3238] text-slate-700 dark:text-neutral-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer font-medium text-[11px]"
                           >
                             Subsubsection
                           </button>
@@ -2590,13 +2590,13 @@ export default function LaTeXStudio({
                       )}
                     </div>
 
-                    <span className="h-3 w-px bg-white/10 mx-0.5" />
+                    <span className="h-3 w-px bg-slate-200 dark:bg-white/10 mx-0.5" />
 
                     {/* Bold */}
                     <button
                       type="button"
                       onClick={() => runCommand('bold')}
-                      className="p-1 h-6 w-6 flex items-center justify-center rounded-sm font-bold hover:bg-white/10 text-neutral-300 font-serif text-xs transition cursor-pointer"
+                      className="p-1 h-6 w-6 flex items-center justify-center rounded-sm font-bold hover:bg-slate-100 dark:hover:bg-white/10 text-slate-700 dark:text-neutral-300 font-serif text-xs transition cursor-pointer"
                       title="In đậm (\textbf{...})"
                     >
                       B
@@ -2606,13 +2606,13 @@ export default function LaTeXStudio({
                     <button
                       type="button"
                       onClick={() => runCommand('italic')}
-                      className="p-1 h-6 w-6 flex items-center justify-center rounded-sm italic font-serif hover:bg-white/10 text-neutral-300 text-xs transition cursor-pointer"
+                      className="p-1 h-6 w-6 flex items-center justify-center rounded-sm italic font-serif hover:bg-slate-100 dark:hover:bg-white/10 text-slate-700 dark:text-neutral-300 text-xs transition cursor-pointer"
                       title="In nghiêng (\textit{...})"
                     >
                       I
                     </button>
 
-                    <span className="h-3 w-px bg-white/10 mx-0.5" />
+                    <span className="h-3 w-px bg-slate-200 dark:bg-white/10 mx-0.5" />
 
                     {/* Math Button with Popover */}
                     <div className="relative">
@@ -2625,8 +2625,8 @@ export default function LaTeXStudio({
                         }
                         className={`p-1 h-6 w-6 flex items-center justify-center rounded-sm transition cursor-pointer ${
                           activeToolbarPopover === 'math'
-                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-xs'
-                            : 'hover:bg-white/10 text-neutral-300'
+                            ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 shadow-xs'
+                            : 'hover:bg-slate-100 dark:hover:bg-white/10 text-slate-700 dark:text-neutral-300'
                         }`}
                         title="Chèn công thức toán (Insert math)"
                       >
@@ -2637,8 +2637,8 @@ export default function LaTeXStudio({
                       </button>
 
                       {activeToolbarPopover === 'math' && (
-                        <div className="absolute left-0 top-full mt-1.5 w-52 bg-[#1e2227] border border-white/10 rounded shadow-xl p-1 text-xs text-neutral-300 z-50 select-none animate-in fade-in duration-100">
-                          <div className="text-neutral-400 text-xs px-2 py-1 font-medium">
+                        <div className="absolute left-0 top-full mt-1.5 w-52 bg-white dark:bg-[#1e2227] border border-slate-200 dark:border-white/10 rounded shadow-xl p-1 text-xs text-slate-700 dark:text-neutral-300 z-50 select-none animate-in fade-in duration-100">
+                          <div className="text-slate-500 dark:text-neutral-400 text-xs px-2 py-1 font-medium">
                             Insert math
                           </div>
                           <button
@@ -2647,25 +2647,25 @@ export default function LaTeXStudio({
                               setActiveToolbarPopover(null);
                               runCommand('symbols');
                             }}
-                            className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded hover:bg-emerald-500/15 hover:text-emerald-400 text-neutral-200 transition-colors text-left cursor-pointer text-xs font-medium"
+                            className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 transition-colors text-left cursor-pointer text-xs font-medium"
                           >
-                            <Sparkles className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                            <Sparkles className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400 shrink-0" />
                             <span>✨ From text or image</span>
                           </button>
-                          <div className="border-t border-white/5 my-1" />
+                          <div className="border-t border-slate-200 dark:border-white/5 my-1" />
                           <button
                             type="button"
                             onClick={() => {
                               setActiveToolbarPopover(null);
                               runCommand('mathInline');
                             }}
-                            className="w-full flex items-center justify-between px-2 py-1.5 rounded hover:bg-[#2c3238] hover:text-white transition-colors text-left cursor-pointer text-xs"
+                            className="w-full flex items-center justify-between px-2 py-1.5 rounded hover:bg-slate-100 dark:hover:bg-[#2c3238] text-slate-800 dark:text-neutral-200 hover:text-slate-900 dark:hover:text-white transition-colors text-left cursor-pointer text-xs"
                           >
                             <div className="flex items-center gap-2">
-                              <span className="text-emerald-400 font-bold">\(x\)</span>
+                              <span className="text-emerald-600 dark:text-emerald-400 font-bold">\(x\)</span>
                               <span>Inline</span>
                             </div>
-                            <span className="text-[11px] text-neutral-500 font-mono">\( | \)</span>
+                            <span className="text-[11px] text-slate-400 dark:text-neutral-500 font-mono">\( | \)</span>
                           </button>
                           <button
                             type="button"
@@ -2673,13 +2673,13 @@ export default function LaTeXStudio({
                               setActiveToolbarPopover(null);
                               runCommand('mathDisplay');
                             }}
-                            className="w-full flex items-center justify-between px-2 py-1.5 rounded hover:bg-[#2c3238] hover:text-white transition-colors text-left cursor-pointer text-xs"
+                            className="w-full flex items-center justify-between px-2 py-1.5 rounded hover:bg-slate-100 dark:hover:bg-[#2c3238] text-slate-800 dark:text-neutral-200 hover:text-slate-900 dark:hover:text-white transition-colors text-left cursor-pointer text-xs"
                           >
                             <div className="flex items-center gap-2">
-                              <span className="text-emerald-400 font-bold">\[x\]</span>
+                              <span className="text-emerald-600 dark:text-emerald-400 font-bold">\[x\]</span>
                               <span>Display</span>
                             </div>
-                            <span className="text-[11px] text-neutral-500 font-mono">\[\n \n\]</span>
+                            <span className="text-[11px] text-slate-400 dark:text-neutral-500 font-mono">\[\n \n\]</span>
                           </button>
                         </div>
                       )}
@@ -2691,8 +2691,8 @@ export default function LaTeXStudio({
                       onClick={() => runCommand('symbols')}
                       className={`p-1 h-6 w-6 flex items-center justify-center rounded-sm font-serif font-bold text-xs transition cursor-pointer ${
                         isSymbolsOpen
-                          ? 'bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/40 shadow-xs'
-                          : 'hover:bg-white/10 text-neutral-300'
+                          ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/40 shadow-xs'
+                          : 'hover:bg-slate-100 dark:hover:bg-white/10 text-slate-700 dark:text-neutral-300'
                       }`}
                       title="Bảng ký hiệu toán học MathType (Omega Ω)"
                     >
@@ -2710,8 +2710,8 @@ export default function LaTeXStudio({
                         }
                         className={`p-1 h-6 w-6 flex items-center justify-center rounded-sm transition cursor-pointer ${
                           activeToolbarPopover === 'image'
-                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-xs'
-                            : 'hover:bg-white/10 text-neutral-300'
+                            ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 shadow-xs'
+                            : 'hover:bg-slate-100 dark:hover:bg-white/10 text-slate-700 dark:text-neutral-300'
                         }`}
                         title="Chèn hình ảnh (Insert image)"
                       >
@@ -2719,8 +2719,8 @@ export default function LaTeXStudio({
                       </button>
 
                       {activeToolbarPopover === 'image' && (
-                        <div className="absolute left-0 top-full mt-1.5 w-60 bg-[#1e2226] border border-white/10 rounded-lg shadow-2xl py-1.5 text-xs text-neutral-300 z-50 select-none animate-in fade-in duration-100">
-                          <div className="px-3 py-1 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider border-b border-white/5 mb-1">
+                        <div className="absolute left-0 top-full mt-1.5 w-60 bg-white dark:bg-[#1e2226] border border-slate-200 dark:border-white/10 rounded-lg shadow-2xl py-1.5 text-xs text-slate-700 dark:text-neutral-300 z-50 select-none animate-in fade-in duration-100">
+                          <div className="px-3 py-1 text-[11px] font-semibold text-slate-500 dark:text-neutral-400 uppercase tracking-wider border-b border-slate-200 dark:border-white/5 mb-1">
                             Insert image
                           </div>
                           <button
@@ -2729,9 +2729,9 @@ export default function LaTeXStudio({
                               setActiveToolbarPopover(null);
                               runCommand('imageUpload');
                             }}
-                            className="w-full flex items-center gap-2.5 px-3 py-2 text-neutral-200 hover:bg-[#2c3238] hover:text-white transition-colors text-left cursor-pointer"
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-700 dark:text-neutral-200 hover:bg-slate-100 dark:hover:bg-[#2c3238] hover:text-slate-900 dark:hover:text-white transition-colors text-left cursor-pointer"
                           >
-                            <Upload className="w-4 h-4 text-emerald-400 shrink-0" />
+                            <Upload className="w-4 h-4 text-emerald-500 dark:text-emerald-400 shrink-0" />
                             <span>Upload from computer</span>
                           </button>
                           <button
@@ -2740,9 +2740,9 @@ export default function LaTeXStudio({
                               setActiveToolbarPopover(null);
                               runCommand('imageFromProject');
                             }}
-                            className="w-full flex items-center gap-2.5 px-3 py-2 text-neutral-200 hover:bg-[#2c3238] hover:text-white transition-colors text-left cursor-pointer"
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-700 dark:text-neutral-200 hover:bg-slate-100 dark:hover:bg-[#2c3238] hover:text-slate-900 dark:hover:text-white transition-colors text-left cursor-pointer"
                           >
-                            <Files className="w-4 h-4 text-cyan-400 shrink-0" />
+                            <Files className="w-4 h-4 text-cyan-600 dark:text-cyan-400 shrink-0" />
                             <span>From project files</span>
                           </button>
                           <button
@@ -2751,9 +2751,9 @@ export default function LaTeXStudio({
                               setActiveToolbarPopover(null);
                               runCommand('figure');
                             }}
-                            className="w-full flex items-center gap-2.5 px-3 py-2 text-neutral-200 hover:bg-[#2c3238] hover:text-white transition-colors text-left cursor-pointer"
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-700 dark:text-neutral-200 hover:bg-slate-100 dark:hover:bg-[#2c3238] hover:text-slate-900 dark:hover:text-white transition-colors text-left cursor-pointer"
                           >
-                            <FolderPlus className="w-4 h-4 text-amber-400 shrink-0" />
+                            <FolderPlus className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
                             <span>From another project</span>
                           </button>
                           <button
@@ -2762,9 +2762,9 @@ export default function LaTeXStudio({
                               setActiveToolbarPopover(null);
                               runCommand('imageFromUrl');
                             }}
-                            className="w-full flex items-center gap-2.5 px-3 py-2 text-neutral-200 hover:bg-[#2c3238] hover:text-white transition-colors text-left cursor-pointer"
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-slate-700 dark:text-neutral-200 hover:bg-slate-100 dark:hover:bg-[#2c3238] hover:text-slate-900 dark:hover:text-white transition-colors text-left cursor-pointer"
                           >
-                            <LinkIcon className="w-4 h-4 text-indigo-400 shrink-0" />
+                            <LinkIcon className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
                             <span>From URL</span>
                           </button>
                         </div>
@@ -2782,8 +2782,8 @@ export default function LaTeXStudio({
                         }
                         className={`p-1 h-6 w-6 flex items-center justify-center rounded-sm transition cursor-pointer ${
                           activeToolbarPopover === 'table'
-                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-xs'
-                            : 'hover:bg-white/10 text-neutral-300'
+                            ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 shadow-xs'
+                            : 'hover:bg-slate-100 dark:hover:bg-white/10 text-slate-700 dark:text-neutral-300'
                         }`}
                         title="Chèn bảng (Insert table)"
                       >
@@ -2791,8 +2791,8 @@ export default function LaTeXStudio({
                       </button>
 
                       {activeToolbarPopover === 'table' && (
-                        <div className="absolute left-0 top-full mt-1.5 w-64 bg-[#1e2226] border border-white/10 rounded-lg shadow-2xl p-3 text-xs text-neutral-300 z-50 select-none animate-in fade-in duration-100">
-                          <div className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider mb-2">
+                        <div className="absolute left-0 top-full mt-1.5 w-64 bg-white dark:bg-[#1e2226] border border-slate-200 dark:border-white/10 rounded-lg shadow-2xl p-3 text-xs text-slate-700 dark:text-neutral-300 z-50 select-none animate-in fade-in duration-100">
+                          <div className="text-[11px] font-semibold text-slate-500 dark:text-neutral-400 uppercase tracking-wider mb-2">
                             Insert table
                           </div>
                           <button
@@ -2801,15 +2801,15 @@ export default function LaTeXStudio({
                               setActiveToolbarPopover(null);
                               runCommand('table', { rows: 3, cols: 3 });
                             }}
-                            className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 transition-colors text-left cursor-pointer mb-2.5 border border-emerald-500/20"
+                            className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 transition-colors text-left cursor-pointer mb-2.5 border border-emerald-500/20"
                           >
                             <Sparkles className="w-3.5 h-3.5 shrink-0" />
                             <span className="font-medium text-[11px]">✨ From text or image</span>
                           </button>
 
-                          <div className="flex items-center justify-between text-[11px] text-neutral-400 mb-1.5 font-medium">
+                          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-neutral-400 mb-1.5 font-medium">
                             <span>Select size</span>
-                            <span className="font-mono text-emerald-400 font-bold">
+                            <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">
                               {tableHoverSize.rows > 0 && tableHoverSize.cols > 0
                                 ? `${tableHoverSize.rows} × ${tableHoverSize.cols}`
                                 : '10 × 10'}
@@ -2818,7 +2818,7 @@ export default function LaTeXStudio({
 
                           {/* 10x10 Matrix Grid */}
                           <div
-                            className="grid grid-cols-10 gap-1 p-1.5 bg-[#141618] rounded border border-white/5"
+                            className="grid grid-cols-10 gap-1 p-1.5 bg-slate-50 dark:bg-[#141618] rounded border border-slate-200 dark:border-white/5"
                             onMouseLeave={() => setTableHoverSize({ rows: 0, cols: 0 })}
                           >
                             {Array.from({ length: 10 }).map((_, rIdx) =>
@@ -2840,7 +2840,7 @@ export default function LaTeXStudio({
                                     className={`w-4 h-4 rounded-xs border cursor-pointer transition-colors ${
                                       isHighlighted
                                         ? 'bg-emerald-500/40 border-emerald-500'
-                                        : 'bg-white/5 border-white/10 hover:border-emerald-500/50'
+                                        : 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-emerald-500/50'
                                     }`}
                                     title={`${r} hàng × ${c} cột`}
                                   />
@@ -2856,7 +2856,7 @@ export default function LaTeXStudio({
                     <button
                       type="button"
                       onClick={() => runCommand('link')}
-                      className="p-1 h-6 w-6 flex items-center justify-center rounded-sm hover:bg-white/10 text-neutral-300 transition cursor-pointer"
+                      className="p-1 h-6 w-6 flex items-center justify-center rounded-sm hover:bg-slate-100 dark:hover:bg-white/10 text-slate-700 dark:text-neutral-300 transition cursor-pointer"
                       title="Chèn liên kết (\href{...})"
                     >
                       <LinkIcon className="w-3.5 h-3.5" />
@@ -2866,7 +2866,7 @@ export default function LaTeXStudio({
                     <button
                       type="button"
                       onClick={() => runCommand('quote')}
-                      className="p-1 h-6 w-6 flex items-center justify-center rounded-sm hover:bg-white/10 text-neutral-300 transition cursor-pointer"
+                      className="p-1 h-6 w-6 flex items-center justify-center rounded-sm hover:bg-slate-100 dark:hover:bg-white/10 text-slate-700 dark:text-neutral-300 transition cursor-pointer"
                       title="Trích dẫn (\begin{quote}...)"
                     >
                       <Quote className="w-3.5 h-3.5" />
@@ -2876,7 +2876,7 @@ export default function LaTeXStudio({
                     <button
                       type="button"
                       onClick={() => runCommand('typewriter')}
-                      className="p-1 h-6 w-6 flex items-center justify-center rounded-sm hover:bg-white/10 text-neutral-300 transition cursor-pointer"
+                      className="p-1 h-6 w-6 flex items-center justify-center rounded-sm hover:bg-slate-100 dark:hover:bg-white/10 text-slate-700 dark:text-neutral-300 transition cursor-pointer"
                       title="Đoạn mã (\texttt{...})"
                     >
                       <Code2 className="w-3.5 h-3.5" />
@@ -2886,7 +2886,7 @@ export default function LaTeXStudio({
                     <button
                       type="button"
                       onClick={() => runCommand('symbols')}
-                      className="p-1 h-6 w-6 flex items-center justify-center rounded-sm hover:bg-white/10 text-neutral-300 transition cursor-pointer"
+                      className="p-1 h-6 w-6 flex items-center justify-center rounded-sm hover:bg-slate-100 dark:hover:bg-white/10 text-slate-700 dark:text-neutral-300 transition cursor-pointer"
                       title="Thêm công cụ / Bảng ký hiệu"
                     >
                       <MoreHorizontal className="w-3.5 h-3.5" />
@@ -2896,14 +2896,14 @@ export default function LaTeXStudio({
                   {/* Right tools group: [ Code | Visual ], [ Editing / Reviewing ], Search */}
                   <div className="flex items-center gap-2">
                     {/* Pill Toggle Code | Visual */}
-                    <div className="flex items-center bg-[#181a1d] p-0.5 rounded border border-white/10">
+                    <div className="flex items-center bg-slate-100 dark:bg-[#181a1d] p-0.5 rounded border border-slate-200 dark:border-white/10">
                       <button
                         type="button"
                         onClick={() => setEditorMode('code')}
                         className={`px-2.5 py-0.5 rounded text-xs font-medium transition-colors cursor-pointer ${
                           editorMode === 'code'
                             ? 'bg-emerald-600 text-white font-semibold shadow-xs'
-                            : 'text-neutral-400 hover:text-white'
+                            : 'text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white'
                         }`}
                       >
                         Code
@@ -2914,7 +2914,7 @@ export default function LaTeXStudio({
                         className={`px-2.5 py-0.5 rounded text-xs font-medium transition-colors cursor-pointer ${
                           editorMode === 'visual'
                             ? 'bg-emerald-600 text-white font-semibold shadow-xs'
-                            : 'text-neutral-400 hover:text-white'
+                            : 'text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white'
                         }`}
                       >
                         Visual
@@ -2926,17 +2926,17 @@ export default function LaTeXStudio({
                       aria-label="Chế độ làm việc"
                       value={reviewMode}
                       onChange={(e) => setReviewMode(e.target.value as any)}
-                      className="h-6 bg-[#181a1d] border border-white/10 rounded px-1.5 text-xs font-medium text-neutral-300 outline-none cursor-pointer hover:border-white/20"
+                      className="h-6 bg-slate-100 dark:bg-[#181a1d] border border-slate-200 dark:border-white/10 rounded px-1.5 text-xs font-medium text-slate-700 dark:text-neutral-300 outline-none cursor-pointer hover:border-slate-300 dark:hover:border-white/20"
                     >
-                      <option value="editing" className="bg-[#1e2226]">Editing ▾</option>
-                      <option value="reviewing" className="bg-[#1e2226]">Reviewing</option>
+                      <option value="editing" className="bg-white dark:bg-[#1e2226] text-slate-800 dark:text-slate-200">Editing ▾</option>
+                      <option value="reviewing" className="bg-white dark:bg-[#1e2226] text-slate-800 dark:text-slate-200">Reviewing</option>
                     </select>
 
                     {/* Search in File */}
                     <button
                       type="button"
                       onClick={() => runCommand('find')}
-                      className="p-1 h-6 w-6 flex items-center justify-center rounded text-neutral-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
+                      className="p-1 h-6 w-6 flex items-center justify-center rounded text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition cursor-pointer"
                       title="Tìm kiếm trong tệp (Ctrl+F)"
                     >
                       <Search className="w-3.5 h-3.5" />
@@ -3003,8 +3003,8 @@ export default function LaTeXStudio({
             onMouseDown={handleMouseDownEditorPdfDivider}
             className={`relative w-2 flex-shrink-0 shrink-0 flex flex-col items-center justify-center cursor-col-resize select-none transition-colors z-30 group ${
               resizingTarget === 'editor-pdf'
-                ? 'bg-neutral-600/50'
-                : 'bg-[#1e2124] hover:bg-neutral-600/50 border-x border-white/5'
+                ? 'bg-neutral-400 dark:bg-neutral-600/50'
+                : 'bg-slate-200 dark:bg-[#1e2124] hover:bg-slate-300 dark:hover:bg-neutral-600/50 border-x border-slate-300 dark:border-white/5'
             }`}
             title={layoutMode === 'code' ? "Kéo sang trái để mở rộng PDF" : "Kéo giãn tỷ lệ giữa Code và PDF (Overleaf Split Gutter)"}
           >
@@ -3020,12 +3020,12 @@ export default function LaTeXStudio({
                       e.stopPropagation();
                       handleSyncCodeToPDF(cursorLine || targetLine || 1);
                     }}
-                    className="w-5 h-5 bg-[#20262b] border border-white/10 rounded-[3px] text-neutral-400 flex items-center justify-center cursor-pointer pointer-events-auto shadow-xs transition-all duration-150 hover:bg-emerald-500/20 hover:border-emerald-500 hover:text-emerald-300 hover:shadow-[0_0_8px_rgba(34,197,94,0.45)]"
+                    className="w-5 h-5 bg-white dark:bg-[#20262b] border border-slate-200 dark:border-white/10 rounded-[3px] text-slate-600 dark:text-neutral-400 flex items-center justify-center cursor-pointer pointer-events-auto shadow-xs transition-all duration-150 hover:bg-emerald-500/20 hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-300"
                     title="Nhảy đến vị trí trong PDF"
                   >
-                    <ArrowRight className="w-3 h-3 text-neutral-400 group-hover/synctop:text-emerald-300 transition-colors" />
+                    <ArrowRight className="w-3 h-3 text-slate-500 dark:text-neutral-400 group-hover/synctop:text-emerald-600 dark:group-hover/synctop:text-emerald-300 transition-colors" />
                   </button>
-                  <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-[#111315] border border-white/10 rounded text-[11px] text-white whitespace-nowrap shadow-lg pointer-events-none opacity-0 group-hover/synctop:opacity-100 transition-opacity duration-150 z-50">
+                  <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-slate-900 dark:bg-[#111315] border border-slate-700 dark:border-white/10 rounded text-[11px] text-white whitespace-nowrap shadow-lg pointer-events-none opacity-0 group-hover/synctop:opacity-100 transition-opacity duration-150 z-50">
                     Nhảy đến vị trí trong PDF
                   </div>
                 </div>
@@ -3039,12 +3039,12 @@ export default function LaTeXStudio({
                       e.stopPropagation();
                       handleSyncPDFToCode(pdfCurrentPage || 1, 0.2);
                     }}
-                    className="w-5 h-5 bg-[#20262b] border border-white/10 rounded-[3px] text-neutral-400 flex items-center justify-center cursor-pointer pointer-events-auto shadow-xs transition-all duration-150 hover:bg-emerald-500/20 hover:border-emerald-500 hover:text-emerald-300 hover:shadow-[0_0_8px_rgba(34,197,94,0.45)]"
+                    className="w-5 h-5 bg-white dark:bg-[#20262b] border border-slate-200 dark:border-white/10 rounded-[3px] text-slate-600 dark:text-neutral-400 flex items-center justify-center cursor-pointer pointer-events-auto shadow-xs transition-all duration-150 hover:bg-emerald-500/20 hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-300"
                     title="Nhảy đến dòng mã nguồn"
                   >
-                    <ArrowLeft className="w-3 h-3 text-neutral-400 group-hover/syncbot:text-emerald-300 transition-colors" />
+                    <ArrowLeft className="w-3 h-3 text-slate-500 dark:text-neutral-400 group-hover/syncbot:text-emerald-600 dark:group-hover/syncbot:text-emerald-300 transition-colors" />
                   </button>
-                  <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-[#111315] border border-white/10 rounded text-[11px] text-white whitespace-nowrap shadow-lg pointer-events-none opacity-0 group-hover/syncbot:opacity-100 transition-opacity duration-150 z-50">
+                  <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-slate-900 dark:bg-[#111315] border border-slate-700 dark:border-white/10 rounded text-[11px] text-white whitespace-nowrap shadow-lg pointer-events-none opacity-0 group-hover/syncbot:opacity-100 transition-opacity duration-150 z-50">
                     Nhảy đến dòng mã nguồn
                   </div>
                 </div>
@@ -3070,7 +3070,7 @@ export default function LaTeXStudio({
                     setLayoutMode('code');
                   }
                 }}
-                className="w-3 h-10 bg-[#20262b] border border-white/10 rounded-[2px] text-neutral-400 flex items-center justify-center cursor-pointer pointer-events-auto z-40 relative shadow-xs transition-all duration-150 hover:bg-emerald-500/20 hover:border-emerald-500 hover:text-emerald-300 hover:shadow-[0_0_8px_rgba(34,197,94,0.45)]"
+                className="w-3 h-10 bg-white dark:bg-[#20262b] border border-slate-200 dark:border-white/10 rounded-[2px] text-slate-600 dark:text-neutral-400 flex items-center justify-center cursor-pointer pointer-events-auto z-40 relative shadow-xs transition-all duration-150 hover:bg-emerald-500/20 hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-300"
                 title={layoutMode === 'code' ? 'Mở rộng khung PDF' : 'Thu gọn khung PDF'}
               >
                 {layoutMode === 'code' ? (
@@ -3079,7 +3079,7 @@ export default function LaTeXStudio({
                   <ChevronRight className="w-2.5 h-2.5" />
                 )}
               </button>
-              <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-[#111315] border border-white/10 rounded text-[11px] text-white whitespace-nowrap shadow-lg pointer-events-none opacity-0 group-hover/pdfcol:opacity-100 transition-opacity duration-150 z-50">
+              <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-slate-900 dark:bg-[#111315] border border-slate-700 dark:border-white/10 rounded text-[11px] text-white whitespace-nowrap shadow-lg pointer-events-none opacity-0 group-hover/pdfcol:opacity-100 transition-opacity duration-150 z-50">
                 {layoutMode === 'code' ? 'Mở rộng khung PDF' : 'Thu gọn khung PDF'}
               </div>
             </div>
@@ -3099,18 +3099,18 @@ export default function LaTeXStudio({
             height: '100%',
             overflow: 'hidden',
           }}
-          className={`min-w-[60px] flex-1 min-h-0 h-full overflow-hidden relative flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xs ${
+          className={`min-w-[60px] flex-1 min-h-0 h-full overflow-hidden relative flex flex-col bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xs ${
             isResizing ? 'select-none pointer-events-none' : ''
           }`}
         >
           {/* Solid Blank Canvas during Dragging */}
           {isResizing && (
-            <div className="absolute inset-0 z-30 bg-[#1e2327] select-none pointer-events-none" />
+            <div className="absolute inset-0 z-30 bg-slate-100 dark:bg-[#1e2327] select-none pointer-events-none" />
           )}
 
           <div className={`flex flex-col h-full w-full overflow-hidden ${isResizing ? 'invisible pointer-events-none' : ''}`}>
             {/* Overleaf Authentic Viewer Toolbar */}
-          <div className="flex justify-between items-center px-2.5 h-8 border-b border-white/10 bg-[#1e2124] shrink-0 text-xs overflow-hidden select-none">
+          <div className="flex justify-between items-center px-2.5 h-8 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0 text-xs overflow-hidden select-none text-slate-700 dark:text-slate-200">
             {/* Left Group: Green Recompile + Engine + Download + Logs */}
             <div className="flex items-center gap-1.5 flex-shrink-0">
               {/* Overleaf Green Recompile Button */}
@@ -3149,10 +3149,10 @@ export default function LaTeXStudio({
                 <a
                   href={pdf}
                   download={`${docTitle.replace(/\.tex$/, '')}.pdf`}
-                  className="h-6 w-6 flex items-center justify-center rounded-sm border border-slate-700 hover:bg-slate-800 text-slate-300 transition shrink-0"
+                  className="h-6 w-6 flex items-center justify-center rounded-sm border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition shrink-0"
                   title="Tải PDF nhanh về máy"
                 >
-                  <Download className="w-3.5 h-3.5 text-emerald-400" />
+                  <Download className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                 </a>
               )}
 
@@ -3162,15 +3162,15 @@ export default function LaTeXStudio({
                 onClick={() => setOutputView(outputView === 'console' ? 'pdf' : 'console')}
                 className={`h-6 inline-flex items-center gap-1 px-2 rounded-sm text-[11px] font-medium transition cursor-pointer border shrink-0 ${
                   errors.length > 0 || status === 'error'
-                    ? 'bg-rose-500/20 border-rose-500/40 text-rose-300 hover:bg-rose-500/30'
-                    : 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/30'
+                    ? 'bg-rose-500/15 border-rose-500/40 text-rose-600 dark:text-rose-300 hover:bg-rose-500/25'
+                    : 'bg-emerald-500/15 border-emerald-500/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/25'
                 }`}
                 title={outputView === 'console' ? 'Quay lại xem PDF' : 'Mở bảng nhật ký & lỗi biên dịch'}
               >
                 {errors.length > 0 || status === 'error' ? (
-                  <AlertCircle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                  <AlertCircle className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400 shrink-0" />
                 ) : (
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 )}
                 {pdfWidth >= 400 && <span>Logs</span>}
                 <span
@@ -3192,7 +3192,7 @@ export default function LaTeXStudio({
                 <button
                   type="button"
                   onClick={() => setOutputView('pdf')}
-                  className="h-6 px-2 rounded-sm bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-medium transition cursor-pointer shrink-0"
+                  className="h-6 px-2 rounded-sm bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-[11px] font-medium transition cursor-pointer shrink-0 border border-slate-200 dark:border-slate-700"
                 >
                   Xem PDF
                 </button>
@@ -3202,7 +3202,7 @@ export default function LaTeXStudio({
             {/* Right Group: Page Navigator + Zoom */}
             <div className="flex items-center gap-1.5 flex-shrink-0">
               {/* Horizontal Page Counter: < Trang 1 / 1 > */}
-              <div className="h-6 flex items-center gap-0.5 bg-slate-800/90 rounded-sm px-1 border border-slate-700 shrink-0 text-[11px] font-mono">
+              <div className="h-6 flex items-center gap-0.5 bg-slate-100 dark:bg-slate-800/90 rounded-sm px-1 border border-slate-200 dark:border-slate-700 shrink-0 text-[11px] font-mono text-slate-700 dark:text-slate-200">
                 <button
                   type="button"
                   disabled={pdfCurrentPage <= 1}
@@ -3211,14 +3211,14 @@ export default function LaTeXStudio({
                     setPdfCurrentPage(prev);
                     setJumpToPage(prev);
                   }}
-                  className="p-0.5 rounded hover:bg-slate-700 text-slate-300 disabled:opacity-30 cursor-pointer"
+                  className="p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 disabled:opacity-30 cursor-pointer"
                   title="Trang trước"
                 >
                   <ChevronLeft className="w-3 h-3" />
                 </button>
 
-                <div className="flex items-center px-1.5 py-0.5 font-mono text-[11px] text-slate-200">
-                  <span className="text-[10px] text-slate-400 mr-1 font-sans">Trang</span>
+                <div className="flex items-center px-1.5 py-0.5 font-mono text-[11px] text-slate-700 dark:text-slate-200">
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 mr-1 font-sans">Trang</span>
                   <input
                     type="number"
                     min={1}
@@ -3231,10 +3231,10 @@ export default function LaTeXStudio({
                         setJumpToPage(val);
                       }
                     }}
-                    className="w-4 text-center bg-transparent border-0 outline-none text-[11px] font-mono text-slate-100 p-0"
+                    className="w-4 text-center bg-transparent border-0 outline-none text-[11px] font-mono text-slate-800 dark:text-slate-100 p-0"
                   />
-                  <span className="text-slate-500">/</span>
-                  <span className="ml-0.5 text-slate-400">{pdfTotalPages || 1}</span>
+                  <span className="text-slate-400 dark:text-slate-500">/</span>
+                  <span className="ml-0.5 text-slate-500 dark:text-slate-400">{pdfTotalPages || 1}</span>
                 </div>
 
                 <button
@@ -3245,7 +3245,7 @@ export default function LaTeXStudio({
                     setPdfCurrentPage(next);
                     setJumpToPage(next);
                   }}
-                  className="p-0.5 rounded hover:bg-slate-700 text-slate-300 disabled:opacity-30 cursor-pointer"
+                  className="p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 disabled:opacity-30 cursor-pointer"
                   title="Trang kế tiếp"
                 >
                   <ChevronRight className="w-3 h-3" />
@@ -3253,18 +3253,18 @@ export default function LaTeXStudio({
               </div>
 
               {/* Zoom Controls: - [%] + */}
-              <div className="h-6 flex items-center gap-0.5 bg-slate-800/90 rounded-sm px-1 border border-slate-700 shrink-0 text-[11px]">
+              <div className="h-6 flex items-center gap-0.5 bg-slate-100 dark:bg-slate-800/90 rounded-sm px-1 border border-slate-200 dark:border-slate-700 shrink-0 text-[11px] text-slate-700 dark:text-slate-200">
                 <button
                   type="button"
                   disabled={!pdf}
                   onClick={() => setZoom((z) => Math.max(25, (typeof z === 'number' ? z : 100) - 25))}
-                  className="p-0.5 rounded hover:bg-slate-700 text-slate-300 disabled:opacity-30 cursor-pointer"
+                  className="p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 disabled:opacity-30 cursor-pointer"
                   title="Thu nhỏ"
                 >
                   <ZoomOut className="w-3 h-3" />
                 </button>
 
-                <span className="font-mono text-[10px] px-1 text-slate-200 min-w-6 text-center">
+                <span className="font-mono text-[10px] px-1 text-slate-700 dark:text-slate-200 min-w-6 text-center">
                   {typeof zoom === 'number' ? `${zoom}%` : 'Rộng'}
                 </span>
 
@@ -3272,7 +3272,7 @@ export default function LaTeXStudio({
                   type="button"
                   disabled={!pdf}
                   onClick={() => setZoom((z) => Math.min(300, (typeof z === 'number' ? z : 100) + 25))}
-                  className="p-0.5 rounded hover:bg-slate-700 text-slate-300 disabled:opacity-30 cursor-pointer"
+                  className="p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 disabled:opacity-30 cursor-pointer"
                   title="Phóng to"
                 >
                   <ZoomIn className="w-3 h-3" />
@@ -3282,19 +3282,19 @@ export default function LaTeXStudio({
           </div>
 
           {/* Main Output Body */}
-          <div className="flex-1 min-h-0 w-full h-full flex flex-col relative overflow-hidden bg-[#525659]">
+          <div className="flex-1 min-h-0 w-full h-full flex flex-col relative overflow-hidden bg-slate-200 dark:bg-[#525659]">
             {outputView === 'pdf' ? (
               pdf ? (
-                <div className="flex-1 min-h-0 w-full h-full flex flex-col relative overflow-hidden bg-[#525659]">
+                <div className="flex-1 min-h-0 w-full h-full flex flex-col relative overflow-hidden bg-slate-200 dark:bg-[#525659]">
                   {source !== compiledSource && (
                     <div
                       role="status"
-                      className="text-xs px-3 py-1 bg-amber-500/20 border-b border-amber-500/30 text-amber-200 flex items-center justify-between shrink-0 w-full z-10"
+                      className="text-xs px-3 py-1 bg-amber-500/20 border-b border-amber-500/30 text-amber-800 dark:text-amber-200 flex items-center justify-between shrink-0 w-full z-10"
                     >
                       <span className="truncate">Mã nguồn đã sửa đổi. Bấm Recompile để cập nhật PDF.</span>
                       <button
                         onClick={() => void compile()}
-                        className="underline font-bold hover:text-white cursor-pointer ml-2 shrink-0"
+                        className="underline font-bold hover:text-amber-950 dark:hover:text-white cursor-pointer ml-2 shrink-0"
                       >
                         Cập nhật
                       </button>
@@ -3314,16 +3314,16 @@ export default function LaTeXStudio({
                   />
                 </div>
               ) : (
-                <div className="flex-1 min-h-0 w-full h-full overflow-y-auto flex flex-col justify-center items-center p-4 text-center text-slate-300 bg-[#525659]">
-                  <div className="w-full max-w-xs flex flex-col items-center px-4 text-center">
-                    <div className="w-12 h-12 rounded-2xl border border-slate-500 bg-slate-700/80 flex items-center justify-center mb-3 shadow-md shrink-0">
-                      <FileText className="w-6 h-6 text-slate-300" />
+                <div className="flex-1 min-h-0 w-full h-full overflow-y-auto flex flex-col justify-center items-center p-4 text-center text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-900">
+                  <div className="w-full max-w-sm flex flex-col items-center p-6 text-center bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm">
+                    <div className="w-12 h-12 rounded-2xl border border-slate-200 dark:border-slate-600 bg-slate-100 dark:bg-slate-700/80 flex items-center justify-center mb-3 shadow-xs shrink-0">
+                      <FileText className="w-6 h-6 text-slate-500 dark:text-slate-300" />
                     </div>
-                    <p className="text-sm font-bold text-white mb-1">
+                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-1">
                       Chưa có tài liệu PDF
                     </p>
-                    <p className="text-xs leading-relaxed text-slate-300 mb-4 max-w-full">
-                      Bấm nút <strong className="text-emerald-400">“Recompile”</strong> màu xanh phía trên (Ctrl+Enter) để biên dịch tài liệu PDF.
+                    <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400 mb-4 max-w-full">
+                      Bấm nút <strong className="text-emerald-600 dark:text-emerald-400">“Recompile”</strong> màu xanh phía trên (Ctrl+Enter) để biên dịch tài liệu PDF.
                     </p>
                     <button
                       type="button"

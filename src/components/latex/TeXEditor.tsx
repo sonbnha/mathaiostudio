@@ -188,6 +188,43 @@ const errorField = StateField.define<DecorationSet>({
   provide: (f) => EditorView.decorations.from(f),
 });
 
+const getThemeExtensions = (isDark: boolean) => {
+  const baseTheme = EditorView.theme({
+    '&': {
+      height: '100%',
+      backgroundColor: isDark ? '#020617' : '#ffffff',
+      color: isDark ? '#cbd5e1' : '#1e293b',
+    },
+    '.cm-content': {
+      fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+      padding: '12px 0',
+      caretColor: isDark ? '#22d3ee' : '#0284c7',
+      lineHeight: '1.6',
+    },
+    '.cm-gutters': {
+      backgroundColor: isDark ? '#020617' : '#f8fafc',
+      color: isDark ? '#475569' : '#94a3b8',
+      borderRight: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.08)'}`,
+      minWidth: '40px',
+    },
+    '.cm-activeLineGutter': {
+      backgroundColor: isDark ? 'rgba(34, 211, 238, 0.1)' : 'rgba(6, 182, 212, 0.1)',
+      color: isDark ? '#22d3ee' : '#0284c7',
+    },
+    '.cm-activeLine': {
+      backgroundColor: isDark ? 'rgba(15, 23, 42, 0.6)' : 'rgba(241, 245, 249, 0.8)',
+    },
+    '.cm-selectionBackground, ::selection': {
+      backgroundColor: isDark ? 'rgba(22, 78, 99, 0.6) !important' : '#bae6fd !important',
+    },
+    '.cm-latex-error-line': {
+      backgroundColor: 'rgba(239, 68, 68, 0.12) !important',
+    },
+  });
+
+  return isDark ? [baseTheme, oneDark] : [baseTheme];
+};
+
 export default function TeXEditor({
   source,
   onChange,
@@ -278,39 +315,6 @@ export default function TeXEditor({
       indentWithTab,
     ]);
 
-    const baseTheme = EditorView.theme({
-      '&': {
-        height: '100%',
-        backgroundColor: resolvedTheme === 'dark' ? '#020617' : '#ffffff',
-        color: resolvedTheme === 'dark' ? '#cbd5e1' : '#1e293b',
-      },
-      '.cm-content': {
-        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-        padding: '12px 0',
-        caretColor: '#22d3ee',
-        lineHeight: '1.6',
-      },
-      '.cm-gutters': {
-        backgroundColor: resolvedTheme === 'dark' ? '#020617' : '#f8fafc',
-        color: resolvedTheme === 'dark' ? '#475569' : '#94a3b8',
-        borderRight: `1px solid ${resolvedTheme === 'dark' ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.06)'}`,
-        minWidth: '40px',
-      },
-      '.cm-activeLineGutter': {
-        backgroundColor: resolvedTheme === 'dark' ? 'rgba(34, 211, 238, 0.1)' : 'rgba(6, 182, 212, 0.1)',
-        color: '#22d3ee',
-      },
-      '.cm-activeLine': {
-        backgroundColor: resolvedTheme === 'dark' ? 'rgba(15, 23, 42, 0.6)' : 'rgba(241, 245, 249, 0.8)',
-      },
-      '.cm-selectionBackground, ::selection': {
-        backgroundColor: resolvedTheme === 'dark' ? 'rgba(22, 78, 99, 0.6) !important' : '#bae6fd !important',
-      },
-      '.cm-latex-error-line': {
-        backgroundColor: 'rgba(239, 68, 68, 0.12) !important',
-      },
-    });
-
     const updateListener = EditorView.updateListener.of((update: ViewUpdate) => {
       if (update.docChanged) {
         onChangeRef.current(update.state.doc.toString());
@@ -320,6 +324,8 @@ export default function TeXEditor({
         onCursorLineRef.current?.(line);
       }
     });
+
+    const isDark = resolvedTheme === 'dark';
 
     const startState = EditorState.create({
       doc: source,
@@ -339,13 +345,12 @@ export default function TeXEditor({
         EditorView.lineWrapping,
         customKeymap,
         errorField,
-        themeCompartment.current.of(resolvedTheme === 'dark' ? oneDark : []),
+        themeCompartment.current.of(getThemeExtensions(isDark)),
         fontSizeCompartment.current.of(
           EditorView.theme({
             '&': { fontSize: `${fontSize}px` },
           })
         ),
-        baseTheme,
         updateListener,
       ],
     });
@@ -393,10 +398,9 @@ export default function TeXEditor({
   useEffect(() => {
     const view = viewRef.current;
     if (!view) return;
+    const isDark = resolvedTheme === 'dark';
     view.dispatch({
-      effects: themeCompartment.current.reconfigure(
-        resolvedTheme === 'dark' ? oneDark : []
-      ),
+      effects: themeCompartment.current.reconfigure(getThemeExtensions(isDark)),
     });
   }, [resolvedTheme]);
 

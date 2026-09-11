@@ -1,8 +1,192 @@
 'use client';
-import { useEffect, useState } from 'react';
-import Editor, { type OnMount } from '@monaco-editor/react';
+
+import React, { useEffect, useRef } from 'react';
+import {
+  EditorView,
+  keymap,
+  lineNumbers,
+  highlightActiveLine,
+  highlightActiveLineGutter,
+  drawSelection,
+  dropCursor,
+  rectangularSelection,
+  crosshairCursor,
+  Decoration,
+  type DecorationSet,
+  ViewUpdate,
+} from '@codemirror/view';
+import {
+  EditorState,
+  StateField,
+  StateEffect,
+  Compartment,
+} from '@codemirror/state';
+import {
+  defaultKeymap,
+  historyKeymap,
+  history,
+  indentWithTab,
+  undo,
+  redo,
+  selectAll,
+} from '@codemirror/commands';
+import { searchKeymap, openSearchPanel } from '@codemirror/search';
+import {
+  syntaxHighlighting,
+  defaultHighlightStyle,
+  bracketMatching,
+  StreamLanguage,
+} from '@codemirror/language';
+import { stex } from '@codemirror/legacy-modes/mode/stex';
+import { oneDark } from '@codemirror/theme-one-dark';
+import {
+  autocompletion,
+  CompletionContext,
+  CompletionResult,
+  snippet,
+} from '@codemirror/autocomplete';
 import { useTheme } from '@/context/ThemeContext';
 import type { ParsedTeXIssue } from '@/components/latex/ErrorConsole';
+
+export interface TeXEditorProps {
+  source: string;
+  onChange: (s: string) => void;
+  fontSize: number;
+  onCompile: () => void;
+  insertRequest?: { id: number; text: string };
+  editorActionRequest?: { id: number; action: string };
+  onCursorLine?: (line: number) => void;
+  targetLine?: number;
+  errors?: ParsedTeXIssue[];
+  onMount?: (view: EditorView) => void;
+}
+
+export const insertTextAtCursor = (
+  view: EditorView,
+  text: string,
+  cursorOffset?: number
+) => {
+  const range = view.state.selection.main;
+  let insert = text;
+  let offset = cursorOffset;
+  const match = /\$\{(\d+)(?::([^}]*))?\}|\$(\d+)/.exec(text);
+  if (match) {
+    const clean = text.replace(/\$\{\d+(?::([^}]*))?\}|\$\d+/g, '$1');
+    insert = clean;
+    if (offset === undefined) {
+      offset = match.index;
+    }
+  }
+
+  view.dispatch({
+    changes: { from: range.from, to: range.to, insert },
+    selection: { anchor: range.from + (offset !== undefined ? offset : insert.length) },
+    scrollIntoView: true,
+  });
+  view.focus();
+};
+
+const latexSnippets = [
+  {
+    label: '\\bpt',
+    detail: 'Hệ phương trình cases',
+    type: 'snippet',
+    apply: snippet('\\begin{cases}\n  ${2x + y = 5} \\\\\n  ${x - 3y = -1}\n\\end{cases}'),
+  },
+  {
+    label: '\\bex',
+    detail: 'Môi trường bài tập exercise',
+    type: 'snippet',
+    apply: snippet('\\begin{exercise}\n  ${Nội dung bài tập toán học...}\n\\end{exercise}'),
+  },
+  {
+    label: '\\frac',
+    detail: 'Phân số dfrac',
+    type: 'snippet',
+    apply: snippet('\\dfrac{${a}}{${b}}'),
+  },
+  {
+    label: '\\bsol',
+    detail: 'Môi trường lời giải solution',
+    type: 'snippet',
+    apply: snippet('\\begin{solution}\n  ${Lời giải chi tiết từng bước...}\n\\end{solution}'),
+  },
+  {
+    label: '\\bth',
+    detail: 'Môi trường định lý theorem',
+    type: 'snippet',
+    apply: snippet('\\begin{theorem}[${Tên định lý}]\n  ${Nội dung định lý...}\n\\end{theorem}'),
+  },
+  {
+    label: '\\btikz',
+    detail: 'Môi trường hình học tikzpicture',
+    type: 'snippet',
+    apply: snippet(
+      '\\begin{tikzpicture}[scale=${0.8}]\n  \\draw[thick, blue] (${0,0}) -- (${3,0}) -- (${1.5,2}) -- cycle;\n\\end{tikzpicture}'
+    ),
+  },
+  {
+    label: '\\bmat',
+    detail: 'Ma trận pmatrix',
+    type: 'snippet',
+    apply: snippet('\\begin{pmatrix}\n  ${a} & ${b} \\\\\n  ${c} & ${d}\n\\end{pmatrix}'),
+  },
+  {
+    label: '\\balign',
+    detail: 'Căn dòng công thức align*',
+    type: 'snippet',
+    apply: snippet('\\begin{align*}\n  ${f(x)} &= ${ax^2 + bx + c} \\\\\n  &= ${0}\n\\end{align*}'),
+  },
+  {
+    label: '\\bmulti',
+    detail: '4 đáp án trắc nghiệm A-B-C-D',
+    type: 'snippet',
+    apply: snippet(
+      '\\begin{multicols}{4}\n\\begin{enumerate}[label=\\Alph*.]\n  \\item ${Phương án A}\n  \\item ${Phương án B}\n  \\item ${Phương án C}\n  \\item ${Phương án D}\n\\end{enumerate}\n\\end{multicols}'
+    ),
+  },
+];
+
+const latexCompletionSource = (context: CompletionContext): CompletionResult | null => {
+  const word = context.matchBefore(/\\[a-zA-Z]*/);
+  if (!word) return null;
+  if (word.from === word.to && !context.explicit) return null;
+  return {
+    from: word.from,
+    options: latexSnippets,
+  };
+};
+
+const setErrorEffect = StateEffect.define<ParsedTeXIssue[]>();
+
+const errorField = StateField.define<DecorationSet>({
+  create() {
+    return Decoration.none;
+  },
+  update(decorations, tr) {
+    for (const e of tr.effects) {
+      if (e.is(setErrorEffect)) {
+        const issues = e.value;
+        const decos: any[] = [];
+        for (const err of issues) {
+          if (err.line && err.line > 0 && err.line <= tr.state.doc.lines && err.type === 'error') {
+            const line = tr.state.doc.line(err.line);
+            decos.push(
+              Decoration.line({
+                class: 'cm-latex-error-line',
+                attributes: { title: err.message },
+              }).range(line.from)
+            );
+          }
+        }
+        decos.sort((a, b) => a.from - b.from);
+        return Decoration.set(decos);
+      }
+    }
+    return decorations.map(tr.changes);
+  },
+  provide: (f) => EditorView.decorations.from(f),
+});
 
 export default function TeXEditor({
   source,
@@ -14,473 +198,309 @@ export default function TeXEditor({
   onCursorLine,
   targetLine,
   errors,
-  onMount: onMountProp,
-}: {
-  source: string;
-  onChange: (s: string) => void;
-  fontSize: number;
-  onCompile: () => void;
-  insertRequest?: { id: number; text: string };
-  editorActionRequest?: { id: number; action: string };
-  onCursorLine?: (line: number) => void;
-  targetLine?: number;
-  errors?: ParsedTeXIssue[];
-  onMount?: (editor: Parameters<OnMount>[0]) => void;
-}) {
-  const [ready, setReady] = useState(false);
-  const [fallback, setFallback] = useState(false);
+  onMount,
+}: TeXEditorProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const viewRef = useRef<EditorView | null>(null);
   const { resolvedTheme } = useTheme();
-  const [editorRef, setEditorRef] = useState<Parameters<OnMount>[0] | null>(null);
-  const [monacoRef, setMonacoRef] = useState<any>(null);
-  const [decorations, setDecorations] = useState<string[]>([]);
 
-  // Fallback timer if Monaco CDN is blocked
+  const fontSizeCompartment = useRef(new Compartment());
+  const themeCompartment = useRef(new Compartment());
+
+  // Ref callbacks to avoid stale closures in CodeMirror extensions
+  const onCompileRef = useRef(onCompile);
+  onCompileRef.current = onCompile;
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+  const onCursorLineRef = useRef(onCursorLine);
+  onCursorLineRef.current = onCursorLine;
+
+  // Initialize CodeMirror 6 EditorView
   useEffect(() => {
-    if (ready) return;
-    const timer = setTimeout(() => setFallback(true), 10000);
-    return () => clearTimeout(timer);
-  }, [ready]);
+    if (!containerRef.current) return;
 
-  // Update Monaco Error Squiggles / Markers and Gutter Bullets
-  useEffect(() => {
-    if (!editorRef || !monacoRef) return;
-    const model = editorRef.getModel();
-    if (!model) return;
-
-    if (!errors || errors.length === 0) {
-      monacoRef.editor.setModelMarkers(model, 'tex-errors', []);
-      setDecorations((prev) => editorRef.deltaDecorations(prev, []));
-      return;
-    }
-
-    const markers = errors
-      .filter((err) => err.line && err.line > 0)
-      .map((err) => {
-        const lineContent = model.getLineContent(err.line!) || '';
-        return {
-          startLineNumber: err.line!,
-          startColumn: 1,
-          endLineNumber: err.line!,
-          endColumn: Math.max(1, lineContent.length + 1),
-          message: err.message,
-          severity:
-            err.type === 'error'
-              ? monacoRef.MarkerSeverity.Error
-              : monacoRef.MarkerSeverity.Warning,
-        };
-      });
-
-    monacoRef.editor.setModelMarkers(model, 'tex-errors', markers);
-
-    // Overleaf-style crisp red error bullet in the left gutter beside line numbers
-    const newDecs = errors
-      .filter((err) => err.line && err.line > 0 && err.type === 'error')
-      .map((err) => ({
-        range: new monacoRef.Range(err.line!, 1, err.line!, 1),
-        options: {
-          isWholeLine: true,
-          className: 'latex-error-line',
-          glyphMarginClassName: 'latex-error-glyph',
-          glyphMarginHoverMessage: { value: `Lỗi biên dịch LaTeX: ${err.message}` },
+    const customKeymap = keymap.of([
+      {
+        key: 'Mod-Enter',
+        run: () => {
+          onCompileRef.current();
+          return true;
         },
-      }));
+      },
+      {
+        key: 'Mod-b',
+        run: (view) => {
+          const range = view.state.selection.main;
+          const text = view.state.sliceDoc(range.from, range.to);
+          const replacement = text ? `\\textbf{${text}}` : `\\textbf{}`;
+          const cursorOffset = text ? replacement.length : 8;
+          view.dispatch({
+            changes: { from: range.from, to: range.to, insert: replacement },
+            selection: { anchor: range.from + cursorOffset },
+            scrollIntoView: true,
+          });
+          return true;
+        },
+      },
+      {
+        key: 'Mod-i',
+        run: (view) => {
+          const range = view.state.selection.main;
+          const text = view.state.sliceDoc(range.from, range.to);
+          const replacement = text ? `\\textit{${text}}` : `\\textit{}`;
+          const cursorOffset = text ? replacement.length : 8;
+          view.dispatch({
+            changes: { from: range.from, to: range.to, insert: replacement },
+            selection: { anchor: range.from + cursorOffset },
+            scrollIntoView: true,
+          });
+          return true;
+        },
+      },
+      {
+        key: 'Mod-m',
+        run: (view) => {
+          const range = view.state.selection.main;
+          const text = view.state.sliceDoc(range.from, range.to);
+          const replacement = text ? `\\( ${text} \\)` : `\\(  \\)`;
+          const cursorOffset = text ? replacement.length : 3;
+          view.dispatch({
+            changes: { from: range.from, to: range.to, insert: replacement },
+            selection: { anchor: range.from + cursorOffset },
+            scrollIntoView: true,
+          });
+          return true;
+        },
+      },
+      ...defaultKeymap,
+      ...historyKeymap,
+      ...searchKeymap,
+      indentWithTab,
+    ]);
 
-    setDecorations((prev) => editorRef.deltaDecorations(prev, newDecs));
-  }, [editorRef, monacoRef, errors]);
+    const baseTheme = EditorView.theme({
+      '&': {
+        height: '100%',
+        backgroundColor: resolvedTheme === 'dark' ? '#020617' : '#ffffff',
+        color: resolvedTheme === 'dark' ? '#cbd5e1' : '#1e293b',
+      },
+      '.cm-content': {
+        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+        padding: '12px 0',
+        caretColor: '#22d3ee',
+        lineHeight: '1.6',
+      },
+      '.cm-gutters': {
+        backgroundColor: resolvedTheme === 'dark' ? '#020617' : '#f8fafc',
+        color: resolvedTheme === 'dark' ? '#475569' : '#94a3b8',
+        borderRight: `1px solid ${resolvedTheme === 'dark' ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.06)'}`,
+        minWidth: '40px',
+      },
+      '.cm-activeLineGutter': {
+        backgroundColor: resolvedTheme === 'dark' ? 'rgba(34, 211, 238, 0.1)' : 'rgba(6, 182, 212, 0.1)',
+        color: '#22d3ee',
+      },
+      '.cm-activeLine': {
+        backgroundColor: resolvedTheme === 'dark' ? 'rgba(15, 23, 42, 0.6)' : 'rgba(241, 245, 249, 0.8)',
+      },
+      '.cm-selectionBackground, ::selection': {
+        backgroundColor: resolvedTheme === 'dark' ? 'rgba(22, 78, 99, 0.6) !important' : '#bae6fd !important',
+      },
+      '.cm-latex-error-line': {
+        backgroundColor: 'rgba(239, 68, 68, 0.12) !important',
+      },
+    });
 
-  // Handle ribbon actions (Undo, Redo, Find, Bold, Italic, Link, Table)
+    const updateListener = EditorView.updateListener.of((update: ViewUpdate) => {
+      if (update.docChanged) {
+        onChangeRef.current(update.state.doc.toString());
+      }
+      if (update.selectionSet) {
+        const line = update.state.doc.lineAt(update.state.selection.main.head).number;
+        onCursorLineRef.current?.(line);
+      }
+    });
+
+    const startState = EditorState.create({
+      doc: source,
+      extensions: [
+        lineNumbers(),
+        highlightActiveLineGutter(),
+        history(),
+        drawSelection(),
+        dropCursor(),
+        rectangularSelection(),
+        crosshairCursor(),
+        highlightActiveLine(),
+        bracketMatching(),
+        autocompletion({ override: [latexCompletionSource] }),
+        StreamLanguage.define(stex),
+        syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+        EditorView.lineWrapping,
+        customKeymap,
+        errorField,
+        themeCompartment.current.of(resolvedTheme === 'dark' ? oneDark : []),
+        fontSizeCompartment.current.of(
+          EditorView.theme({
+            '&': { fontSize: `${fontSize}px` },
+          })
+        ),
+        baseTheme,
+        updateListener,
+      ],
+    });
+
+    const view = new EditorView({
+      state: startState,
+      parent: containerRef.current,
+    });
+
+    viewRef.current = view;
+    onMount?.(view);
+
+    return () => {
+      view.destroy();
+      viewRef.current = null;
+    };
+  }, []); // Run once on mount
+
+  // Sync incoming source changes (e.g. file switch, template load)
   useEffect(() => {
-    if (!editorRef || !editorActionRequest) return;
+    const view = viewRef.current;
+    if (!view) return;
+    const currentDoc = view.state.doc.toString();
+    if (source !== currentDoc) {
+      view.dispatch({
+        changes: { from: 0, to: currentDoc.length, insert: source },
+      });
+    }
+  }, [source]);
+
+  // Sync font size changes
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+    view.dispatch({
+      effects: fontSizeCompartment.current.reconfigure(
+        EditorView.theme({
+          '&': { fontSize: `${fontSize}px` },
+        })
+      ),
+    });
+  }, [fontSize]);
+
+  // Sync theme changes
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+    view.dispatch({
+      effects: themeCompartment.current.reconfigure(
+        resolvedTheme === 'dark' ? oneDark : []
+      ),
+    });
+  }, [resolvedTheme]);
+
+  // Sync LaTeX errors squiggles / lines
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+    view.dispatch({
+      effects: setErrorEffect.of(errors || []),
+    });
+  }, [errors]);
+
+  // Sync targetLine jump (SyncTeX from PDF)
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view || !targetLine) return;
+    if (targetLine > 0 && targetLine <= view.state.doc.lines) {
+      const line = view.state.doc.line(targetLine);
+      view.dispatch({
+        selection: { anchor: line.from },
+        scrollIntoView: true,
+      });
+      view.focus();
+    }
+  }, [targetLine]);
+
+  // Handle ribbon actions (Undo, Redo, Find, Bold, Italic, Link, Table, Code, Quote, SelectAll)
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view || !editorActionRequest) return;
     const { action } = editorActionRequest;
-    const sel = editorRef.getSelection();
-    const model = editorRef.getModel();
+    const range = view.state.selection.main;
+    const selectedText = view.state.sliceDoc(range.from, range.to);
 
     if (action === 'undo') {
-      editorRef.trigger('ribbon', 'undo', null);
+      undo(view);
     } else if (action === 'redo') {
-      editorRef.trigger('ribbon', 'redo', null);
+      redo(view);
     } else if (action === 'find') {
-      editorRef.getAction('actions.find')?.run();
+      openSearchPanel(view);
     } else if (action === 'bold') {
-      if (sel && model) {
-        const text = model.getValueInRange(sel);
-        const replacement = text ? `\\textbf{${text}}` : `\\textbf{}`;
-        editorRef.executeEdits('ribbon-bold', [{ range: sel, text: replacement, forceMoveMarkers: true }]);
-      }
+      const replacement = selectedText ? `\\textbf{${selectedText}}` : `\\textbf{}`;
+      const cursorOffset = selectedText ? replacement.length : 8;
+      view.dispatch({
+        changes: { from: range.from, to: range.to, insert: replacement },
+        selection: { anchor: range.from + cursorOffset },
+        scrollIntoView: true,
+      });
     } else if (action === 'italic') {
-      if (sel && model) {
-        const text = model.getValueInRange(sel);
-        const replacement = text ? `\\textit{${text}}` : `\\textit{}`;
-        editorRef.executeEdits('ribbon-italic', [{ range: sel, text: replacement, forceMoveMarkers: true }]);
-      }
+      const replacement = selectedText ? `\\textit{${selectedText}}` : `\\textit{}`;
+      const cursorOffset = selectedText ? replacement.length : 8;
+      view.dispatch({
+        changes: { from: range.from, to: range.to, insert: replacement },
+        selection: { anchor: range.from + cursorOffset },
+        scrollIntoView: true,
+      });
     } else if (action === 'link') {
-      if (sel && model) {
-        const text = model.getValueInRange(sel);
-        const replacement = `\\href{https://example.com}{${text || 'liên kết'}}`;
-        editorRef.executeEdits('ribbon-link', [{ range: sel, text: replacement, forceMoveMarkers: true }]);
-      }
+      const replacement = `\\href{https://example.com}{${selectedText || 'liên kết'}}`;
+      view.dispatch({
+        changes: { from: range.from, to: range.to, insert: replacement },
+        selection: { anchor: range.from + replacement.length },
+        scrollIntoView: true,
+      });
     } else if (action === 'table') {
-      if (sel) {
-        const tableSnippet = `\\begin{table}[h!]\n\\centering\n\\begin{tabular}{|c|c|c|}\n\\hline\nCột 1 & Cột 2 & Cột 3 \\\\\n\\hline\nA & B & C \\\\\nD & E & F \\\\\n\\hline\n\\end{tabular}\n\\caption{Bảng mẫu}\n\\end{table}\n`;
-        editorRef.executeEdits('ribbon-table', [{ range: sel, text: tableSnippet, forceMoveMarkers: true }]);
-      }
+      const tableSnippet = `\\begin{table}[h!]\n\\centering\n\\begin{tabular}{|c|c|c|}\n\\hline\nCột 1 & Cột 2 & Cột 3 \\\\\n\\hline\nA & B & C \\\\\nD & E & F \\\\\n\\hline\n\\end{tabular}\n\\caption{Bảng mẫu}\n\\end{table}\n`;
+      view.dispatch({
+        changes: { from: range.from, to: range.to, insert: tableSnippet },
+        selection: { anchor: range.from + tableSnippet.length },
+        scrollIntoView: true,
+      });
     } else if (action === 'code') {
-      if (sel && model) {
-        const text = model.getValueInRange(sel);
-        const replacement = text ? `\\texttt{${text}}` : `\\texttt{}`;
-        editorRef.executeEdits('ribbon-code', [{ range: sel, text: replacement, forceMoveMarkers: true }]);
-      }
+      const replacement = selectedText ? `\\texttt{${selectedText}}` : `\\texttt{}`;
+      const cursorOffset = selectedText ? replacement.length : 8;
+      view.dispatch({
+        changes: { from: range.from, to: range.to, insert: replacement },
+        selection: { anchor: range.from + cursorOffset },
+        scrollIntoView: true,
+      });
     } else if (action === 'quote') {
-      if (sel && model) {
-        const text = model.getValueInRange(sel);
-        const replacement = text ? `\\begin{quote}\n  ${text}\n\\end{quote}` : `\\begin{quote}\n  \n\\end{quote}`;
-        editorRef.executeEdits('ribbon-quote', [{ range: sel, text: replacement, forceMoveMarkers: true }]);
-      }
+      const replacement = selectedText
+        ? `\\begin{quote}\n  ${selectedText}\n\\end{quote}`
+        : `\\begin{quote}\n  \n\\end{quote}`;
+      view.dispatch({
+        changes: { from: range.from, to: range.to, insert: replacement },
+        selection: { anchor: range.from + (selectedText ? replacement.length : 17) },
+        scrollIntoView: true,
+      });
     } else if (action === 'select-all') {
-      editorRef.getAction('editor.action.selectAll')?.run();
+      selectAll(view);
     }
-    editorRef.focus();
-  }, [editorRef, editorActionRequest]);
+    view.focus();
+  }, [editorActionRequest]);
 
-  // Insert text at cursor position (from ribbon or tools) with smart cursor placement
+  // Handle insert requests (Symbols, Templates, Snippets)
   useEffect(() => {
-    if (!editorRef || !insertRequest) return;
-    const selection = editorRef.getSelection();
-    if (!selection) return;
-
-    const snippetController = (editorRef as any).getContribution?.(
-      'snippetController2'
-    );
-
-    if (
-      snippetController &&
-      typeof snippetController.insert === 'function' &&
-      /\$\{\d+(?::[^\}]*)?\}|\$\d+/.test(insertRequest.text)
-    ) {
-      snippetController.insert(insertRequest.text);
-    } else {
-      const cleanText = insertRequest.text.replace(/\$\{\d+:?([^\}]*)\}|\$\d+/g, '$1');
-      editorRef.executeEdits('math-tools', [
-        { range: selection, text: cleanText, forceMoveMarkers: true },
-      ]);
-
-      // Jump cursor into first bracket/brace
-      const firstBracketIdx = cleanText.search(/[\{\[\(]/);
-      if (firstBracketIdx !== -1) {
-        const linesBefore = cleanText.substring(0, firstBracketIdx).split('\n');
-        const targetLine = selection.startLineNumber + linesBefore.length - 1;
-        const targetCol =
-          linesBefore.length === 1
-            ? selection.startColumn + firstBracketIdx + 1
-            : linesBefore[linesBefore.length - 1].length + 1;
-        editorRef.setPosition({ lineNumber: targetLine, column: targetCol });
-      }
-    }
-    editorRef.focus();
-  }, [editorRef, insertRequest]);
-
-  // SyncTeX: Scroll to target line when clicked on PDF
-  useEffect(() => {
-    if (!editorRef || !targetLine) return;
-    editorRef.revealLineInCenter(targetLine);
-    editorRef.setPosition({ lineNumber: targetLine, column: 1 });
-    editorRef.focus();
-  }, [editorRef, targetLine]);
-
-  const mount: OnMount = (editor, monaco) => {
-    setReady(true);
-    setEditorRef(editor);
-    setMonacoRef(monaco);
-    onMountProp?.(editor);
-
-    editor.onDidChangeCursorPosition((event) => {
-      onCursorLine?.(event.position.lineNumber);
-    });
-
-    editor.addAction({
-      id: 'compile-pdf',
-      label: 'Biên dịch PDF',
-      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter],
-      run: onCompile,
-    });
-
-    editor.addAction({
-      id: 'format-bold',
-      label: 'Chữ đậm (\\textbf)',
-      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyB],
-      run: (ed) => {
-        const sel = ed.getSelection();
-        const model = ed.getModel();
-        if (sel && model) {
-          const text = model.getValueInRange(sel);
-          const replacement = text ? `\\textbf{${text}}` : `\\textbf{}`;
-          ed.executeEdits('shortcut-bold', [{ range: sel, text: replacement, forceMoveMarkers: true }]);
-        }
-      },
-    });
-
-    editor.addAction({
-      id: 'format-italic',
-      label: 'Chữ nghiêng (\\textit)',
-      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyI],
-      run: (ed) => {
-        const sel = ed.getSelection();
-        const model = ed.getModel();
-        if (sel && model) {
-          const text = model.getValueInRange(sel);
-          const replacement = text ? `\\textit{${text}}` : `\\textit{}`;
-          ed.executeEdits('shortcut-italic', [{ range: sel, text: replacement, forceMoveMarkers: true }]);
-        }
-      },
-    });
-
-    editor.addAction({
-      id: 'insert-inline-math',
-      label: 'Chèn công thức toán (\\( ... \\))',
-      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyM],
-      run: (ed) => {
-        const sel = ed.getSelection();
-        const model = ed.getModel();
-        if (sel && model) {
-          const text = model.getValueInRange(sel);
-          const replacement = text ? `\\( ${text} \\)` : `\\(  \\)`;
-          ed.executeEdits('shortcut-math', [{ range: sel, text: replacement, forceMoveMarkers: true }]);
-          if (!text) {
-            ed.setPosition({
-              lineNumber: sel.startLineNumber,
-              column: sel.startColumn + 3,
-            });
-          }
-        }
-      },
-    });
-
-    // Smart initial cursor placement (between line 8 and 10, line 9 inside document body)
-    const model = editor.getModel();
-    if (model) {
-      const lineCount = model.getLineCount();
-      if (targetLine && targetLine <= lineCount) {
-        editor.setPosition({ lineNumber: targetLine, column: 1 });
-        editor.revealLineInCenter(targetLine);
-        editor.focus();
-      } else {
-        for (let i = 1; i <= lineCount; i++) {
-          const lineContent = model.getLineContent(i).trim();
-          if (lineContent === '\\begin{document}') {
-            const nextLine = i + 1;
-            if (nextLine <= lineCount) {
-              editor.setPosition({ lineNumber: nextLine, column: 1 });
-              editor.revealLineInCenter(nextLine);
-              editor.focus();
-              break;
-            }
-          }
-        }
-      }
-    }
-  };
-
-  if (fallback) {
-    return (
-      <div className="h-full flex flex-col p-2">
-        <p className="text-xs text-amber-600 dark:text-amber-400 mb-1">
-          Trình soạn thảo nâng cao đang tải ở chế độ tương thích nhẹ.
-        </p>
-        <textarea
-          aria-label="Mã nguồn LaTeX"
-          value={source}
-          onChange={(e) => onChange(e.target.value)}
-          spellCheck={false}
-          className="flex-1 min-h-0 w-full p-3 bg-transparent font-mono border rounded-xl"
-          style={{ fontSize }}
-        />
-      </div>
-    );
-  }
+    const view = viewRef.current;
+    if (!view || !insertRequest) return;
+    insertTextAtCursor(view, insertRequest.text);
+  }, [insertRequest]);
 
   return (
-    <>
-    <Editor
-      language="latex"
-      path="document.tex"
-      value={source}
-      onChange={(v) => onChange(v ?? '')}
-      theme={resolvedTheme === 'dark' ? 'mathaio-dark' : 'light'}
-      onMount={mount}
-      beforeMount={(monaco) => {
-        monaco.editor.defineTheme('mathaio-dark', {
-          base: 'vs-dark',
-          inherit: true,
-          rules: [
-            { token: 'keyword', foreground: '38bdf8', fontStyle: 'bold' },
-            { token: 'comment', foreground: '64748b', fontStyle: 'italic' },
-            { token: 'string', foreground: 'f472b6' },
-            { token: 'tag', foreground: 'fbbf24' },
-            { token: 'delimiter.bracket', foreground: '94a3b8' },
-          ],
-          colors: {
-            'editor.background': '#020617',
-            'editor.foreground': '#cbd5e1',
-            'editorLineNumber.foreground': '#475569',
-            'editorLineNumber.activeForeground': '#22d3ee',
-            'editor.lineHighlightBackground': '#0f172a',
-            'editor.selectionBackground': '#164e6380',
-          },
-        });
-
-        if (!monaco.languages.getLanguages().some((l: { id: string }) => l.id === 'latex')) {
-          monaco.languages.register({ id: 'latex' });
-          monaco.languages.setMonarchTokensProvider('latex', {
-            tokenizer: {
-              root: [
-                [/%.*$/, 'comment'],
-                [/\\(?:begin|end|documentclass|usepackage|geometry|setmainfont|babelprovide|babelfont)\b/, 'keyword'],
-                [/\\[a-zA-Z@]+|\\./, 'tag'],
-                [/\$\$?|\\[\[\]()]/, 'string'],
-                [/[{}\[\]]/, 'delimiter.bracket'],
-                [/[0-9]+/, 'number'],
-              ],
-            },
-          });
-
-          monaco.languages.setLanguageConfiguration('latex', {
-            comments: { lineComment: '%' },
-            brackets: [
-              ['{', '}'],
-              ['[', ']'],
-              ['(', ')'],
-            ],
-            autoClosingPairs: [
-              { open: '{', close: '}' },
-              { open: '[', close: ']' },
-              { open: '(', close: ')' },
-              { open: '$', close: '$' },
-            ],
-          });
-
-          // Register rich Snippets (Tab-trigger)
-          monaco.languages.registerCompletionItemProvider('latex', {
-            triggerCharacters: ['\\'],
-            provideCompletionItems(model: any, position: any) {
-              const range = new monaco.Range(
-                position.lineNumber,
-                Math.max(1, position.column - 8),
-                position.lineNumber,
-                position.column
-              );
-
-              return {
-                suggestions: [
-                  {
-                    label: '\\bpt',
-                    insertText: '\\begin{cases}\n  ${1:2x + y = 5} \\\\\n  ${2:x - 3y = -1}\n\\end{cases}',
-                    insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-                    kind: monaco.languages.CompletionItemKind.Snippet,
-                    documentation: 'Môi trường hệ phương trình cases',
-                    range,
-                  },
-                  {
-                    label: '\\bex',
-                    insertText: '\\begin{exercise}\n  ${1:Nội dung bài tập toán học...}\n\\end{exercise}',
-                    insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-                    kind: monaco.languages.CompletionItemKind.Snippet,
-                    documentation: 'Môi trường bài tập exercise',
-                    range,
-                  },
-                  {
-                    label: '\\frac',
-                    insertText: '\\dfrac{${1:a}}{${2:b}}',
-                    insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-                    kind: monaco.languages.CompletionItemKind.Snippet,
-                    documentation: 'Phân số dfrac',
-                    range,
-                  },
-                  {
-                    label: '\\bsol',
-                    insertText: '\\begin{solution}\n  ${1:Lời giải chi tiết từng bước...}\n\\end{solution}',
-                    insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-                    kind: monaco.languages.CompletionItemKind.Snippet,
-                    documentation: 'Môi trường lời giải solution',
-                    range,
-                  },
-                  {
-                    label: '\\bth',
-                    insertText: '\\begin{theorem}[${1:Tên định lý}]\n  ${2:Nội dung định lý...}\n\\end{theorem}',
-                    insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-                    kind: monaco.languages.CompletionItemKind.Snippet,
-                    documentation: 'Môi trường định lý theorem',
-                    range,
-                  },
-                  {
-                    label: '\\btikz',
-                    insertText: '\\begin{tikzpicture}[scale=${1:0.8}]\n  \\draw[thick, blue] (${2:0,0}) -- (${3:3,0}) -- (${4:1.5,2}) -- cycle;\n\\end{tikzpicture}',
-                    insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-                    kind: monaco.languages.CompletionItemKind.Snippet,
-                    documentation: 'Môi trường hình học tikzpicture',
-                    range,
-                  },
-                  {
-                    label: '\\bmat',
-                    insertText: '\\begin{pmatrix}\n  ${1:a} & ${2:b} \\\\\n  ${3:c} & ${4:d}\n\\end{pmatrix}',
-                    insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-                    kind: monaco.languages.CompletionItemKind.Snippet,
-                    documentation: 'Ma trận pmatrix',
-                    range,
-                  },
-                  {
-                    label: '\\balign',
-                    insertText: '\\begin{align*}\n  ${1:f(x)} &= ${2:ax^2 + bx + c} \\\\\n  &= ${3:0}\n\\end{align*}',
-                    insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-                    kind: monaco.languages.CompletionItemKind.Snippet,
-                    documentation: 'Căn dòng công thức align*',
-                    range,
-                  },
-                  {
-                    label: '\\bmulti',
-                    insertText: '\\begin{multicols}{4}\n\\begin{enumerate}[label=\\Alph*.]\n  \\item ${1:Phương án A}\n  \\item ${2:Phương án B}\n  \\item ${3:Phương án C}\n  \\item ${4:Phương án D}\n\\end{enumerate}\n\\end{multicols}',
-                    insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-                    kind: monaco.languages.CompletionItemKind.Snippet,
-                    documentation: '4 đáp án trắc nghiệm A-B-C-D',
-                    range,
-                  },
-                ],
-              };
-            },
-          });
-        }
-      }}
-      loading={<div className="p-4 text-xs text-slate-500">Đang tải trình soạn thảo LaTeX Monaco…</div>}
-      options={{
-        readOnly: false,
-        fontSize,
-        lineNumbers: 'on',
-        minimap: { enabled: false },
-        automaticLayout: true,
-        wordWrap: 'on',
-        scrollBeyondLastLine: false,
-        tabSize: 2,
-        ariaLabel: 'Mã nguồn LaTeX',
-        glyphMargin: true,
-        contextmenu: true,
-        quickSuggestions: true,
-        copyWithSyntaxHighlighting: true,
-      }}
+    <div
+      ref={containerRef}
+      className="h-full w-full overflow-hidden select-text text-left"
     />
-    <style jsx global>{`
-      .latex-error-glyph {
-        background-color: #ef4444 !important;
-        border-radius: 50% !important;
-        width: 8px !important;
-        height: 8px !important;
-        margin-left: 6px !important;
-        margin-top: 5px !important;
-        box-shadow: 0 0 5px rgba(239, 68, 68, 0.8) !important;
-        cursor: pointer !important;
-      }
-      .latex-error-line {
-        background-color: rgba(239, 68, 68, 0.08) !important;
-      }
-    `}</style>
-    </>
   );
 }

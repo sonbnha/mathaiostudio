@@ -190,7 +190,7 @@ export default function LaTeXStudio({
   const [resizingTarget, setResizingTarget] = useState<'sidebar' | 'editor-pdf' | null>(null);
   const isResizing = Boolean(resizingTarget);
   const resizingTargetRef = useRef<'sidebar' | 'editor-pdf' | null>(null);
-  const monacoEditorRef = useRef<any>(null);
+  const editorViewRef = useRef<any>(null);
   const mainContainerRef = useRef<HTMLElement>(null);
   const workspaceRef = useRef<HTMLDivElement>(null);
   const pdfSectionRef = useRef<HTMLElement>(null);
@@ -822,8 +822,8 @@ export default function LaTeXStudio({
         setSidebarWidth(0);
       }
 
-      // Trigger Monaco Editor layout update
-      monacoEditorRef.current?.layout();
+      // Trigger CodeMirror layout update
+      editorViewRef.current?.requestMeasure?.();
       window.dispatchEvent(new Event('resize'));
     };
 
@@ -882,8 +882,8 @@ export default function LaTeXStudio({
         }
       }
 
-      // Trigger editor.layout() of Monaco Editor to adapt immediately to new size
-      monacoEditorRef.current?.layout();
+      // Trigger editor layout update
+      editorViewRef.current?.requestMeasure?.();
       window.dispatchEvent(new Event('resize'));
     };
 
@@ -2948,8 +2948,8 @@ export default function LaTeXStudio({
                 onCursorLine={handleSyncCodeToPDF}
                 targetLine={targetLine}
                 errors={errors}
-                onMount={(editor) => {
-                  monacoEditorRef.current = editor;
+                onMount={(view) => {
+                  editorViewRef.current = view;
                 }}
               />
             ) : (

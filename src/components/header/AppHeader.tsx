@@ -108,7 +108,7 @@ export default function AppHeader({
 
   return (
     <header
-      className={`shrink-0 z-30 backdrop-blur-md bg-white/85 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800/80 px-4 lg:px-8 py-2.5 sm:py-3 flex flex-wrap items-center justify-between gap-3 shadow-xs dark:shadow-xl dark:shadow-slate-950/50 transition-colors ${className}`}
+      className={`shrink-0 z-30 backdrop-blur-md bg-white/95 dark:bg-slate-900/95 border-b border-slate-200 dark:border-slate-800 px-4 lg:px-8 py-2 sm:py-2.5 flex flex-wrap items-center justify-between gap-3 shadow-2xs transition-colors ${className}`}
     >
       {/* 1. Left Section */}
       {isHome ? (

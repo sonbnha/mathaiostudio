@@ -550,9 +550,9 @@ export default function LaTeXStudio({
       />
 
       {/* 2. Single-Tier Compact Ribbon (Max 38px, No multi-tier stacking) */}
-      <div className="relative z-10 mx-2 sm:mx-3 my-1 px-2.5 py-1 bg-white/95 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xs backdrop-blur-sm flex items-center justify-between gap-2 shrink-0 h-9">
+      <div className="relative z-30 mx-2 sm:mx-3 my-1 px-2.5 py-1 bg-white/95 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xs backdrop-blur-sm flex items-center justify-between gap-2 shrink-0 h-9 overflow-visible">
         {/* Left Side: Template selector & Popover Launcher for Math Symbols & AI */}
-        <div className="flex items-center gap-1.5 min-w-0">
+        <div className="flex items-center gap-1.5 min-w-0 overflow-visible">
           {/* Template Selector */}
           <div className="flex items-center gap-1 shrink-0">
             <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 hidden sm:inline">
@@ -592,16 +592,25 @@ export default function LaTeXStudio({
 
           <span className="h-3.5 w-px bg-slate-200 dark:bg-slate-800" />
 
-          {/* Floating Math Symbols Button (Opens Popover, doesn't eat vertical screen space) */}
-          <button
-            type="button"
-            onClick={() => setIsSymbolsOpen(true)}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border border-cyan-500/25 transition shrink-0 cursor-pointer shadow-2xs"
-            title="Mở bảng ký hiệu toán học & mẫu TikZ (Floating Popover)"
-          >
-            <Sigma className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
-            <span>Ký hiệu Toán</span>
-          </button>
+          {/* Floating Math Symbols Button (Opens Popover anchored directly below) */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsSymbolsOpen((prev) => !prev)}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border border-cyan-500/25 transition shrink-0 cursor-pointer shadow-2xs"
+              title="Mở bảng ký hiệu toán học & mẫu TikZ (MathType Palette)"
+            >
+              <Sigma className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+              <span>Ký hiệu Toán</span>
+            </button>
+
+            {/* Anchored Math Symbols Popover */}
+            <MathSymbolsPopover
+              isOpen={isSymbolsOpen}
+              onClose={() => setIsSymbolsOpen(false)}
+              onInsert={handleInsert}
+            />
+          </div>
 
           {/* AI Assistant Dropdown */}
           <AIAssistantDropdown onAI={handleAI} aiBusy={aiBusy} />
@@ -708,13 +717,6 @@ export default function LaTeXStudio({
           )}
         </div>
       </div>
-
-      {/* Floating Math Symbols Popover */}
-      <MathSymbolsPopover
-        isOpen={isSymbolsOpen}
-        onClose={() => setIsSymbolsOpen(false)}
-        onInsert={handleInsert}
-      />
 
       {/* 3. Main Overleaf Workspace (Edge-to-Edge Fill Height) */}
       <main className="relative z-10 flex-1 min-h-0 w-full px-2 sm:px-3 pb-1 flex flex-row gap-2 overflow-hidden">

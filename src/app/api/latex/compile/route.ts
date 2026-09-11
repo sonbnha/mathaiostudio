@@ -30,10 +30,14 @@ export async function POST(request: Request) {
     const source = body && typeof body === 'object' && 'source' in body ? body.source : undefined;
     if (typeof source !== 'string' || !source.trim()) return fail('Nhập mã nguồn LaTeX trước khi biên dịch.', 400);
     if (Buffer.byteLength(source, 'utf8') > SOURCE_LIMIT) return fail('Mã nguồn quá lớn (tối đa 200 KB).', 413);
+    console.log('=== API COMPILE PAYLOAD ===', source);
     const pdf = await compileLatex(source, request.signal);
     return new Response(new Blob([pdf as Uint8Array<ArrayBuffer>], {type: 'application/pdf'}), {headers: {...privateHeaders, 'Content-Type': 'application/pdf', 'Content-Disposition': 'inline; filename="document.pdf"'}});
   } catch (error) {
-    if (error instanceof CompileError) return fail(error.message, error.status, error.log);
+    if (error instanceof CompileError) {
+      console.log('=== API COMPILE LOG ===', error.log);
+      return fail(error.message, error.status, error.log);
+    }
     return fail('Không thể xử lý yêu cầu biên dịch.', 500);
   }
 }

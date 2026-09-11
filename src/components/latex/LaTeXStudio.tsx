@@ -261,6 +261,7 @@ export default function LaTeXStudio({
 
       if (!code?.trim()) return;
 
+      console.log('=== PAYLOAD GUI DI ===', code);
       setStatus('compiling');
       setErrorLog('');
 
@@ -278,7 +279,9 @@ export default function LaTeXStudio({
           } catch {
             errData = { error: 'Lỗi máy chủ biên dịch.' };
           }
-          throw new Error(errData.log || errData.error || 'Biên dịch thất bại.');
+          const errorLogMessage = errData.log || errData.error || 'Biên dịch thất bại.';
+          console.log('=== RAW LATEX LOG ===', errorLogMessage);
+          throw new Error(errorLogMessage);
         }
 
         const blob = await res.blob();
@@ -296,6 +299,7 @@ export default function LaTeXStudio({
       } catch (err: any) {
         setStatus('error');
         const rawLog = err.message || 'Lỗi không xác định khi biên dịch.';
+        console.log('=== RAW LATEX LOG ===', rawLog);
         setErrorLog(rawLog);
         setOutputView('console');
       }

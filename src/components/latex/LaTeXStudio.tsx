@@ -598,7 +598,7 @@ export default function LaTeXStudio({
               type="button"
               onClick={() => setIsSymbolsOpen((prev) => !prev)}
               className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border border-cyan-500/25 transition shrink-0 cursor-pointer shadow-2xs"
-              title="Mở bảng ký hiệu toán học & mẫu TikZ (MathType Palette)"
+              title="Mở bảng ký hiệu toán học (MathType Palette)"
             >
               <Sigma className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
               <span>Ký hiệu Toán</span>

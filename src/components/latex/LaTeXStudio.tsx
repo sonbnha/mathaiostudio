@@ -3079,8 +3079,13 @@ export default function LaTeXStudio({
           style={{
             display: layoutMode === 'code' ? 'none' : 'flex',
             width: layoutMode === 'split' ? `${(1 - editorRatio) * 100}%` : '100%',
+            flex: '1 1 0%',
+            minWidth: 0,
+            minHeight: 0,
+            height: '100%',
+            overflow: 'hidden',
           }}
-          className={`min-w-[60px] flex-1 overflow-hidden relative flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xs h-full ${
+          className={`min-w-[60px] flex-1 min-h-0 h-full overflow-hidden relative flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xs ${
             isResizing ? 'select-none pointer-events-none' : ''
           }`}
         >
@@ -3266,11 +3271,11 @@ export default function LaTeXStudio({
           <div className="flex-1 min-h-0 w-full h-full flex flex-col relative overflow-hidden bg-[#525659]">
             {outputView === 'pdf' ? (
               pdf ? (
-                <div className="flex-1 min-h-0 w-full h-full overflow-auto flex flex-col justify-center items-center p-4 bg-[#525659]">
+                <div className="flex-1 min-h-0 w-full h-full flex flex-col relative overflow-hidden bg-[#525659]">
                   {source !== compiledSource && (
                     <div
                       role="status"
-                      className="text-xs px-3 py-1 bg-amber-500/20 border-b border-amber-500/30 text-amber-200 flex items-center justify-between shrink-0 w-full mb-2 rounded"
+                      className="text-xs px-3 py-1 bg-amber-500/20 border-b border-amber-500/30 text-amber-200 flex items-center justify-between shrink-0 w-full z-10"
                     >
                       <span className="truncate">Mã nguồn đã sửa đổi. Bấm Recompile để cập nhật PDF.</span>
                       <button
@@ -3282,7 +3287,6 @@ export default function LaTeXStudio({
                     </div>
                   )}
                   <PDFPreview
-                    key={pdf}
                     url={pdf}
                     zoom={zoom}
                     setZoom={setZoom}
@@ -3296,7 +3300,7 @@ export default function LaTeXStudio({
                   />
                 </div>
               ) : (
-                <div className="flex-1 w-full h-full overflow-auto flex flex-col justify-center items-center p-4 text-center text-slate-300 bg-[#525659]">
+                <div className="flex-1 min-h-0 w-full h-full overflow-y-auto flex flex-col justify-center items-center p-4 text-center text-slate-300 bg-[#525659]">
                   <div className="w-full max-w-xs flex flex-col items-center px-4 text-center">
                     <div className="w-12 h-12 rounded-2xl border border-slate-500 bg-slate-700/80 flex items-center justify-center mb-3 shadow-md shrink-0">
                       <FileText className="w-6 h-6 text-slate-300" />

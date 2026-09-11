@@ -1,15 +1,14 @@
 'use client';
-import { useEffect, useRef, useState, useCallback } from 'react';
+
+import { useEffect, useRef, useState, useCallback, memo } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/TextLayer.css';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import {
   ZoomIn,
   ZoomOut,
-  Maximize2,
   ChevronLeft,
   ChevronRight,
-  Download,
   Image as ImageIcon,
   Minimize2,
   Tv,
@@ -20,7 +19,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url
 ).toString();
 
-function PDFSinglePage({
+const PDFSinglePage = memo(function PDFSinglePage({
   number,
   width,
   onPageClick,
@@ -37,12 +36,18 @@ function PDFSinglePage({
 
   useEffect(() => {
     const observer = new IntersectionObserver(
-      (entries) => setVisible(entries[0].isIntersecting),
+      (entries) => {
+        if (entries[0]) {
+          setVisible(entries[0].isIntersecting);
+        }
+      },
       { rootMargin: '600px' }
     );
     if (element.current) observer.observe(element.current);
     return () => observer.disconnect();
   }, []);
+
+  const pageHeight = Math.round(width * ratio);
 
   return (
     <div
@@ -53,34 +58,51 @@ function PDFSinglePage({
         const yRatio = (e.clientY - rect.top) / Math.max(1, rect.height);
         onPageClick?.(number, yRatio);
       }}
-      className={`mb-6 shadow-[0_4px_16px_rgba(0,0,0,0.35)] bg-white rounded-xs overflow-hidden cursor-crosshair transition-all relative ${
+      className={`mb-6 shadow-[0_4px_16px_rgba(0,0,0,0.35)] bg-white rounded-xs overflow-hidden cursor-crosshair relative shrink-0 transition-shadow ${
         isHighlighted ? 'ring-4 ring-cyan-500/80' : ''
       }`}
-      style={{ width, minHeight: width * ratio }}
+      style={{
+        width: `${width}px`,
+        maxWidth: `${width}px`,
+        minHeight: `${pageHeight}px`,
+        aspectRatio: '1 / 1.414',
+      }}
       aria-label={`Trang ${number}`}
     >
-      {visible && (
+      {visible ? (
         <Page
           pageNumber={number}
           width={width}
-          devicePixelRatio={Math.min(window.devicePixelRatio || 1, 2)}
+          devicePixelRatio={Math.min(typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1, 2)}
           onLoadSuccess={(page) => {
             const view = page.getViewport({ scale: 1 });
-            setRatio(view.height / view.width);
+            if (view.width > 0 && view.height > 0) {
+              setRatio(view.height / view.width);
+            }
           }}
           loading={
-            <div className="p-8 text-center text-xs text-slate-500">
+            <div
+              className="w-full flex items-center justify-center bg-white text-xs text-slate-400 font-mono"
+              style={{ minHeight: `${pageHeight}px` }}
+            >
               Đang kết xuất trang {number}…
             </div>
           }
         />
+      ) : (
+        <div
+          className="w-full bg-white flex items-center justify-center text-xs text-slate-400 font-mono"
+          style={{ minHeight: `${pageHeight}px` }}
+        >
+          Trang {number}
+        </div>
       )}
-      <span className="absolute bottom-1 right-2 text-[10px] text-slate-400 font-mono select-none">
+      <span className="absolute bottom-1 right-2 text-[10px] text-slate-400 font-mono select-none pointer-events-none">
         Trang {number}
       </span>
     </div>
   );
-}
+});
 
 export default function PDFPreview({
   url,
@@ -113,14 +135,31 @@ export default function PDFPreview({
   const [activePage, setActivePage] = useState(1);
   const [exportingImage, setExportingImage] = useState(false);
 
+  // ResizeObserver with threshold & debounce to prevent resize loops
   useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
     const observer = new ResizeObserver((entries) => {
-      if (entries[0]) {
-        setContainerWidth(Math.max(200, entries[0].contentRect.width - (isPresentation ? 64 : 32)));
-      }
+      if (!entries[0]) return;
+      const rawWidth = entries[0].contentRect.width - (isPresentation ? 64 : 32);
+      const newWidth = Math.max(200, Math.floor(rawWidth));
+
+      if (timeoutId) clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        setContainerWidth((prev) => {
+          // Threshold of 2px to eliminate sub-pixel / scrollbar fluctuation loops
+          if (Math.abs(prev - newWidth) > 2) {
+            return newWidth;
+          }
+          return prev;
+        });
+      }, 100);
     });
+
     if (host.current) observer.observe(host.current);
-    return () => observer.disconnect();
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      observer.disconnect();
+    };
   }, [isPresentation]);
 
   // Scroll to highlighted page when sync from code editor occurs
@@ -182,21 +221,21 @@ export default function PDFPreview({
       const loadingTask = (pdfjs as any).getDocument(url);
       const pdf = await loadingTask.promise;
       const page = await pdf.getPage(activePage || 1);
-      
-      const scale = 3.0; // 300 DPI equivalent scale
+
+      const targetDpi = 300;
+      const defaultDpi = 72;
+      const scale = targetDpi / defaultDpi; // ~4.167x
       const viewport = page.getViewport({ scale });
-      
+
       const canvas = document.createElement('canvas');
-      const context = canvas.getContext('2d');
-      if (!context) return;
-      
-      canvas.height = viewport.height;
       canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Không thể khởi tạo canvas 2D');
 
       const renderContext = {
-        canvasContext: context,
+        canvasContext: ctx,
         viewport,
-        canvas,
       };
 
       await (page.render as any)(renderContext).promise;
@@ -217,7 +256,7 @@ export default function PDFPreview({
   const computedWidth =
     zoom === 'page-width'
       ? containerWidth
-      : (595.28 * (typeof zoom === 'number' ? zoom : 100)) / 100;
+      : Math.round((595.28 * (typeof zoom === 'number' ? zoom : 100)) / 100);
 
   // Presentation Mode View
   if (isPresentation) {
@@ -348,10 +387,15 @@ export default function PDFPreview({
         </div>
       )}
 
-      {/* Main PDF Scroll Container */}
+      {/* Main PDF Scroll Container with Fixed Vertical Scrollbar & Scroll Anchoring Disabled */}
       <div
         ref={host}
-        className="flex-1 min-h-0 w-full h-full overflow-auto p-4 flex flex-col items-center bg-[#525659] transition-colors"
+        className="flex-1 min-h-0 w-full h-full p-4 flex flex-col items-center bg-[#525659]"
+        style={{
+          overflowY: 'scroll',
+          overflowX: 'auto',
+          overflowAnchor: 'none',
+        }}
         aria-label="Tài liệu PDF đã biên dịch"
       >
         <Document

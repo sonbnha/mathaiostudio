@@ -650,8 +650,8 @@ export default function AuthenticatedToolsDashboard({
                       onClick={() => handleOpenProject(item)}
                       className="group relative rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 hover:border-cyan-500/60 transition-all duration-200 shadow-2xs hover:shadow-xl hover:shadow-cyan-500/5 cursor-pointer flex flex-col overflow-hidden"
                     >
-                      {/* 1. Top Section: Live Visual Miniature Thumbnail */}
-                      <div className="h-32 bg-slate-100/70 dark:bg-slate-950/70 border-b border-slate-200 dark:border-slate-800/80 relative flex items-center justify-center p-2.5 overflow-hidden group-hover:bg-slate-50 dark:group-hover:bg-slate-900/60 transition-colors">
+                      {/* 1. Top Section: Live Visual Miniature Thumbnail (Light Paper Canvas) */}
+                      <div className="h-32 bg-slate-100/90 dark:bg-slate-950/80 border-b border-slate-200 dark:border-slate-800/80 relative flex items-center justify-center p-2.5 overflow-hidden">
                         {/* 1. GEOMETRY LIVE PREVIEW */}
                         {isGeo &&
                           (() => {
@@ -662,19 +662,19 @@ export default function AuthenticatedToolsDashboard({
                                 ? item.content
                                 : null);
 
-                            if (svgContent && svgContent.includes('<svg')) {
-                              return (
-                                <div
-                                  className="w-full h-full flex items-center justify-center [&>svg]:max-w-full [&>svg]:max-h-full [&>svg]:w-auto [&>svg]:h-auto pointer-events-none transition-transform group-hover:scale-[1.02]"
-                                  dangerouslySetInnerHTML={{ __html: svgContent }}
-                                />
-                              );
-                            }
-
                             return (
-                              <div className="w-full h-full rounded-2xl border border-dashed border-cyan-500/30 bg-cyan-500/5 flex flex-col items-center justify-center gap-1.5 text-cyan-600/70 dark:text-cyan-400/70">
-                                <Compass className="w-6 h-6 stroke-[1.5]" />
-                                <span className="text-[10px] font-mono font-medium">Bản vẽ trống</span>
+                              <div className="w-full h-full rounded-2xl bg-white dark:bg-slate-50 border border-slate-200/90 dark:border-slate-300 shadow-2xs relative flex items-center justify-center p-2 overflow-hidden bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:10px_10px] group-hover:scale-[1.01] transition-transform">
+                                {svgContent && svgContent.includes('<svg') ? (
+                                  <div
+                                    className="w-full h-full flex items-center justify-center [&>svg]:max-w-full [&>svg]:max-h-full [&>svg]:w-auto [&>svg]:h-auto pointer-events-none transition-transform group-hover:scale-[1.02]"
+                                    dangerouslySetInnerHTML={{ __html: svgContent }}
+                                  />
+                                ) : (
+                                  <div className="w-full h-full rounded-xl border border-dashed border-cyan-400/40 bg-cyan-50/60 flex flex-col items-center justify-center gap-1 text-cyan-700">
+                                    <Compass className="w-5 h-5 stroke-[1.5]" />
+                                    <span className="text-[10px] font-mono font-bold">Bản vẽ trống</span>
+                                  </div>
+                                )}
                               </div>
                             );
                           })()}
@@ -685,21 +685,21 @@ export default function AuthenticatedToolsDashboard({
                             const { grade, topic, activities } = getLessonPlanCardPreview(item);
 
                             return (
-                              <div className="w-full max-w-[240px] h-[106px] bg-white dark:bg-slate-900 rounded-xl border border-emerald-300/70 dark:border-emerald-800/70 shadow-xs p-2 flex flex-col justify-between text-[8px] font-sans select-none overflow-hidden group-hover:border-emerald-400 transition-colors">
-                                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-1 text-[8px]">
-                                  <span className="font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
+                              <div className="w-full max-w-[240px] h-[106px] bg-white dark:bg-slate-50 rounded-xl border border-emerald-300/80 dark:border-emerald-300 shadow-xs p-2 flex flex-col justify-between text-[8px] font-sans select-none overflow-hidden group-hover:border-emerald-500 transition-colors">
+                                <div className="flex items-center justify-between border-b border-slate-200 pb-1 text-[8px]">
+                                  <span className="font-bold text-emerald-800 flex items-center gap-1">
                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                                     {grade}
                                   </span>
-                                  <span className="text-[7px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 font-mono font-semibold">
+                                  <span className="text-[7px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-mono font-bold border border-emerald-200">
                                     Chuẩn 5512
                                   </span>
                                 </div>
 
-                                <div className="space-y-0.5 text-slate-600 dark:text-slate-300 text-[8px] py-0.5 overflow-hidden leading-tight">
+                                <div className="space-y-0.5 text-slate-700 text-[8px] py-0.5 overflow-hidden leading-tight font-medium">
                                   {activities.slice(0, 3).map((act, idx) => (
                                     <div key={idx} className="flex items-center gap-1 truncate">
-                                      <span className="w-3 h-3 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 flex items-center justify-center font-bold text-[7px] shrink-0 font-mono">
+                                      <span className="w-3 h-3 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300/60 flex items-center justify-center font-bold text-[7px] shrink-0 font-mono">
                                         {idx + 1}
                                       </span>
                                       <span className="truncate">{act}</span>
@@ -707,9 +707,9 @@ export default function AuthenticatedToolsDashboard({
                                   ))}
                                 </div>
 
-                                <div className="flex justify-between items-center text-[7px] text-slate-400 font-mono border-t border-slate-100 dark:border-slate-800/80 pt-0.5">
-                                  <span className="truncate max-w-[130px]">{topic}</span>
-                                  <span className="text-emerald-600 font-bold shrink-0">4 Hoạt động</span>
+                                <div className="flex justify-between items-center text-[7px] text-slate-500 font-mono border-t border-slate-200 pt-0.5">
+                                  <span className="truncate max-w-[130px] font-semibold text-slate-700">{topic}</span>
+                                  <span className="text-emerald-700 font-bold shrink-0">4 Hoạt động</span>
                                 </div>
                               </div>
                             );
@@ -724,29 +724,31 @@ export default function AuthenticatedToolsDashboard({
 
                             if (isImageDataUrl) {
                               return (
-                                <img
-                                  src={item.thumbnail}
-                                  alt={item.title}
-                                  className="w-full h-full object-contain pointer-events-none rounded-lg shadow-xs"
-                                />
+                                <div className="w-full h-full rounded-2xl bg-white dark:bg-slate-50 border border-slate-200/90 dark:border-slate-300 p-1 flex items-center justify-center overflow-hidden">
+                                  <img
+                                    src={item.thumbnail}
+                                    alt={item.title}
+                                    className="w-full h-full object-contain pointer-events-none rounded-lg"
+                                  />
+                                </div>
                               );
                             }
 
                             const { title: latexTitle, lines } = getLatexCardPreview(item);
 
                             return (
-                              <div className="w-full max-w-[220px] h-[106px] bg-white dark:bg-slate-900 rounded-xl border border-rose-300/70 dark:border-rose-800/70 shadow-xs p-2 flex flex-col justify-between text-[8px] font-sans select-none relative overflow-hidden group-hover:border-rose-400 transition-colors">
-                                <div className="border-b border-slate-100 dark:border-slate-800 pb-1">
-                                  <div className="flex items-center justify-between gap-1 text-[7px] text-rose-600 dark:text-rose-400 font-mono font-bold">
+                              <div className="w-full max-w-[220px] h-[106px] bg-white dark:bg-slate-50 rounded-xl border border-rose-300/80 dark:border-rose-300 shadow-xs p-2 flex flex-col justify-between text-[8px] font-sans select-none relative overflow-hidden group-hover:border-rose-400 transition-colors">
+                                <div className="border-b border-slate-200 pb-1">
+                                  <div className="flex items-center justify-between gap-1 text-[7px] text-rose-700 font-mono font-bold">
                                     <span className="truncate">{item.metadata?.badge || 'XeLaTeX A4'}</span>
-                                    <span className="shrink-0 font-serif">TeX</span>
+                                    <span className="shrink-0 font-serif font-bold text-rose-800">TeX</span>
                                   </div>
-                                  <p className="font-bold text-[9px] text-slate-800 dark:text-slate-200 truncate mt-0.5">
+                                  <p className="font-bold text-[9px] text-slate-900 truncate mt-0.5">
                                     {latexTitle}
                                   </p>
                                 </div>
 
-                                <div className="space-y-0.5 text-slate-500 dark:text-slate-400 text-[8px] font-mono leading-tight flex-1 py-0.5 overflow-hidden">
+                                <div className="space-y-0.5 text-slate-600 text-[8px] font-mono leading-tight flex-1 py-0.5 overflow-hidden font-medium">
                                   {lines.slice(0, 2).map((l, idx) => (
                                     <p key={idx} className="truncate">
                                       {l}
@@ -754,9 +756,9 @@ export default function AuthenticatedToolsDashboard({
                                   ))}
                                 </div>
 
-                                <div className="flex justify-between items-center text-[7px] text-slate-400 font-mono border-t border-slate-100 dark:border-slate-800/80 pt-0.5">
-                                  <span>Trang 1/A4</span>
-                                  <span className="text-rose-500 font-bold">PDF Ready</span>
+                                <div className="flex justify-between items-center text-[7px] text-slate-500 font-mono border-t border-slate-200 pt-0.5">
+                                  <span className="font-semibold text-slate-600">Trang 1/A4</span>
+                                  <span className="text-rose-700 font-bold">PDF Ready</span>
                                 </div>
                               </div>
                             );
@@ -766,7 +768,7 @@ export default function AuthenticatedToolsDashboard({
                         <button
                           type="button"
                           onClick={(e) => handleToggleStar(item.id, e)}
-                          className="absolute top-2.5 right-2.5 p-1.5 rounded-full bg-white/80 dark:bg-slate-900/80 backdrop-blur border border-slate-200 dark:border-slate-800 text-slate-400 hover:text-amber-500 transition cursor-pointer"
+                          className="absolute top-2.5 right-2.5 z-10 p-1.5 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-amber-500 shadow-xs transition cursor-pointer"
                           title={item.isStarred ? 'Bỏ đánh dấu sao' : 'Đánh dấu sao yêu thích'}
                         >
                           <Star className={`w-3.5 h-3.5 ${item.isStarred ? 'text-amber-500 fill-amber-500' : ''}`} />

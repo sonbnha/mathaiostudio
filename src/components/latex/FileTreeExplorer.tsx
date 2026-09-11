@@ -283,6 +283,35 @@ export default function FileTreeExplorer({
     return <Dot className="w-4 h-4 text-slate-400 -mx-1 shrink-0" />;
   };
 
+  const [treeHeightPercent, setTreeHeightPercent] = useState<number>(55);
+  const [isTreeExpanded, setIsTreeExpanded] = useState<boolean>(true);
+  const [isOutlineExpanded, setIsOutlineExpanded] = useState<boolean>(true);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const handleMouseDownHorizontalSplitter = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const container = containerRef.current;
+    if (!container) return;
+    const containerRect = container.getBoundingClientRect();
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      const relativeY = moveEvent.clientY - containerRect.top;
+      const totalH = containerRect.height;
+      if (totalH <= 0) return;
+      let newPercent = (relativeY / totalH) * 100;
+      newPercent = Math.min(80, Math.max(20, newPercent));
+      setTreeHeightPercent(newPercent);
+    };
+
+    const onMouseUp = () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  };
+
   if (isCollapsed) {
     return (
       <div className="w-12 flex-shrink-0 shrink-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col items-center py-2.5 gap-3 select-none transition-all h-full">
@@ -326,24 +355,44 @@ export default function FileTreeExplorer({
     );
   }
 
+  const bothExpanded = isTreeExpanded && isOutlineExpanded;
+
   return (
     <aside
+      ref={containerRef}
       aria-label="Cột quản lý file và mục lục Overleaf"
-      className="w-64 flex-shrink-0 shrink-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col text-xs select-none transition-all h-full overflow-hidden"
+      className="w-full flex-1 flex flex-col text-xs select-none h-full overflow-hidden bg-white dark:bg-[#1e2124]"
     >
-      {/* SECTION 1 (TOP HALF): FILE TREE */}
-      <div className="flex flex-col flex-1 min-h-[160px] max-h-[55%] border-b border-slate-200 dark:border-slate-800 overflow-hidden">
+      {/* SECTION 1 (TOP TIER): FILE TREE */}
+      <div
+        style={{
+          height: bothExpanded ? `${treeHeightPercent}%` : isTreeExpanded ? '100%' : 'auto',
+          minHeight: isTreeExpanded ? (bothExpanded ? '120px' : '0px') : 'auto',
+        }}
+        className={`flex flex-col overflow-hidden ${isTreeExpanded ? 'flex-1 min-h-0' : 'flex-shrink-0'}`}
+      >
         {/* File Tree Header */}
-        <div className="px-2 py-1.5 bg-slate-50/90 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-1.5 font-semibold text-[11px] uppercase tracking-wider text-neutral-400">
+        <div className="flex items-center justify-between px-2 py-1.5 w-full overflow-hidden flex-nowrap bg-slate-50/90 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800 shrink-0 select-none">
+          <button
+            type="button"
+            onClick={() => setIsTreeExpanded(!isTreeExpanded)}
+            className="flex items-center gap-1 font-semibold text-[11px] uppercase tracking-wider text-neutral-400 hover:text-white transition flex-shrink-0 mr-1 cursor-pointer"
+            title="Đóng/Mở File Tree"
+          >
+            {isTreeExpanded ? (
+              <ChevronDown className="w-3 h-3 text-neutral-400" />
+            ) : (
+              <ChevronRight className="w-3 h-3 text-neutral-400" />
+            )}
             <Layers className="w-3.5 h-3.5 text-cyan-500" />
             <span>File tree</span>
-          </div>
+          </button>
 
-          <div className="flex items-center gap-0.5">
+          <div className="flex-shrink-0 flex items-center gap-1">
             <button
               type="button"
               onClick={() => {
+                if (!isTreeExpanded) setIsTreeExpanded(true);
                 setIsAddingFile(true);
                 setIsAddingFolder(false);
                 setNewFileName('');
@@ -356,6 +405,7 @@ export default function FileTreeExplorer({
             <button
               type="button"
               onClick={() => {
+                if (!isTreeExpanded) setIsTreeExpanded(true);
                 setIsAddingFolder(true);
                 setIsAddingFile(false);
                 setNewFolderName('');
@@ -380,219 +430,240 @@ export default function FileTreeExplorer({
               onChange={handleFileInputChange}
               className="hidden"
             />
-            <button
-              type="button"
-              onClick={onToggleCollapse}
-              className="p-0.5 rounded text-neutral-400 hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition ml-0.5 cursor-pointer"
-              title="Thu gọn cột trái"
-            >
-              <ChevronLeft className="w-3.5 h-3.5" />
-            </button>
           </div>
         </div>
 
         {/* File Tree List */}
-        <div className="flex-1 min-h-0 overflow-y-auto p-1.5 space-y-0.5">
-          {/* New File Inline Form */}
-          {isAddingFile && (
-            <form
-              onSubmit={handleCreateSubmit}
-              className="p-1.5 rounded-lg bg-cyan-500/10 border border-cyan-500/30 mb-1.5"
-            >
-              <div className="flex items-center gap-1.5 mb-1">
-                <FilePlus className="w-3 h-3 text-cyan-600 dark:text-cyan-400 shrink-0" />
-                <input
-                  type="text"
-                  autoFocus
-                  value={newFileName}
-                  onChange={(e) => setNewFileName(e.target.value)}
-                  placeholder="vd: baitap.tex"
-                  className="w-full text-xs font-mono bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded px-1.5 py-0.5 text-slate-800 dark:text-slate-100 outline-none focus:border-cyan-500"
-                />
-              </div>
-              <div className="flex items-center justify-end gap-1">
-                <button
-                  type="button"
-                  onClick={() => setIsAddingFile(false)}
-                  className="px-1.5 py-0.5 rounded text-[10px] text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800 cursor-pointer"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  className="px-2 py-0.5 rounded text-[10px] bg-cyan-600 hover:bg-cyan-500 text-white font-bold cursor-pointer"
-                >
-                  Tạo
-                </button>
-              </div>
-            </form>
-          )}
-
-          {/* New Folder Inline Form */}
-          {isAddingFolder && (
-            <form
-              onSubmit={handleCreateFolderSubmit}
-              className="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 mb-1.5"
-            >
-              <div className="flex items-center gap-1.5 mb-1">
-                <FolderPlus className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />
-                <input
-                  type="text"
-                  autoFocus
-                  value={newFolderName}
-                  onChange={(e) => setNewFolderName(e.target.value)}
-                  placeholder="Tên thư mục (vd: images)"
-                  className="w-full text-xs font-mono bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded px-1.5 py-0.5 text-slate-800 dark:text-slate-100 outline-none focus:border-amber-500"
-                />
-              </div>
-              <div className="flex items-center justify-end gap-1">
-                <button
-                  type="button"
-                  onClick={() => setIsAddingFolder(false)}
-                  className="px-1.5 py-0.5 rounded text-[10px] text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800 cursor-pointer"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  className="px-2 py-0.5 rounded text-[10px] bg-amber-600 hover:bg-amber-500 text-white font-bold cursor-pointer"
-                >
-                  Tạo
-                </button>
-              </div>
-            </form>
-          )}
-
-          {/* Files */}
-          {files.map((file) => {
-            const isActive = file.name === activeFileName;
-            const isMain = file.name === 'main.tex';
-            const isEditing = editingFileName === file.name;
-
-            return (
-              <div
-                key={file.name}
-                className={`group flex items-center justify-between px-2 py-1 rounded-lg cursor-pointer transition ${
-                  isActive
-                    ? 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 font-semibold border border-cyan-500/25 shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/80 hover:text-slate-900 dark:hover:text-slate-200'
-                }`}
-                onClick={() => {
-                  if (!isEditing) onSelectFile(file.name);
-                }}
+        {isTreeExpanded && (
+          <div className="flex-1 min-h-0 overflow-y-auto p-1.5 space-y-0.5 scrollbar-thin">
+            {/* New File Inline Form */}
+            {isAddingFile && (
+              <form
+                onSubmit={handleCreateSubmit}
+                className="p-1.5 rounded-lg bg-cyan-500/10 border border-cyan-500/30 mb-1.5"
               >
-                <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                  {getFileIcon(file.name)}
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      autoFocus
-                      value={renameInput}
-                      onClick={(e) => e.stopPropagation()}
-                      onChange={(e) => setRenameInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleRenameSubmit(file.name);
-                        if (e.key === 'Escape') setEditingFileName(null);
-                      }}
-                      onBlur={() => handleRenameSubmit(file.name)}
-                      className="w-full text-xs font-mono bg-white dark:bg-slate-950 border border-cyan-500 rounded px-1 py-0.2 outline-none text-slate-900 dark:text-slate-100"
-                    />
-                  ) : (
-                    <span className="truncate font-mono text-xs" title={file.name}>
-                      {file.name}
+                <div className="flex items-center gap-1.5 mb-1">
+                  <FilePlus className="w-3 h-3 text-cyan-600 dark:text-cyan-400 shrink-0" />
+                  <input
+                    type="text"
+                    autoFocus
+                    value={newFileName}
+                    onChange={(e) => setNewFileName(e.target.value)}
+                    placeholder="vd: baitap.tex"
+                    className="w-full text-xs font-mono bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded px-1.5 py-0.5 text-slate-800 dark:text-slate-100 outline-none focus:border-cyan-500"
+                  />
+                </div>
+                <div className="flex items-center justify-end gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setIsAddingFile(false)}
+                    className="px-1.5 py-0.5 rounded text-[10px] text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800 cursor-pointer"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-2 py-0.5 rounded text-[10px] bg-cyan-600 hover:bg-cyan-500 text-white font-bold cursor-pointer"
+                  >
+                    Tạo
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* New Folder Inline Form */}
+            {isAddingFolder && (
+              <form
+                onSubmit={handleCreateFolderSubmit}
+                className="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 mb-1.5"
+              >
+                <div className="flex items-center gap-1.5 mb-1">
+                  <FolderPlus className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />
+                  <input
+                    type="text"
+                    autoFocus
+                    value={newFolderName}
+                    onChange={(e) => setNewFolderName(e.target.value)}
+                    placeholder="Tên thư mục (vd: images)"
+                    className="w-full text-xs font-mono bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded px-1.5 py-0.5 text-slate-800 dark:text-slate-100 outline-none focus:border-amber-500"
+                  />
+                </div>
+                <div className="flex items-center justify-end gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setIsAddingFolder(false)}
+                    className="px-1.5 py-0.5 rounded text-[10px] text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800 cursor-pointer"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-2 py-0.5 rounded text-[10px] bg-amber-600 hover:bg-amber-500 text-white font-bold cursor-pointer"
+                  >
+                    Tạo
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Files */}
+            {files.map((file) => {
+              const isActive = file.name === activeFileName;
+              const isMain = file.name === 'main.tex';
+              const isEditing = editingFileName === file.name;
+
+              return (
+                <div
+                  key={file.name}
+                  className={`group flex items-center justify-between px-2 py-1 rounded-lg cursor-pointer transition ${
+                    isActive
+                      ? 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 font-semibold border border-cyan-500/25 shadow-2xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/80 hover:text-slate-900 dark:hover:text-slate-200'
+                  }`}
+                  onClick={() => {
+                    if (!isEditing) onSelectFile(file.name);
+                  }}
+                >
+                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                    {getFileIcon(file.name)}
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        autoFocus
+                        value={renameInput}
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={(e) => setRenameInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleRenameSubmit(file.name);
+                          if (e.key === 'Escape') setEditingFileName(null);
+                        }}
+                        onBlur={() => handleRenameSubmit(file.name)}
+                        className="w-full text-xs font-mono bg-white dark:bg-slate-950 border border-cyan-500 rounded px-1 py-0.2 outline-none text-slate-900 dark:text-slate-100"
+                      />
+                    ) : (
+                      <span className="truncate font-mono text-xs" title={file.name}>
+                        {file.name}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Main Tag / Action icons */}
+                  {isMain ? (
+                    <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 font-mono shrink-0">
+                      main
                     </span>
+                  ) : (
+                    !isEditing && (
+                      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition shrink-0">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingFileName(file.name);
+                            setRenameInput(file.name);
+                          }}
+                          className="p-1 rounded hover:text-cyan-600 hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer"
+                          title="Đổi tên"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (confirm(`Xóa tệp "${file.name}"?`)) {
+                              onDeleteFile(file.name);
+                            }
+                          }}
+                          className="p-1 rounded hover:text-rose-600 hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer"
+                          title="Xóa"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    )
                   )}
                 </div>
-
-                {/* Main Tag / Action icons */}
-                {isMain ? (
-                  <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 font-mono shrink-0">
-                    main
-                  </span>
-                ) : (
-                  !isEditing && (
-                    <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition shrink-0">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingFileName(file.name);
-                          setRenameInput(file.name);
-                        }}
-                        className="p-1 rounded hover:text-cyan-600 hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer"
-                        title="Đổi tên"
-                      >
-                        <Edit2 className="w-3 h-3" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (confirm(`Xóa tệp "${file.name}"?`)) {
-                            onDeleteFile(file.name);
-                          }
-                        }}
-                        className="p-1 rounded hover:text-rose-600 hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer"
-                        title="Xóa"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </div>
-                  )
-                )}
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {/* SECTION 2 (BOTTOM HALF): FILE OUTLINE */}
-      <div className="flex flex-col flex-1 min-h-[140px] overflow-hidden bg-slate-50/40 dark:bg-slate-950/20">
+      {/* HORIZONTAL RESIZER BETWEEN TREE AND OUTLINE */}
+      {bothExpanded && (
+        <div
+          onMouseDown={handleMouseDownHorizontalSplitter}
+          className="h-1 bg-slate-200 dark:bg-white/10 hover:bg-cyan-500/60 cursor-row-resize flex-shrink-0 select-none transition-colors z-10"
+          title="Kéo chỉnh tỷ lệ giữa File tree và File outline"
+        />
+      )}
+
+      {/* SECTION 2 (BOTTOM TIER): FILE OUTLINE */}
+      <div
+        style={{
+          height: bothExpanded ? `${100 - treeHeightPercent}%` : isOutlineExpanded ? '100%' : 'auto',
+          minHeight: isOutlineExpanded ? (bothExpanded ? '100px' : '0px') : 'auto',
+        }}
+        className={`flex flex-col overflow-hidden bg-slate-50/40 dark:bg-slate-950/20 ${isOutlineExpanded ? 'flex-1 min-h-0' : 'flex-shrink-0'}`}
+      >
         {/* File Outline Header */}
-        <div className="px-2 py-1.5 bg-slate-50/90 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-1.5 font-semibold text-[11px] uppercase tracking-wider text-neutral-400">
+        <div className="flex items-center justify-between px-2 py-1.5 w-full overflow-hidden flex-nowrap bg-slate-50/90 dark:bg-slate-950/60 border-y border-slate-200 dark:border-slate-800 shrink-0 select-none">
+          <button
+            type="button"
+            onClick={() => setIsOutlineExpanded(!isOutlineExpanded)}
+            className="flex items-center gap-1 font-semibold text-[11px] uppercase tracking-wider text-neutral-400 hover:text-white transition flex-shrink-0 mr-1 cursor-pointer"
+            title="Đóng/Mở File Outline"
+          >
+            {isOutlineExpanded ? (
+              <ChevronDown className="w-3 h-3 text-neutral-400" />
+            ) : (
+              <ChevronRight className="w-3 h-3 text-neutral-400" />
+            )}
             <ListTree className="w-3.5 h-3.5 text-indigo-500" />
             <span>File outline</span>
-          </div>
-          <span className="text-[10px] font-mono text-neutral-400">
+          </button>
+          <span className="text-[10px] font-mono text-neutral-400 flex-shrink-0">
             {outlineItems.length} mục
           </span>
         </div>
 
         {/* Outline Items List */}
-        <div className="flex-1 min-h-0 overflow-y-auto p-1.5 space-y-0.5">
-          {outlineItems.length > 0 ? (
-            outlineItems.map((item) => {
-              const paddingLeft =
-                item.level === 1 ? 'pl-2' : item.level === 2 ? 'pl-4' : 'pl-6';
+        {isOutlineExpanded && (
+          <div className="flex-1 min-h-0 overflow-y-auto p-1.5 space-y-0.5 scrollbar-thin">
+            {outlineItems.length > 0 ? (
+              outlineItems.map((item) => {
+                const paddingLeft =
+                  item.level === 1 ? 'pl-2' : item.level === 2 ? 'pl-4' : 'pl-6';
 
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => onJumpToLine?.(item.line)}
-                  className={`w-full text-left flex items-center justify-between py-1 px-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition group cursor-pointer text-xs ${paddingLeft}`}
-                  title={`Dòng ${item.line}: ${item.title}`}
-                >
-                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                    {getOutlineIcon(item)}
-                    <span className="truncate text-xs font-medium group-hover:text-cyan-600 dark:group-hover:text-cyan-400">
-                      {item.title}
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => onJumpToLine?.(item.line)}
+                    className={`w-full text-left flex items-center justify-between py-1 px-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition group cursor-pointer text-xs ${paddingLeft}`}
+                    title={`Dòng ${item.line}: ${item.title}`}
+                  >
+                    <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                      {getOutlineIcon(item)}
+                      <span className="truncate text-xs font-medium group-hover:text-cyan-600 dark:group-hover:text-cyan-400">
+                        {item.title}
+                      </span>
+                    </div>
+                    <span className="text-[9px] font-mono text-slate-400 ml-1 shrink-0 px-1 py-0.2 rounded bg-slate-100 dark:bg-slate-800 group-hover:bg-cyan-500/10 group-hover:text-cyan-600">
+                      L{item.line}
                     </span>
-                  </div>
-                  <span className="text-[9px] font-mono text-slate-400 ml-1 shrink-0 px-1 py-0.2 rounded bg-slate-100 dark:bg-slate-800 group-hover:bg-cyan-500/10 group-hover:text-cyan-600">
-                    L{item.line}
-                  </span>
-                </button>
-              );
-            })
-          ) : (
-            <div className="p-3 text-center text-slate-400 dark:text-slate-500 text-[11px]">
-              <Bookmark className="w-4 h-4 mx-auto mb-1 opacity-50" />
-              <p>Chưa có \section hoặc tiêu đề trong tệp hiện tại.</p>
-            </div>
-          )}
-        </div>
+                  </button>
+                );
+              })
+            ) : (
+              <div className="p-3 text-center text-slate-400 dark:text-slate-500 text-[11px]">
+                <Bookmark className="w-4 h-4 mx-auto mb-1 opacity-50" />
+                <p>Chưa có \section hoặc tiêu đề trong tệp hiện tại.</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </aside>
   );

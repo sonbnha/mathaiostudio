@@ -50,6 +50,10 @@ import {
   Files,
   Settings,
   HelpCircle,
+  Share2,
+  Copy,
+  Check,
+  ExternalLink,
 } from 'lucide-react';
 import { APP_VERSION } from '@/config/version';
 import { useTheme } from '@/context/ThemeContext';
@@ -186,10 +190,12 @@ export default function LaTeXStudio({
   const isDark = resolvedTheme === 'dark';
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState(docTitle);
-  const [isUtilsMenuOpen, setIsUtilsMenuOpen] = useState(false);
+  const [activeDesktopMenu, setActiveDesktopMenu] = useState<'file' | 'edit' | 'insert' | 'view' | 'format' | 'help' | null>(null);
   const [isLayoutMenuOpen, setIsLayoutMenuOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [copiedShareLink, setCopiedShareLink] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const utilsMenuRef = useRef<HTMLDivElement>(null);
+  const desktopMenuRef = useRef<HTMLDivElement>(null);
   const layoutMenuRef = useRef<HTMLDivElement>(null);
 
   // Sync titleInput when docTitle changes
@@ -200,8 +206,8 @@ export default function LaTeXStudio({
   // Close popover menus on outside click
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
-      if (isUtilsMenuOpen && utilsMenuRef.current && !utilsMenuRef.current.contains(e.target as Node)) {
-        setIsUtilsMenuOpen(false);
+      if (activeDesktopMenu && desktopMenuRef.current && !desktopMenuRef.current.contains(e.target as Node)) {
+        setActiveDesktopMenu(null);
       }
       if (isLayoutMenuOpen && layoutMenuRef.current && !layoutMenuRef.current.contains(e.target as Node)) {
         setIsLayoutMenuOpen(false);
@@ -209,7 +215,7 @@ export default function LaTeXStudio({
     };
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
-  }, [isUtilsMenuOpen, isLayoutMenuOpen]);
+  }, [activeDesktopMenu, isLayoutMenuOpen]);
 
   // Fullscreen toggle handler
   const toggleFullscreen = useCallback(() => {
@@ -729,136 +735,668 @@ export default function LaTeXStudio({
   return (
     <div className="h-screen overflow-hidden bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors duration-200">
       {/* 1. Overleaf Single Desktop Topbar (h-10) */}
-      <header className="h-10 px-3 bg-[#1e2124] border-b border-[#2d3136] flex items-center justify-between gap-2 shrink-0 z-30 select-none text-xs text-slate-200">
-        {/* Left Side: Brand Logo, Template Picker, "Tiện ích ▾" Dropdown */}
-        <div className="flex items-center gap-2 min-w-0">
+      <header className="h-10 px-2.5 bg-[#1e2124] border-b border-[#2d3136] flex items-center justify-between gap-2 shrink-0 z-30 select-none text-xs text-slate-200">
+        {/* Left Side: Brand Logo + Desktop Dropdown Menus */}
+        <div className="flex items-center gap-1 min-w-0" ref={desktopMenuRef}>
           <Link
             href="/"
-            className="flex items-center gap-1.5 text-white hover:text-emerald-400 font-bold text-xs tracking-tight transition shrink-0 mr-1"
+            className="flex items-center gap-1.5 text-white hover:text-emerald-400 font-bold text-xs tracking-tight transition shrink-0 mr-1.5"
             title="Về trang chủ MathAIO Studio"
           >
             <div className="w-5 h-5 rounded bg-emerald-600 flex items-center justify-center text-white font-serif font-black text-xs shadow-xs">
               T
             </div>
-            <span className="hidden sm:inline font-semibold">LaTeX Studio</span>
+            <span className="hidden lg:inline font-semibold">LaTeX Studio</span>
           </Link>
 
-          {/* Templates Dropdown */}
-          <div className="relative shrink-0">
-            <select
-              aria-label="Chọn mẫu tài liệu"
-              value={template}
-              disabled={status === 'compiling'}
-              className="bg-[#2a2e33] hover:bg-[#32373e] text-slate-200 border border-[#3e444b] rounded-md px-2 py-1 text-[11px] font-medium outline-none cursor-pointer max-w-36 sm:max-w-44 truncate transition"
-              onChange={(e) => {
-                const selected = LATEX_TEMPLATES.find((t) => t.id === e.target.value);
-                if (selected) {
-                  if (
-                    source === LATEX_TEMPLATES.find((t) => t.id === template)?.source ||
-                    window.confirm(
-                      `Chuyển sang mẫu "${selected.name}"? Nội dung hiện tại sẽ được lưu vào lịch sử nháp.`
-                    )
-                  ) {
-                    setTemplate(selected.id);
-                    setSource(selected.source);
-                    setFiles((prev) =>
-                      prev.map((f) => (f.name === activeFileName ? { ...f, content: selected.source } : f))
-                    );
-                    if (selected.id === 'blank') {
-                      setTargetLine(9);
-                    }
-                  }
-                }
-              }}
-            >
-              {LATEX_TEMPLATES.map((t) => (
-                <option key={t.id} value={t.id} className="bg-[#1e2124] text-slate-200">
-                  {t.badge ? `[${t.badge}] ` : ''}
-                  {t.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Desktop Dropdown Menus: File, Edit, Insert, View, Format, Help */}
+          <div className="flex items-center gap-0.5 text-neutral-300 text-xs">
+            {/* FILE MENU */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setActiveDesktopMenu(activeDesktopMenu === 'file' ? null : 'file')}
+                onMouseEnter={() => {
+                  if (activeDesktopMenu) setActiveDesktopMenu('file');
+                }}
+                className={`px-2 py-1 rounded-sm transition cursor-pointer text-xs font-normal ${
+                  activeDesktopMenu === 'file'
+                    ? 'bg-[#2a2e33] text-white'
+                    : 'hover:bg-[#2a2e33] hover:text-white'
+                }`}
+              >
+                File
+              </button>
 
-          {/* "Tiện ích ▾" Popover Dropdown */}
-          <div className="relative shrink-0" ref={utilsMenuRef}>
-            <button
-              type="button"
-              onClick={() => setIsUtilsMenuOpen((prev) => !prev)}
-              className="inline-flex items-center gap-1 bg-[#2a2e33] hover:bg-[#32373e] text-slate-200 border border-[#3e444b] rounded-md px-2 py-1 text-[11px] font-medium outline-none cursor-pointer transition"
-              title="Tiện ích mở rộng (OCR, Word, Tex...)"
-            >
-              <span>Tiện ích</span>
-              <ChevronDown className="w-3 h-3 text-slate-400" />
-            </button>
+              {activeDesktopMenu === 'file' && (
+                <div className="absolute left-0 top-full mt-1 w-56 bg-[#1e2124] border border-[#3e444b] rounded-lg shadow-2xl py-1 z-50 text-xs animate-in fade-in duration-100 select-none">
+                  <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    Mẫu tài liệu (Templates)
+                  </div>
+                  <div className="max-h-40 overflow-y-auto px-1 space-y-0.5">
+                    {LATEX_TEMPLATES.map((t) => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => {
+                          setActiveDesktopMenu(null);
+                          if (
+                            source === LATEX_TEMPLATES.find((tpl) => tpl.id === template)?.source ||
+                            window.confirm(`Chuyển sang mẫu "${t.name}"? Nội dung hiện tại sẽ được lưu vào lịch sử.`)
+                          ) {
+                            setTemplate(t.id);
+                            setSource(t.source);
+                            setFiles((prev) =>
+                              prev.map((f) => (f.name === activeFileName ? { ...f, content: t.source } : f))
+                            );
+                            if (t.id === 'blank') setTargetLine(9);
+                          }
+                        }}
+                        className={`w-full flex items-center justify-between px-2 py-1 rounded text-left text-xs transition cursor-pointer ${
+                          template === t.id ? 'bg-emerald-600/30 text-emerald-300 font-semibold' : 'text-slate-200 hover:bg-[#2a2e33] hover:text-white'
+                        }`}
+                      >
+                        <span className="truncate">{t.name}</span>
+                        {t.badge && <span className="text-[9px] px-1 bg-white/10 rounded ml-1">{t.badge}</span>}
+                      </button>
+                    ))}
+                  </div>
 
-            {isUtilsMenuOpen && (
-              <div className="absolute top-full left-0 mt-1 w-48 bg-[#1e2124] border border-[#3e444b] rounded-xl shadow-2xl py-1 z-50 text-xs animate-in fade-in duration-100">
-                <button
-                  type="button"
-                  disabled={ocrBusy}
-                  onClick={() => {
-                    setIsUtilsMenuOpen(false);
-                    ocrInputRef.current?.click();
-                  }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
-                >
-                  <Camera className="w-3.5 h-3.5 text-violet-400" />
-                  <span>{ocrBusy ? 'Đang OCR ảnh…' : 'OCR ảnh công thức'}</span>
-                </button>
+                  <div className="h-px bg-[#2d3136] my-1" />
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsUtilsMenuOpen(false);
-                    wordInputRef.current?.click();
-                  }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
-                >
-                  <FileText className="w-3.5 h-3.5 text-blue-400" />
-                  <span>Nhập Word (.docx)</span>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveDesktopMenu(null);
+                      const name = prompt('Nhập tên tệp LaTeX mới (vd: baitap.tex):');
+                      if (name) handleCreateFile(name);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Tạo tệp mới (.tex)</span>
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsUtilsMenuOpen(false);
-                    handleExportWord();
-                  }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
-                >
-                  <FileDown className="w-3.5 h-3.5 text-blue-400" />
-                  <span>Xuất Word (.docx)</span>
-                </button>
+                  <button
+                    type="button"
+                    disabled={ocrBusy}
+                    onClick={() => {
+                      setActiveDesktopMenu(null);
+                      ocrInputRef.current?.click();
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                  >
+                    <Camera className="w-3.5 h-3.5 text-violet-400" />
+                    <span>{ocrBusy ? 'Đang OCR ảnh…' : 'OCR ảnh công thức'}</span>
+                  </button>
 
-                <div className="h-px bg-[#2d3136] my-1" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveDesktopMenu(null);
+                      wordInputRef.current?.click();
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                  >
+                    <FileText className="w-3.5 h-3.5 text-blue-400" />
+                    <span>Nhập Word (.docx)</span>
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsUtilsMenuOpen(false);
-                    exportTex();
-                  }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
-                >
-                  <Code2 className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>Xuất mã nguồn (.tex)</span>
-                </button>
+                  <div className="h-px bg-[#2d3136] my-1" />
 
-                <button
-                  type="button"
-                  disabled={!pdf}
-                  onClick={() => {
-                    setIsUtilsMenuOpen(false);
-                    setIsPresentation(true);
-                  }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer disabled:opacity-40"
-                >
-                  <Tv className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>Trình chiếu máy chiếu</span>
-                </button>
-              </div>
-            )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveDesktopMenu(null);
+                      exportTex();
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                  >
+                    <Code2 className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Xuất mã nguồn (.tex)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveDesktopMenu(null);
+                      handleExportWord();
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                  >
+                    <FileDown className="w-3.5 h-3.5 text-blue-400" />
+                    <span>Xuất Word (.docx)</span>
+                  </button>
+
+                  {pdf && (
+                    <a
+                      href={pdf}
+                      download={`${docTitle.replace(/\.tex$/, '')}.pdf`}
+                      onClick={() => setActiveDesktopMenu(null)}
+                      className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Tải tệp PDF</span>
+                    </a>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* EDIT MENU */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setActiveDesktopMenu(activeDesktopMenu === 'edit' ? null : 'edit')}
+                onMouseEnter={() => {
+                  if (activeDesktopMenu) setActiveDesktopMenu('edit');
+                }}
+                className={`px-2 py-1 rounded-sm transition cursor-pointer text-xs font-normal ${
+                  activeDesktopMenu === 'edit'
+                    ? 'bg-[#2a2e33] text-white'
+                    : 'hover:bg-[#2a2e33] hover:text-white'
+                }`}
+              >
+                Edit
+              </button>
+
+              {activeDesktopMenu === 'edit' && (
+                <div className="absolute left-0 top-full mt-1 w-52 bg-[#1e2124] border border-[#3e444b] rounded-lg shadow-2xl py-1 z-50 text-xs animate-in fade-in duration-100 select-none">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveDesktopMenu(null);
+                      triggerEditorAction('undo');
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Undo2 className="w-3.5 h-3.5 text-slate-400" />
+                      <span>Hoàn tác (Undo)</span>
+                    </div>
+                    <kbd className="text-[10px] text-slate-400 font-mono">Ctrl+Z</kbd>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveDesktopMenu(null);
+                      triggerEditorAction('redo');
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Redo2 className="w-3.5 h-3.5 text-slate-400" />
+                      <span>Làm lại (Redo)</span>
+                    </div>
+                    <kbd className="text-[10px] text-slate-400 font-mono">Ctrl+Y</kbd>
+                  </button>
+
+                  <div className="h-px bg-[#2d3136] my-1" />
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveDesktopMenu(null);
+                      triggerEditorAction('find');
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Search className="w-3.5 h-3.5 text-slate-400" />
+                      <span>Tìm kiếm & Thay thế</span>
+                    </div>
+                    <kbd className="text-[10px] text-slate-400 font-mono">Ctrl+F</kbd>
+                  </button>
+
+                  <div className="h-px bg-[#2d3136] my-1" />
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveDesktopMenu(null);
+                      triggerEditorAction('bold');
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold font-serif w-3.5 text-center text-xs">B</span>
+                      <span>In đậm</span>
+                    </div>
+                    <kbd className="text-[10px] text-slate-400 font-mono">Ctrl+B</kbd>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveDesktopMenu(null);
+                      triggerEditorAction('italic');
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="italic font-serif w-3.5 text-center text-xs">I</span>
+                      <span>In nghiêng</span>
+                    </div>
+                    <kbd className="text-[10px] text-slate-400 font-mono">Ctrl+I</kbd>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* INSERT MENU */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setActiveDesktopMenu(activeDesktopMenu === 'insert' ? null : 'insert')}
+                onMouseEnter={() => {
+                  if (activeDesktopMenu) setActiveDesktopMenu('insert');
+                }}
+                className={`px-2 py-1 rounded-sm transition cursor-pointer text-xs font-normal ${
+                  activeDesktopMenu === 'insert'
+                    ? 'bg-[#2a2e33] text-white'
+                    : 'hover:bg-[#2a2e33] hover:text-white'
+                }`}
+              >
+                Insert
+              </button>
+
+              {activeDesktopMenu === 'insert' && (
+                <div className="absolute left-0 top-full mt-1 w-60 bg-[#1e2124] border border-[#3e444b] rounded-lg shadow-2xl py-1 z-50 text-xs animate-in fade-in duration-100 select-none">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveDesktopMenu(null);
+                      setIsSymbolsOpen(true);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                  >
+                    <Sigma className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Bảng ký hiệu toán học</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveDesktopMenu(null);
+                      handleInsert(' $x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$ ');
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer font-mono text-[11px]"
+                  >
+                    <span className="text-cyan-400 font-bold">$</span>
+                    <span>Công thức toán inline ($...$)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveDesktopMenu(null);
+                      handleInsert('\n$$\n\\int_{a}^{b} f(x)\\,dx = F(b) - F(a)\n$$\n');
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer font-mono text-[11px]"
+                  >
+                    <span className="text-cyan-400 font-bold">$$</span>
+                    <span>Công thức khối ($$...$$)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveDesktopMenu(null);
+                      handleInsert('\n\\begin{pmatrix}\n  a & b \\\\\n  c & d\n\\end{pmatrix}\n');
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                  >
+                    <span className="text-cyan-400 font-mono">[M]</span>
+                    <span>Ma trận (pmatrix)</span>
+                  </button>
+
+                  <div className="h-px bg-[#2d3136] my-1" />
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveDesktopMenu(null);
+                      triggerEditorAction('table');
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                  >
+                    <Table className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Bảng dữ liệu (tabular)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveDesktopMenu(null);
+                      triggerEditorAction('link');
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                  >
+                    <LinkIcon className="w-3.5 h-3.5 text-blue-400" />
+                    <span>Chèn liên kết (\href)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveDesktopMenu(null);
+                      handleInsert('\n\\begin{figure}[htbp]\n  \\centering\n  \\includegraphics[width=0.7\\linewidth]{example-image}\n  \\caption{Chú thích hình}\n  \\label{fig:vd1}\n\\end{figure}\n');
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                  >
+                    <Layers className="w-3.5 h-3.5 text-violet-400" />
+                    <span>Hình ảnh (\includegraphics)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveDesktopMenu(null);
+                      handleInsert('\n\\begin{itemize}\n  \\item Mục 1\n  \\item Mục 2\n\\end{itemize}\n');
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                  >
+                    <span className="text-amber-400 font-bold">•</span>
+                    <span>Danh sách chấm (itemize)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveDesktopMenu(null);
+                      handleInsert('\n\\begin{enumerate}\n  \\item Bước 1\n  \\item Bước 2\n\\end{enumerate}\n');
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                  >
+                    <span className="text-amber-400 font-bold font-mono">1.</span>
+                    <span>Danh sách đánh số (enumerate)</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* VIEW MENU */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setActiveDesktopMenu(activeDesktopMenu === 'view' ? null : 'view')}
+                onMouseEnter={() => {
+                  if (activeDesktopMenu) setActiveDesktopMenu('view');
+                }}
+                className={`px-2 py-1 rounded-sm transition cursor-pointer text-xs font-normal ${
+                  activeDesktopMenu === 'view'
+                    ? 'bg-[#2a2e33] text-white'
+                    : 'hover:bg-[#2a2e33] hover:text-white'
+                }`}
+              >
+                View
+              </button>
+
+              {activeDesktopMenu === 'view' && (
+                <div className="absolute left-0 top-full mt-1 w-56 bg-[#1e2124] border border-[#3e444b] rounded-lg shadow-2xl py-1 z-50 text-xs animate-in fade-in duration-100 select-none">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLayoutMode('split');
+                      setActiveDesktopMenu(null);
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-1.5 text-left transition cursor-pointer ${
+                      layoutMode === 'split' ? 'bg-[#2a2e33] text-emerald-400 font-semibold' : 'text-slate-200 hover:bg-[#2a2e33] hover:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Columns className="w-3.5 h-3.5" />
+                      <span>Code + PDF</span>
+                    </div>
+                    {layoutMode === 'split' && <span className="text-[10px]">✓</span>}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLayoutMode('code');
+                      setActiveDesktopMenu(null);
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-1.5 text-left transition cursor-pointer ${
+                      layoutMode === 'code' ? 'bg-[#2a2e33] text-emerald-400 font-semibold' : 'text-slate-200 hover:bg-[#2a2e33] hover:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Code2 className="w-3.5 h-3.5" />
+                      <span>Chỉ Code</span>
+                    </div>
+                    {layoutMode === 'code' && <span className="text-[10px]">✓</span>}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLayoutMode('pdf');
+                      setActiveDesktopMenu(null);
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-1.5 text-left transition cursor-pointer ${
+                      layoutMode === 'pdf' ? 'bg-[#2a2e33] text-emerald-400 font-semibold' : 'text-slate-200 hover:bg-[#2a2e33] hover:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Maximize2 className="w-3.5 h-3.5" />
+                      <span>Chỉ PDF</span>
+                    </div>
+                    {layoutMode === 'pdf' && <span className="text-[10px]">✓</span>}
+                  </button>
+
+                  <div className="h-px bg-[#2d3136] my-1" />
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSidebarOpen((prev) => !prev);
+                      setActiveDesktopMenu(null);
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Files className="w-3.5 h-3.5 text-slate-400" />
+                      <span>{isSidebarOpen ? 'Ẩn thanh Sidebar' : 'Hiện thanh Sidebar'}</span>
+                    </div>
+                    {isSidebarOpen && <span className="text-[10px] text-emerald-400">Bật</span>}
+                  </button>
+
+                  <div className="h-px bg-[#2d3136] my-1" />
+
+                  <button
+                    type="button"
+                    disabled={!pdf}
+                    onClick={() => {
+                      setActiveDesktopMenu(null);
+                      setIsPresentation(true);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer disabled:opacity-40"
+                  >
+                    <Tv className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>Trình chiếu máy chiếu</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveDesktopMenu(null);
+                      toggleFullscreen();
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                  >
+                    <Maximize2 className="w-3.5 h-3.5 text-slate-400" />
+                    <span>{isFullscreen ? 'Thoát toàn màn hình' : 'Toàn màn hình'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveDesktopMenu(null);
+                      toggleTheme();
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                  >
+                    {isDark ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-slate-300" />}
+                    <span>{isDark ? 'Giao diện Sáng' : 'Giao diện Tối'}</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* FORMAT MENU */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setActiveDesktopMenu(activeDesktopMenu === 'format' ? null : 'format')}
+                onMouseEnter={() => {
+                  if (activeDesktopMenu) setActiveDesktopMenu('format');
+                }}
+                className={`px-2 py-1 rounded-sm transition cursor-pointer text-xs font-normal ${
+                  activeDesktopMenu === 'format'
+                    ? 'bg-[#2a2e33] text-white'
+                    : 'hover:bg-[#2a2e33] hover:text-white'
+                }`}
+              >
+                Format
+              </button>
+
+              {activeDesktopMenu === 'format' && (
+                <div className="absolute left-0 top-full mt-1 w-52 bg-[#1e2124] border border-[#3e444b] rounded-lg shadow-2xl py-1 z-50 text-xs animate-in fade-in duration-100 select-none">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveDesktopMenu(null);
+                      triggerEditorAction('bold');
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                  >
+                    <span className="font-bold font-serif w-3.5 text-center text-xs">B</span>
+                    <span>In đậm (\textbf)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveDesktopMenu(null);
+                      triggerEditorAction('italic');
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                  >
+                    <span className="italic font-serif w-3.5 text-center text-xs">I</span>
+                    <span>In nghiêng (\textit)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveDesktopMenu(null);
+                      handleInsert('\\underline{văn bản}');
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                  >
+                    <span className="underline font-serif w-3.5 text-center text-xs">U</span>
+                    <span>Gạch chân (\underline)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveDesktopMenu(null);
+                      handleInsert('\\texttt{mã}');
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer font-mono"
+                  >
+                    <span className="text-cyan-400 font-bold text-xs">TT</span>
+                    <span>Kiểu máy chữ (\texttt)</span>
+                  </button>
+
+                  <div className="h-px bg-[#2d3136] my-1" />
+
+                  <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    Cỡ chữ soạn thảo
+                  </div>
+                  <div className="grid grid-cols-4 gap-1 px-3 py-1">
+                    {[12, 13, 14, 15, 16, 18, 20].map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => {
+                          setFontSize(s);
+                          setActiveDesktopMenu(null);
+                        }}
+                        className={`py-1 rounded text-center text-[11px] font-mono transition cursor-pointer ${
+                          fontSize === s ? 'bg-emerald-600 text-white font-bold' : 'bg-[#2a2e33] text-slate-300 hover:bg-[#383e45]'
+                        }`}
+                      >
+                        {s}px
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* HELP MENU */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setActiveDesktopMenu(activeDesktopMenu === 'help' ? null : 'help')}
+                onMouseEnter={() => {
+                  if (activeDesktopMenu) setActiveDesktopMenu('help');
+                }}
+                className={`px-2 py-1 rounded-sm transition cursor-pointer text-xs font-normal ${
+                  activeDesktopMenu === 'help'
+                    ? 'bg-[#2a2e33] text-white'
+                    : 'hover:bg-[#2a2e33] hover:text-white'
+                }`}
+              >
+                Help
+              </button>
+
+              {activeDesktopMenu === 'help' && (
+                <div className="absolute left-0 top-full mt-1 w-52 bg-[#1e2124] border border-[#3e444b] rounded-lg shadow-2xl py-1 z-50 text-xs animate-in fade-in duration-100 select-none">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveDesktopMenu(null);
+                      setIsShortcutsOpen(true);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                  >
+                    <HelpCircle className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Phím tắt thao tác</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveDesktopMenu(null);
+                      setIsSettingsOpen(true);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                  >
+                    <Settings className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Cài đặt biên dịch</span>
+                  </button>
+
+                  <div className="h-px bg-[#2d3136] my-1" />
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveDesktopMenu(null);
+                      window.open('/', '_blank');
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Về MathAIO Studio</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Hidden file inputs for OCR and Word */}
@@ -887,7 +1425,7 @@ export default function LaTeXStudio({
         </div>
 
         {/* Center Side: Document Title (Click-to-rename) & Autosave Status */}
-        <div className="flex items-center gap-2 min-w-0 max-w-[40%] justify-center">
+        <div className="flex items-center gap-2 min-w-0 max-w-[38%] justify-center">
           {isEditingTitle ? (
             <input
               type="text"
@@ -932,7 +1470,7 @@ export default function LaTeXStudio({
           </span>
         </div>
 
-        {/* Right Side: History, Layout, Theme Toggle, Fullscreen Toggle, AI Assistant Launcher */}
+        {/* Right Side: History, Layout, Share, Theme Toggle, Fullscreen Toggle */}
         <div className="flex items-center gap-1 shrink-0">
           {/* History Button */}
           <button
@@ -1013,6 +1551,17 @@ export default function LaTeXStudio({
               </div>
             )}
           </div>
+
+          {/* Share / Xuất bản Button */}
+          <button
+            type="button"
+            onClick={() => setIsShareModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-[#2a2e33] hover:bg-[#343a40] text-emerald-400 hover:text-emerald-300 border border-emerald-500/30 transition cursor-pointer"
+            title="Chia sẻ & Xuất bản"
+          >
+            <Share2 className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Xuất bản</span>
+          </button>
 
           <span className="h-3.5 w-px bg-[#2d3136] mx-0.5" />
 
@@ -1253,18 +1802,41 @@ export default function LaTeXStudio({
           </div>
         )}
 
+        {/* Quick Expand Button when Sidebar is Collapsed */}
+        {!isSidebarOpen && (
+          <button
+            type="button"
+            onClick={() => setIsSidebarOpen(true)}
+            className="absolute left-11 top-12 z-40 w-4.5 h-7 rounded-r bg-[#1e2124] hover:bg-[#2a2e33] text-neutral-400 hover:text-white flex items-center justify-center border border-l-0 border-white/10 shadow-md transition cursor-pointer"
+            title="Mở rộng bảng quản lý tệp (Click to show the panel)"
+          >
+            <ChevronRight className="w-3 h-3" />
+          </button>
+        )}
+
         {/* RESIZER 1: SIDEBAR RESIZER (180px - 360px) */}
         {isSidebarOpen && (
           <div
             onMouseDown={handleMouseDownSidebarDivider}
-            className={`relative w-1.5 flex-shrink-0 shrink-0 flex items-center justify-center cursor-col-resize select-none transition-colors z-20 group ${
+            className={`relative w-2 flex-shrink-0 shrink-0 flex flex-col items-center justify-center cursor-col-resize select-none transition-colors z-20 group ${
               resizingTarget === 'sidebar'
                 ? 'bg-neutral-600/50'
                 : 'bg-[#1e2124] hover:bg-neutral-600/50 border-r border-white/5'
             }`}
             title="Kéo chỉnh độ rộng Sidebar (180px - 360px)"
           >
-            <div className="w-0.5 h-8 rounded-full bg-slate-400/40 group-hover:bg-cyan-500 transition-colors" />
+            <div className="w-0.5 h-8 rounded-full bg-slate-400/40 group-hover:bg-cyan-500 transition-colors mb-1" />
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsSidebarOpen(false);
+              }}
+              className="w-4 h-4 rounded-full bg-[#2a2e33] hover:bg-[#383e45] text-neutral-300 hover:text-white flex items-center justify-center transition shadow-xs border border-white/10 cursor-pointer"
+              title="Thu gọn thanh tệp (Click to hide the panel)"
+            >
+              <ChevronLeft className="w-2.5 h-2.5 text-neutral-300 group-hover:text-white" />
+            </button>
           </div>
         )}
 
@@ -1280,18 +1852,10 @@ export default function LaTeXStudio({
               display: layoutMode === 'pdf' ? 'none' : 'flex',
               width: layoutMode === 'code' ? '100%' : `${editorRatio * 100}%`,
             }}
-            className={`min-w-[250px] flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xs overflow-hidden h-full flex flex-shrink-0 shrink-0 relative ${
-              isResizing ? 'select-none pointer-events-none' : ''
-            }`}
+            className="min-w-[250px] flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xs overflow-hidden h-full flex flex-shrink-0 shrink-0 relative"
           >
-            {/* Solid Blank Canvas during Dragging */}
-            {isResizing && (
-              <div className="absolute inset-0 z-30 bg-[#1e2327] select-none pointer-events-none" />
-            )}
-
-            <div className={`flex flex-col h-full w-full overflow-hidden ${isResizing ? 'invisible pointer-events-none' : ''}`}>
-              {/* File Tabs Bar */}
-            <div className="flex items-center justify-between px-2 bg-slate-100/90 dark:bg-slate-950/90 border-b border-slate-200 dark:border-slate-800 text-xs shrink-0 h-8">
+            {/* File Tabs Bar - ALWAYS VISIBLE OUTSIDE MASK */}
+            <div className="flex items-center justify-between px-2 bg-slate-100/90 dark:bg-slate-950/90 border-b border-slate-200 dark:border-slate-800 text-xs shrink-0 h-8 z-10">
               <div className="flex items-center gap-1 overflow-x-auto min-w-0 py-0.5">
                 {openTabs.map((tab) => {
                   const isActive = tab === activeFileName;
@@ -1337,13 +1901,21 @@ export default function LaTeXStudio({
               </div>
             </div>
 
-            {/* Overleaf Flat Editor Ribbon */}
-            <div className="h-8 px-2 bg-slate-50 dark:bg-slate-950/80 border-b border-slate-200 dark:border-white/10 flex items-center justify-between gap-1 text-xs shrink-0 select-none overflow-x-auto">
-              {/* Left icons group */}
-              <div className="flex items-center gap-0.5">
-                <button
-                  type="button"
-                  onClick={() => triggerEditorAction('undo')}
+            {/* Area below Tabs Bar (Ribbon + Editor) with Solid Mask during Dragging */}
+            <div className="flex-1 min-h-0 relative flex flex-col overflow-hidden">
+              {/* Solid Blank Canvas during Dragging */}
+              {isResizing && (
+                <div className="absolute inset-0 z-30 bg-[#1e2327] select-none pointer-events-none" />
+              )}
+
+              <div className={`flex flex-col h-full w-full overflow-hidden ${isResizing ? 'invisible pointer-events-none' : ''}`}>
+                {/* Overleaf Flat Editor Ribbon */}
+                <div className="h-8 px-2 bg-slate-50 dark:bg-slate-950/80 border-b border-slate-200 dark:border-white/10 flex items-center justify-between gap-1 text-xs shrink-0 select-none overflow-x-auto">
+                  {/* Left icons group */}
+                  <div className="flex items-center gap-0.5">
+                    <button
+                      type="button"
+                      onClick={() => triggerEditorAction('undo')}
                   className="p-1 rounded-sm hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 transition"
                   title="Hoàn tác (Undo / Ctrl+Z)"
                 >
@@ -1534,7 +2106,8 @@ export default function LaTeXStudio({
             )}
           </div>
         </div>
-      </section>
+      </div>
+    </section>
 
         {/* RESIZER 2: SPLIT RESIZER & SYNCTEX ARROWS (Overleaf Split Gutter) */}
         {layoutMode === 'split' && (
@@ -1884,6 +2457,143 @@ export default function LaTeXStudio({
               ) : (
                 <p className="text-xs text-slate-400 text-center py-6">Chưa có điểm khôi phục nào.</p>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Share / Xuất bản Modal */}
+      {isShareModalOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4"
+          onClick={() => setIsShareModalOpen(false)}
+        >
+          <div
+            className="bg-[#1e2124] border border-[#3e444b] text-slate-100 rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+              <div className="flex items-center gap-2">
+                <Share2 className="w-4 h-4 text-emerald-400" />
+                <h3 className="font-bold text-sm">Chia sẻ & Xuất bản dự án</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsShareModalOpen(false)}
+                className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-4 space-y-4 text-xs">
+              {/* Share Link */}
+              <div>
+                <label className="text-slate-400 font-medium block mb-1.5">Liên kết chia sẻ trực tiếp:</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={typeof window !== 'undefined' ? window.location.href : ''}
+                    className="flex-1 bg-[#141618] border border-white/10 rounded-lg px-3 py-2 text-slate-300 font-mono text-[11px] outline-none select-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (typeof window !== 'undefined') {
+                        navigator.clipboard.writeText(window.location.href);
+                        setCopiedShareLink(true);
+                        setTimeout(() => setCopiedShareLink(false), 2000);
+                      }
+                    }}
+                    className="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold flex items-center gap-1.5 transition cursor-pointer shrink-0"
+                  >
+                    {copiedShareLink ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedShareLink ? 'Đã chép' : 'Sao chép'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Quick Export Options */}
+              <div className="pt-2 border-t border-white/10">
+                <p className="text-slate-400 font-medium mb-2.5">Tải xuống & Xuất bản tệp:</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {pdf ? (
+                    <a
+                      href={pdf}
+                      download={`${docTitle.replace(/\.tex$/, '')}.pdf`}
+                      className="flex items-center gap-2 p-2.5 rounded-lg bg-[#2a2e33] hover:bg-[#343a40] text-slate-200 transition cursor-pointer border border-white/5"
+                    >
+                      <Download className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <div className="text-left">
+                        <div className="font-semibold text-xs">Tải PDF</div>
+                        <div className="text-[10px] text-slate-400">Tài liệu đã biên dịch</div>
+                      </div>
+                    </a>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsShareModalOpen(false);
+                        void compile();
+                      }}
+                      className="flex items-center gap-2 p-2.5 rounded-lg bg-[#2a2e33] hover:bg-[#343a40] text-slate-200 transition cursor-pointer border border-white/5 text-left"
+                    >
+                      <RefreshCw className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <div>
+                        <div className="font-semibold text-xs">Biên dịch PDF</div>
+                        <div className="text-[10px] text-slate-400">Recompile để tải</div>
+                      </div>
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      exportTex();
+                      setIsShareModalOpen(false);
+                    }}
+                    className="flex items-center gap-2 p-2.5 rounded-lg bg-[#2a2e33] hover:bg-[#343a40] text-slate-200 transition cursor-pointer border border-white/5 text-left"
+                  >
+                    <Code2 className="w-4 h-4 text-cyan-400 shrink-0" />
+                    <div>
+                      <div className="font-semibold text-xs">Mã nguồn TeX</div>
+                      <div className="text-[10px] text-slate-400">Tệp .tex gốc</div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleExportWord();
+                      setIsShareModalOpen(false);
+                    }}
+                    className="flex items-center gap-2 p-2.5 rounded-lg bg-[#2a2e33] hover:bg-[#343a40] text-slate-200 transition cursor-pointer border border-white/5 text-left"
+                  >
+                    <FileDown className="w-4 h-4 text-blue-400 shrink-0" />
+                    <div>
+                      <div className="font-semibold text-xs">Xuất Word</div>
+                      <div className="text-[10px] text-slate-400">Định dạng .docx</div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={!pdf}
+                    onClick={() => {
+                      setIsShareModalOpen(false);
+                      setIsPresentation(true);
+                    }}
+                    className="flex items-center gap-2 p-2.5 rounded-lg bg-[#2a2e33] hover:bg-[#343a40] text-slate-200 transition cursor-pointer border border-white/5 text-left disabled:opacity-40"
+                  >
+                    <Tv className="w-4 h-4 text-indigo-400 shrink-0" />
+                    <div>
+                      <div className="font-semibold text-xs">Trình chiếu</div>
+                      <div className="text-[10px] text-slate-400">Máy chiếu / Fullscreen</div>
+                    </div>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

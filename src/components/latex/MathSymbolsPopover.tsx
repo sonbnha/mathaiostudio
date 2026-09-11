@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import katex from 'katex';
+import 'katex/dist/katex.min.css';
 
 export interface MathSymbolsPopoverProps {
   isOpen: boolean;
@@ -10,14 +11,17 @@ export interface MathSymbolsPopoverProps {
   onInsert: (code: string) => void;
 }
 
+interface MathItem {
+  preview: string;
+  insert: string;
+  tooltip?: string;
+  isWide?: boolean;
+}
+
 interface MathCategory {
   id: string;
   name: string;
-  items: Array<{
-    display: string;
-    code: string;
-    tooltip?: string;
-  }>;
+  items: MathItem[];
 }
 
 const MATHTYPE_CATEGORIES: MathCategory[] = [
@@ -25,170 +29,175 @@ const MATHTYPE_CATEGORIES: MathCategory[] = [
     id: 'fraction_root',
     name: 'Căn / Phân số / Mũ',
     items: [
-      { display: '\\frac{\\Box}{\\Box}', code: '\\frac{${1}}{${2}}', tooltip: '\\frac{}{}' },
-      { display: '\\dfrac{\\Box}{\\Box}', code: '\\dfrac{${1}}{${2}}', tooltip: '\\dfrac{}{}' },
-      { display: '\\sqrt{\\Box}', code: '\\sqrt{${1}}', tooltip: '\\sqrt{}' },
-      { display: '\\sqrt[n]{\\Box}', code: '\\sqrt[${1}]{${2}}', tooltip: '\\sqrt[]{}\'' },
-      { display: '\\Box^{n}', code: '{${1}}^{${2}}', tooltip: '^{}' },
-      { display: '\\Box_{n}', code: '{${1}}_{${2}}', tooltip: '_{}' },
-      { display: '\\Box_{i}^{n}', code: '{${1}}_{${2}}^{${3}}', tooltip: '_{}^{}' },
-      { display: '|\\Box|', code: '|${1}|', tooltip: '| |' },
-      { display: '\\|\\Box\\|', code: '\\|${1}\\|', tooltip: '\\| \\|' },
-      { display: '\\overline{\\Box}', code: '\\overline{${1}}', tooltip: '\\overline{}' },
-      { display: '\\underline{\\Box}', code: '\\underline{${1}}', tooltip: '\\underline{}' },
+      { preview: '\\dfrac{\\Box}{\\Box}', insert: '\\dfrac{${1}}{${2}}', tooltip: 'Phân số dfrac' },
+      { preview: '\\frac{\\Box}{\\Box}', insert: '\\frac{${1}}{${2}}', tooltip: 'Phân số frac' },
+      { preview: '\\sqrt{\\Box}', insert: '\\sqrt{${1}}', tooltip: 'Căn bậc hai' },
+      { preview: '\\sqrt[n]{\\Box}', insert: '\\sqrt[${1}]{${2}}', tooltip: 'Căn bậc n' },
+      { preview: '{\\Box}^{\\Box}', insert: '^{${1}}', tooltip: 'Lũy thừa' },
+      { preview: '{\\Box}_{\\Box}', insert: '_{${1}}', tooltip: 'Chỉ số dưới' },
+      { preview: '{\\Box}_{\\Box}^{\\Box}', insert: '_{${1}}^{${2}}', tooltip: 'Mũ và chỉ số dưới' },
+      { preview: '|\\Box|', insert: '|${1}|', tooltip: 'Trị tuyệt đối' },
+      { preview: '\\|\\Box\\|', insert: '\\|${1}\\|', tooltip: 'Chuẩn (Norm)' },
+      { preview: '\\overline{\\Box}', insert: '\\overline{${1}}', tooltip: 'Gạch đầu' },
+      { preview: '\\underline{\\Box}', insert: '\\underline{${1}}', tooltip: 'Gạch chân' },
     ],
   },
   {
     id: 'operators_relations',
     name: 'Toán tử & Quan hệ',
     items: [
-      { display: '\\pm', code: '\\pm ', tooltip: '\\pm' },
-      { display: '\\mp', code: '\\mp ', tooltip: '\\mp' },
-      { display: '\\times', code: '\\times ', tooltip: '\\times' },
-      { display: '\\div', code: '\\div ', tooltip: '\\div' },
-      { display: '\\cdot', code: '\\cdot ', tooltip: '\\cdot' },
-      { display: '\\ast', code: '\\ast ', tooltip: '\\ast' },
-      { display: '=', code: '= ', tooltip: '=' },
-      { display: '\\neq', code: '\\neq ', tooltip: '\\neq' },
-      { display: '\\approx', code: '\\approx ', tooltip: '\\approx' },
-      { display: '\\equiv', code: '\\equiv ', tooltip: '\\equiv' },
-      { display: '\\sim', code: '\\sim ', tooltip: '\\sim' },
-      { display: '\\cong', code: '\\cong ', tooltip: '\\cong' },
-      { display: '\\le', code: '\\le ', tooltip: '\\le' },
-      { display: '\\ge', code: '\\ge ', tooltip: '\\ge' },
-      { display: '\\ll', code: '\\ll ', tooltip: '\\ll' },
-      { display: '\\gg', code: '\\gg ', tooltip: '\\gg' },
-      { display: '\\propto', code: '\\propto ', tooltip: '\\propto' },
+      { preview: '\\pm', insert: '\\pm ', tooltip: 'Cộng trừ' },
+      { preview: '\\mp', insert: '\\mp ', tooltip: 'Trừ cộng' },
+      { preview: '\\times', insert: '\\times ', tooltip: 'Nhân (x)' },
+      { preview: '\\div', insert: '\\div ', tooltip: 'Chia' },
+      { preview: '\\cdot', insert: '\\cdot ', tooltip: 'Nhân (chấm)' },
+      { preview: '\\ast', insert: '\\ast ', tooltip: 'Sao' },
+      { preview: '=', insert: '= ', tooltip: 'Bằng' },
+      { preview: '\\neq', insert: '\\neq ', tooltip: 'Khác' },
+      { preview: '\\approx', insert: '\\approx ', tooltip: 'Xấp xỉ' },
+      { preview: '\\equiv', insert: '\\equiv ', tooltip: 'Đồng nhất' },
+      { preview: '\\sim', insert: '\\sim ', tooltip: 'Đồng dạng' },
+      { preview: '\\cong', insert: '\\cong ', tooltip: 'Bằng nhau' },
+      { preview: '\\le', insert: '\\le ', tooltip: 'Nhỏ hơn hoặc bằng' },
+      { preview: '\\ge', insert: '\\ge ', tooltip: 'Lớn hơn hoặc bằng' },
+      { preview: '\\ll', insert: '\\ll ', tooltip: 'Rất nhỏ hơn' },
+      { preview: '\\gg', insert: '\\gg ', tooltip: 'Rất lớn hơn' },
+      { preview: '\\propto', insert: '\\propto ', tooltip: 'Tỉ lệ thuận' },
     ],
   },
   {
     id: 'calculus',
     name: 'Giải tích & Vi phân',
     items: [
-      { display: '\\int', code: '\\int ', tooltip: '\\int' },
-      { display: '\\int_{a}^{b}', code: '\\int_{${1}}^{${2}} ', tooltip: '\\int_{}^{}' },
-      { display: '\\iint', code: '\\iint ', tooltip: '\\iint' },
-      { display: '\\iiint', code: '\\iiint ', tooltip: '\\iiint' },
-      { display: '\\oint', code: '\\oint ', tooltip: '\\oint' },
-      { display: '\\sum', code: '\\sum ', tooltip: '\\sum' },
-      { display: '\\sum_{i}^{n}', code: '\\sum_{${1}}^{${2}} ', tooltip: '\\sum_{}^{}' },
-      { display: '\\prod', code: '\\prod ', tooltip: '\\prod' },
-      { display: '\\prod_{i}^{n}', code: '\\prod_{${1}}^{${2}} ', tooltip: '\\prod_{}^{}' },
-      { display: '\\lim_{x \\to x_0}', code: '\\lim_{${1} \\to ${2}} ', tooltip: '\\lim_{ \\to }' },
-      { display: '\\lim_{x \\to \\infty}', code: '\\lim_{${1} \\to \\infty} ', tooltip: '\\lim_{ \\to \\infty}' },
-      { display: '\\mathrm{d}x', code: '\\mathrm{d}${1}', tooltip: '\\mathrm{d}' },
-      { display: '\\partial x', code: '\\frac{\\partial ${1}}{\\partial ${2}}', tooltip: '\\partial' },
-      { display: '\\nabla', code: '\\nabla', tooltip: '\\nabla' },
-      { display: '\\infty', code: '+\\infty', tooltip: '\\infty' },
+      { preview: '\\int', insert: '\\int ', tooltip: 'Tích phân bất định' },
+      { preview: '\\int_{\\Box}^{\\Box}', insert: '\\int_{${1}}^{${2}} ', tooltip: 'Tích phân xác định' },
+      { preview: '\\iint', insert: '\\iint ', tooltip: 'Tích phân hai lớp' },
+      { preview: '\\iiint', insert: '\\iiint ', tooltip: 'Tích phân ba lớp' },
+      { preview: '\\oint', insert: '\\oint ', tooltip: 'Tích phân đường cong' },
+      { preview: '\\sum', insert: '\\sum ', tooltip: 'Tổng' },
+      { preview: '\\sum_{\\Box}^{\\Box}', insert: '\\sum_{${1}}^{${2}} ', tooltip: 'Tổng chuỗi' },
+      { preview: '\\prod', insert: '\\prod ', tooltip: 'Tích' },
+      { preview: '\\prod_{\\Box}^{\\Box}', insert: '\\prod_{${1}}^{${2}} ', tooltip: 'Tích chuỗi' },
+      { preview: '\\lim_{\\Box \\to \\Box}', insert: '\\lim_{${1} \\to ${2}} ', tooltip: 'Giới hạn' },
+      { preview: '\\lim_{\\Box \\to \\infty}', insert: '\\lim_{${1} \\to \\infty} ', tooltip: 'Giới hạn vô cực' },
+      { preview: '\\mathrm{d}\\Box', insert: '\\mathrm{d}${1}', tooltip: 'Vi phân d' },
+      { preview: '\\frac{\\partial \\Box}{\\partial \\Box}', insert: '\\frac{\\partial ${1}}{\\partial ${2}}', tooltip: 'Đạo hàm riêng' },
+      { preview: '\\nabla', insert: '\\nabla', tooltip: 'Toán tử Nabla' },
+      { preview: '\\infty', insert: '+\\infty', tooltip: 'Vô cực' },
     ],
   },
   {
     id: 'geometry_trig',
     name: 'Hình học & Lượng giác',
     items: [
-      { display: '\\vec{u}', code: '\\vec{${1}}', tooltip: '\\vec{}' },
-      { display: '\\overrightarrow{AB}', code: '\\overrightarrow{${1}}', tooltip: '\\overrightarrow{}' },
-      { display: '\\widehat{A}', code: '\\widehat{${1}}', tooltip: '\\widehat{}' },
-      { display: '\\angle', code: '\\angle ', tooltip: '\\angle' },
-      { display: '\\Delta', code: '\\Delta ', tooltip: '\\Delta' },
-      { display: '\\perp', code: '\\perp ', tooltip: '\\perp' },
-      { display: '\\parallel', code: '\\parallel ', tooltip: '\\parallel' },
-      { display: '\\not\\parallel', code: '\\not\\parallel ', tooltip: '\\not\\parallel' },
-      { display: '\\sim', code: '\\sim ', tooltip: '\\sim' },
-      { display: '60^\\circ', code: '${1}^\\circ', tooltip: '^\circ' },
-      { display: '\\pi', code: '\\pi', tooltip: '\\pi' },
-      { display: '\\sin', code: '\\sin(${1})', tooltip: '\\sin' },
-      { display: '\\cos', code: '\\cos(${1})', tooltip: '\\cos' },
-      { display: '\\tan', code: '\\tan(${1})', tooltip: '\\tan' },
-      { display: '\\cot', code: '\\cot(${1})', tooltip: '\\cot' },
+      { preview: '\\vec{\\Box}', insert: '\\vec{${1}}', tooltip: 'Vectơ' },
+      { preview: '\\overrightarrow{\\Box}', insert: '\\overrightarrow{${1}}', tooltip: 'Vectơ 2 điểm' },
+      { preview: '\\widehat{\\Box}', insert: '\\widehat{${1}}', tooltip: 'Ký hiệu góc' },
+      { preview: '\\angle \\Box', insert: '\\angle ${1}', tooltip: 'Góc' },
+      { preview: '\\Delta', insert: '\\Delta ', tooltip: 'Tam giác' },
+      { preview: '\\perp', insert: '\\perp ', tooltip: 'Vuông góc' },
+      { preview: '\\parallel', insert: '\\parallel ', tooltip: 'Song song' },
+      { preview: '\\not\\parallel', insert: '\\not\\parallel ', tooltip: 'Không song song' },
+      { preview: '\\sim', insert: '\\sim ', tooltip: 'Đồng dạng' },
+      { preview: '{\\Box}^\\circ', insert: '${1}^\\circ', tooltip: 'Độ góc' },
+      { preview: '\\pi', insert: '\\pi', tooltip: 'Số Pi' },
+      { preview: '\\sin(\\Box)', insert: '\\sin(${1})', tooltip: 'Hàm sin' },
+      { preview: '\\cos(\\Box)', insert: '\\cos(${1})', tooltip: 'Hàm cos' },
+      { preview: '\\tan(\\Box)', insert: '\\tan(${1})', tooltip: 'Hàm tan' },
+      { preview: '\\cot(\\Box)', insert: '\\cot(${1})', tooltip: 'Hàm cot' },
     ],
   },
   {
     id: 'sets_logic',
     name: 'Tập hợp & Logic',
     items: [
-      { display: '\\in', code: '\\in ', tooltip: '\\in' },
-      { display: '\\notin', code: '\\notin ', tooltip: '\\notin' },
-      { display: '\\subset', code: '\\subset ', tooltip: '\\subset' },
-      { display: '\\supset', code: '\\supset ', tooltip: '\\supset' },
-      { display: '\\subseteq', code: '\\subseteq ', tooltip: '\\subseteq' },
-      { display: '\\supseteq', code: '\\supseteq ', tooltip: '\\supseteq' },
-      { display: '\\cap', code: '\\cap ', tooltip: '\\cap' },
-      { display: '\\cup', code: '\\cup ', tooltip: '\\cup' },
-      { display: '\\setminus', code: '\\setminus ', tooltip: '\\setminus' },
-      { display: '\\emptyset', code: '\\emptyset', tooltip: '\\emptyset' },
-      { display: '\\mathbb{R}', code: '\\mathbb{R}', tooltip: '\\mathbb{R}' },
-      { display: '\\mathbb{N}', code: '\\mathbb{N}', tooltip: '\\mathbb{N}' },
-      { display: '\\mathbb{Z}', code: '\\mathbb{Z}', tooltip: '\\mathbb{Z}' },
-      { display: '\\mathbb{Q}', code: '\\mathbb{Q}', tooltip: '\\mathbb{Q}' },
-      { display: '\\mathbb{C}', code: '\\mathbb{C}', tooltip: '\\mathbb{C}' },
-      { display: '\\forall', code: '\\forall ', tooltip: '\\forall' },
-      { display: '\\exists', code: '\\exists ', tooltip: '\\exists' },
-      { display: '\\nexists', code: '\\nexists ', tooltip: '\\nexists' },
-      { display: '\\Rightarrow', code: '\\Rightarrow ', tooltip: '\\Rightarrow' },
-      { display: '\\Leftarrow', code: '\\Leftarrow ', tooltip: '\\Leftarrow' },
-      { display: '\\Leftrightarrow', code: '\\Leftrightarrow ', tooltip: '\\Leftrightarrow' },
-      { display: '\\neg', code: '\\neg ', tooltip: '\\neg' },
-      { display: '\\land', code: '\\land ', tooltip: '\\land' },
-      { display: '\\lor', code: '\\lor ', tooltip: '\\lor' },
+      { preview: '\\in', insert: '\\in ', tooltip: 'Thuộc' },
+      { preview: '\\notin', insert: '\\notin ', tooltip: 'Không thuộc' },
+      { preview: '\\subset', insert: '\\subset ', tooltip: 'Tập con' },
+      { preview: '\\supset', insert: '\\supset ', tooltip: 'Chứa tập' },
+      { preview: '\\subseteq', insert: '\\subseteq ', tooltip: 'Tập con hoặc bằng' },
+      { preview: '\\supseteq', insert: '\\supseteq ', tooltip: 'Chứa hoặc bằng' },
+      { preview: '\\cap', insert: '\\cap ', tooltip: 'Giao' },
+      { preview: '\\cup', insert: '\\cup ', tooltip: 'Hợp' },
+      { preview: '\\setminus', insert: '\\setminus ', tooltip: 'Hiệu tập hợp' },
+      { preview: '\\emptyset', insert: '\\emptyset', tooltip: 'Tập rỗng' },
+      { preview: '\\mathbb{R}', insert: '\\mathbb{R}', tooltip: 'Tập số thực' },
+      { preview: '\\mathbb{N}', insert: '\\mathbb{N}', tooltip: 'Tập số tự nhiên' },
+      { preview: '\\mathbb{Z}', insert: '\\mathbb{Z}', tooltip: 'Tập số nguyên' },
+      { preview: '\\mathbb{Q}', insert: '\\mathbb{Q}', tooltip: 'Tập số hữu tỉ' },
+      { preview: '\\mathbb{C}', insert: '\\mathbb{C}', tooltip: 'Tập số phức' },
+      { preview: '\\forall', insert: '\\forall ', tooltip: 'Với mọi' },
+      { preview: '\\exists', insert: '\\exists ', tooltip: 'Tồn tại' },
+      { preview: '\\nexists', insert: '\\nexists ', tooltip: 'Không tồn tại' },
+      { preview: '\\Rightarrow', insert: '\\Rightarrow ', tooltip: 'Suy ra' },
+      { preview: '\\Leftarrow', insert: '\\Leftarrow ', tooltip: 'Suy từ' },
+      { preview: '\\Leftrightarrow', insert: '\\Leftrightarrow ', tooltip: 'Tương đương' },
+      { preview: '\\neg', insert: '\\neg ', tooltip: 'Phủ định' },
+      { preview: '\\land', insert: '\\land ', tooltip: 'Và (hội)' },
+      { preview: '\\lor', insert: '\\lor ', tooltip: 'Hoặc (tuyển)' },
     ],
   },
   {
     id: 'greek_letters',
     name: 'Ký tự Hy Lạp',
     items: [
-      { display: '\\alpha', code: '\\alpha', tooltip: '\\alpha' },
-      { display: '\\beta', code: '\\beta', tooltip: '\\beta' },
-      { display: '\\gamma', code: '\\gamma', tooltip: '\\gamma' },
-      { display: '\\delta', code: '\\delta', tooltip: '\\delta' },
-      { display: '\\epsilon', code: '\\epsilon', tooltip: '\\epsilon' },
-      { display: '\\varepsilon', code: '\\varepsilon', tooltip: '\\varepsilon' },
-      { display: '\\theta', code: '\\theta', tooltip: '\\theta' },
-      { display: '\\lambda', code: '\\lambda', tooltip: '\\lambda' },
-      { display: '\\mu', code: '\\mu', tooltip: '\\mu' },
-      { display: '\\pi', code: '\\pi', tooltip: '\\pi' },
-      { display: '\\rho', code: '\\rho', tooltip: '\\rho' },
-      { display: '\\sigma', code: '\\sigma', tooltip: '\\sigma' },
-      { display: '\\tau', code: '\\tau', tooltip: '\\tau' },
-      { display: '\\phi', code: '\\phi', tooltip: '\\phi' },
-      { display: '\\varphi', code: '\\varphi', tooltip: '\\varphi' },
-      { display: '\\omega', code: '\\omega', tooltip: '\\omega' },
-      { display: '\\Delta', code: '\\Delta', tooltip: '\\Delta' },
-      { display: '\\Omega', code: '\\Omega', tooltip: '\\Omega' },
+      { preview: '\\alpha', insert: '\\alpha', tooltip: 'alpha' },
+      { preview: '\\beta', insert: '\\beta', tooltip: 'beta' },
+      { preview: '\\gamma', insert: '\\gamma', tooltip: 'gamma' },
+      { preview: '\\delta', insert: '\\delta', tooltip: 'delta' },
+      { preview: '\\epsilon', insert: '\\epsilon', tooltip: 'epsilon' },
+      { preview: '\\varepsilon', insert: '\\varepsilon', tooltip: 'varepsilon' },
+      { preview: '\\theta', insert: '\\theta', tooltip: 'theta' },
+      { preview: '\\lambda', insert: '\\lambda', tooltip: 'lambda' },
+      { preview: '\\mu', insert: '\\mu', tooltip: 'mu' },
+      { preview: '\\pi', insert: '\\pi', tooltip: 'pi' },
+      { preview: '\\rho', insert: '\\rho', tooltip: 'rho' },
+      { preview: '\\sigma', insert: '\\sigma', tooltip: 'sigma' },
+      { preview: '\\tau', insert: '\\tau', tooltip: 'tau' },
+      { preview: '\\phi', insert: '\\phi', tooltip: 'phi' },
+      { preview: '\\varphi', insert: '\\varphi', tooltip: 'varphi' },
+      { preview: '\\omega', insert: '\\omega', tooltip: 'omega' },
+      { preview: '\\Delta', insert: '\\Delta', tooltip: 'Delta' },
+      { preview: '\\Omega', insert: '\\Omega', tooltip: 'Omega' },
     ],
   },
   {
     id: 'brackets_matrices',
     name: 'Ngoặc & Ma trận',
     items: [
-      { display: '\\left( \\right)', code: '\\left( ${1} \\right)', tooltip: '\\left( \\right)' },
-      { display: '\\left[ \\right]', code: '\\left[ ${1} \\right]', tooltip: '\\left[ \\right]' },
-      { display: '\\left\\{ \\right\\}', code: '\\left\\{ ${1} \\right\\}', tooltip: '\\left\\{ \\right\\}' },
-      { display: '\\left| \\right|', code: '\\left| ${1} \\right|', tooltip: '\\left| \\right|' },
+      { preview: '(\\Box)', insert: '\\left( ${1} \\right)', tooltip: 'Ngoặc tròn ( )' },
+      { preview: '[\\Box]', insert: '\\left[ ${1} \\right]', tooltip: 'Ngoặc vuông [ ]' },
+      { preview: '\\{\\Box\\}', insert: '\\left\\{ ${1} \\right\\}', tooltip: 'Ngoặc nhọn { }' },
+      { preview: '|\\Box|', insert: '\\left| ${1} \\right|', tooltip: 'Gạch đứng | |' },
       {
-        display: '\\begin{cases}..',
-        code: '\\begin{cases}\n  ${1} \\\\\n  ${2}\n\\end{cases}',
-        tooltip: '\\begin{cases}',
+        preview: '\\begin{cases}\\Box\\\\\\Box\\end{cases}',
+        insert: '\\begin{cases}\n  ${1} \\\\\n  ${2}\n\\end{cases}',
+        tooltip: 'Hệ phương trình (cases)',
+        isWide: true,
       },
       {
-        display: '\\begin{matrix}..',
-        code: '\\begin{matrix}\n  ${1} & ${2} \\\\\n  ${3} & ${4}\n\\end{matrix}',
-        tooltip: '\\begin{matrix}',
+        preview: '\\begin{pmatrix}\\Box & \\Box\\\\\\Box & \\Box\\end{pmatrix}',
+        insert: '\\begin{pmatrix}\n  ${1} & ${2} \\\\\n  ${3} & ${4}\n\\end{pmatrix}',
+        tooltip: 'Ma trận tròn (pmatrix)',
+        isWide: true,
       },
       {
-        display: '\\begin{pmatrix}..',
-        code: '\\begin{pmatrix}\n  ${1} & ${2} \\\\\n  ${3} & ${4}\n\\end{pmatrix}',
-        tooltip: '\\begin{pmatrix}',
+        preview: '\\begin{bmatrix}\\Box & \\Box\\\\\\Box & \\Box\\end{bmatrix}',
+        insert: '\\begin{bmatrix}\n  ${1} & ${2} \\\\\n  ${3} & ${4}\n\\end{bmatrix}',
+        tooltip: 'Ma trận vuông (bmatrix)',
+        isWide: true,
       },
       {
-        display: '\\begin{bmatrix}..',
-        code: '\\begin{bmatrix}\n  ${1} & ${2} \\\\\n  ${3} & ${4}\n\\end{bmatrix}',
-        tooltip: '\\begin{bmatrix}',
+        preview: '\\begin{vmatrix}\\Box & \\Box\\\\\\Box & \\Box\\end{vmatrix}',
+        insert: '\\begin{vmatrix}\n  ${1} & ${2} \\\\\n  ${3} & ${4}\n\\end{vmatrix}',
+        tooltip: 'Định thức ma trận (vmatrix)',
+        isWide: true,
       },
       {
-        display: '\\begin{vmatrix}..',
-        code: '\\begin{vmatrix}\n  ${1} & ${2} \\\\\n  ${3} & ${4}\n\\end{vmatrix}',
-        tooltip: '\\begin{vmatrix}',
+        preview: '\\begin{matrix}\\Box & \\Box\\\\\\Box & \\Box\\end{matrix}',
+        insert: '\\begin{matrix}\n  ${1} & ${2} \\\\\n  ${3} & ${4}\n\\end{matrix}',
+        tooltip: 'Bảng ma trận trơn (matrix)',
+        isWide: true,
       },
     ],
   },
@@ -259,17 +268,17 @@ export default function MathSymbolsPopover({
         </button>
       </div>
 
-      {/* Grid of Square MathType Icon Buttons (32x32px) */}
-      <div className="grid grid-cols-7 sm:grid-cols-8 gap-1.5 overflow-y-auto max-h-[300px] p-1 scrollbar-thin">
+      {/* Grid of MathType Icon Buttons rendered via KaTeX */}
+      <div className="grid grid-cols-6 sm:grid-cols-7 gap-1.5 overflow-y-auto max-h-[300px] p-1 scrollbar-thin">
         {currentCategory.items.map((item, idx) => {
           let renderedHtml = '';
           try {
-            renderedHtml = katex.renderToString(item.display, {
+            renderedHtml = katex.renderToString(item.preview, {
               displayMode: false,
               throwOnError: false,
             });
           } catch {
-            renderedHtml = `<span class="text-[10px]">${item.display}</span>`;
+            renderedHtml = `<span class="text-[10px]">${item.preview}</span>`;
           }
 
           return (
@@ -277,14 +286,16 @@ export default function MathSymbolsPopover({
               key={idx}
               type="button"
               onClick={() => {
-                onInsert(item.code);
+                onInsert(item.insert);
                 onClose();
               }}
-              title={item.tooltip || item.code}
-              className="h-9 w-full min-w-[32px] rounded-lg border border-slate-800 hover:border-cyan-500/80 bg-slate-950/60 hover:bg-cyan-500/15 text-slate-100 flex items-center justify-center p-1 transition-all cursor-pointer shadow-2xs hover:scale-105"
+              title={item.tooltip || item.insert}
+              className={`rounded-lg border border-slate-800 hover:border-cyan-500/80 bg-slate-950/60 hover:bg-cyan-500/15 text-slate-100 flex items-center justify-center p-1 transition-all cursor-pointer shadow-2xs hover:scale-105 ${
+                item.isWide ? 'col-span-2 h-12' : 'h-10 min-w-[36px]'
+              }`}
             >
               <div
-                className="text-xs overflow-hidden max-w-full truncate pointer-events-none text-slate-100"
+                className="text-xs overflow-hidden max-w-full truncate pointer-events-none text-slate-100 flex items-center justify-center"
                 dangerouslySetInnerHTML={{ __html: renderedHtml }}
               />
             </button>
@@ -294,7 +305,7 @@ export default function MathSymbolsPopover({
 
       {/* Bottom Status Bar */}
       <div className="mt-2 pt-1.5 border-t border-slate-800 flex items-center justify-between text-[10px] text-slate-400 font-mono shrink-0">
-        <span>Click ký hiệu để chèn khung rỗng vào Editor</span>
+        <span>Click biểu tượng để chèn khung rỗng vào Editor</span>
         <span>Phím Esc để đóng</span>
       </div>
     </div>

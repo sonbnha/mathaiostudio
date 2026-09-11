@@ -53,7 +53,7 @@ function PDFSinglePage({
         const yRatio = (e.clientY - rect.top) / Math.max(1, rect.height);
         onPageClick?.(number, yRatio);
       }}
-      className={`mb-6 shadow-lg bg-white rounded-md overflow-hidden cursor-crosshair transition-all relative ${
+      className={`mb-6 shadow-[0_4px_16px_rgba(0,0,0,0.35)] bg-white rounded-xs overflow-hidden cursor-crosshair transition-all relative ${
         isHighlighted ? 'ring-4 ring-cyan-500/80' : ''
       }`}
       style={{ width, minHeight: width * ratio }}
@@ -88,6 +88,9 @@ export default function PDFPreview({
   setZoom,
   onSync,
   highlightPage,
+  jumpToPage,
+  onTotalPagesChange,
+  onActivePageChange,
   isPresentation,
   onClosePresentation,
 }: {
@@ -96,6 +99,9 @@ export default function PDFPreview({
   setZoom: (z: number | 'page-width' | ((prev: number | 'page-width') => number | 'page-width')) => void;
   onSync?: (page: number, ratio: number) => void;
   highlightPage?: number;
+  jumpToPage?: number;
+  onTotalPagesChange?: (total: number) => void;
+  onActivePageChange?: (page: number) => void;
   isPresentation?: boolean;
   onClosePresentation?: () => void;
 }) {
@@ -121,9 +127,23 @@ export default function PDFPreview({
       const el = document.getElementById(`pdf-page-${highlightPage}`);
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setActivePage(highlightPage);
+        onActivePageChange?.(highlightPage);
       }
     }
-  }, [highlightPage, numPages]);
+  }, [highlightPage, numPages, onActivePageChange]);
+
+  // Jump to specific page requested by horizontal page navigator
+  useEffect(() => {
+    if (jumpToPage && jumpToPage <= numPages && jumpToPage >= 1) {
+      const el = document.getElementById(`pdf-page-${jumpToPage}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setActivePage(jumpToPage);
+        onActivePageChange?.(jumpToPage);
+      }
+    }
+  }, [jumpToPage, numPages, onActivePageChange]);
 
   // Keyboard navigation for presentation mode
   useEffect(() => {
@@ -318,19 +338,22 @@ export default function PDFPreview({
       {/* Main PDF Scroll Container */}
       <div
         ref={host}
-        className="flex-1 min-h-0 overflow-auto p-4 flex flex-col items-center bg-slate-100/60 dark:bg-slate-950/40"
+        className="flex-1 min-h-0 overflow-auto p-4 flex flex-col items-center bg-[#525659] dark:bg-[#3a3d40] transition-colors"
         aria-label="Tài liệu PDF đã biên dịch"
       >
         <Document
           file={url}
-          onLoadSuccess={({ numPages }) => setNumPages(numPages)}
+          onLoadSuccess={({ numPages }) => {
+            setNumPages(numPages);
+            onTotalPagesChange?.(numPages);
+          }}
           loading={
-            <div className="p-8 text-center text-xs text-slate-500">
+            <div className="p-8 text-center text-xs text-slate-200">
               Đang mở tài liệu PDF…
             </div>
           }
           error={
-            <div className="p-8 text-center text-xs text-rose-500">
+            <div className="p-8 text-center text-xs text-rose-300">
               Không thể hiển thị PDF trực tiếp. Hãy dùng nút Tải PDF về máy.
             </div>
           }

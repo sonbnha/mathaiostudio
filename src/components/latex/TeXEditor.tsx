@@ -10,6 +10,7 @@ export default function TeXEditor({
   fontSize,
   onCompile,
   insertRequest,
+  editorActionRequest,
   onCursorLine,
   targetLine,
   errors,
@@ -19,6 +20,7 @@ export default function TeXEditor({
   fontSize: number;
   onCompile: () => void;
   insertRequest?: { id: number; text: string };
+  editorActionRequest?: { id: number; action: string };
   onCursorLine?: (line: number) => void;
   targetLine?: number;
   errors?: ParsedTeXIssue[];
@@ -28,6 +30,7 @@ export default function TeXEditor({
   const { resolvedTheme } = useTheme();
   const [editorRef, setEditorRef] = useState<Parameters<OnMount>[0] | null>(null);
   const [monacoRef, setMonacoRef] = useState<any>(null);
+  const [decorations, setDecorations] = useState<string[]>([]);
 
   // Fallback timer if Monaco CDN is blocked
   useEffect(() => {
@@ -36,7 +39,7 @@ export default function TeXEditor({
     return () => clearTimeout(timer);
   }, [ready]);
 
-  // Update Monaco Error Squiggles / Markers
+  // Update Monaco Error Squiggles / Markers and Gutter Bullets
   useEffect(() => {
     if (!editorRef || !monacoRef) return;
     const model = editorRef.getModel();
@@ -44,6 +47,7 @@ export default function TeXEditor({
 
     if (!errors || errors.length === 0) {
       monacoRef.editor.setModelMarkers(model, 'tex-errors', []);
+      setDecorations((prev) => editorRef.deltaDecorations(prev, []));
       return;
     }
 
@@ -65,7 +69,62 @@ export default function TeXEditor({
       });
 
     monacoRef.editor.setModelMarkers(model, 'tex-errors', markers);
+
+    // Overleaf-style crisp red error bullet in the left gutter beside line numbers
+    const newDecs = errors
+      .filter((err) => err.line && err.line > 0 && err.type === 'error')
+      .map((err) => ({
+        range: new monacoRef.Range(err.line!, 1, err.line!, 1),
+        options: {
+          isWholeLine: true,
+          className: 'latex-error-line',
+          glyphMarginClassName: 'latex-error-glyph',
+          glyphMarginHoverMessage: { value: `Lỗi biên dịch LaTeX: ${err.message}` },
+        },
+      }));
+
+    setDecorations((prev) => editorRef.deltaDecorations(prev, newDecs));
   }, [editorRef, monacoRef, errors]);
+
+  // Handle ribbon actions (Undo, Redo, Find, Bold, Italic, Link, Table)
+  useEffect(() => {
+    if (!editorRef || !editorActionRequest) return;
+    const { action } = editorActionRequest;
+    const sel = editorRef.getSelection();
+    const model = editorRef.getModel();
+
+    if (action === 'undo') {
+      editorRef.trigger('ribbon', 'undo', null);
+    } else if (action === 'redo') {
+      editorRef.trigger('ribbon', 'redo', null);
+    } else if (action === 'find') {
+      editorRef.getAction('actions.find')?.run();
+    } else if (action === 'bold') {
+      if (sel && model) {
+        const text = model.getValueInRange(sel);
+        const replacement = text ? `\\textbf{${text}}` : `\\textbf{}`;
+        editorRef.executeEdits('ribbon-bold', [{ range: sel, text: replacement, forceMoveMarkers: true }]);
+      }
+    } else if (action === 'italic') {
+      if (sel && model) {
+        const text = model.getValueInRange(sel);
+        const replacement = text ? `\\textit{${text}}` : `\\textit{}`;
+        editorRef.executeEdits('ribbon-italic', [{ range: sel, text: replacement, forceMoveMarkers: true }]);
+      }
+    } else if (action === 'link') {
+      if (sel && model) {
+        const text = model.getValueInRange(sel);
+        const replacement = `\\href{https://example.com}{${text || 'liên kết'}}`;
+        editorRef.executeEdits('ribbon-link', [{ range: sel, text: replacement, forceMoveMarkers: true }]);
+      }
+    } else if (action === 'table') {
+      if (sel) {
+        const tableSnippet = `\\begin{table}[h!]\n\\centering\n\\begin{tabular}{|c|c|c|}\n\\hline\nCột 1 & Cột 2 & Cột 3 \\\\\n\\hline\nA & B & C \\\\\nD & E & F \\\\\n\\hline\n\\end{tabular}\n\\caption{Bảng mẫu}\n\\end{table}\n`;
+        editorRef.executeEdits('ribbon-table', [{ range: sel, text: tableSnippet, forceMoveMarkers: true }]);
+      }
+    }
+    editorRef.focus();
+  }, [editorRef, editorActionRequest]);
 
   // Insert text at cursor position (from ribbon or tools) with smart cursor placement
   useEffect(() => {
@@ -172,6 +231,7 @@ export default function TeXEditor({
   }
 
   return (
+    <>
     <Editor
       language="latex"
       path="document.tex"
@@ -334,5 +394,21 @@ export default function TeXEditor({
         glyphMargin: true,
       }}
     />
+    <style jsx global>{`
+      .latex-error-glyph {
+        background-color: #ef4444 !important;
+        border-radius: 50% !important;
+        width: 8px !important;
+        height: 8px !important;
+        margin-left: 6px !important;
+        margin-top: 5px !important;
+        box-shadow: 0 0 5px rgba(239, 68, 68, 0.8) !important;
+        cursor: pointer !important;
+      }
+      .latex-error-line {
+        background-color: rgba(239, 68, 68, 0.08) !important;
+      }
+    `}</style>
+    </>
   );
 }

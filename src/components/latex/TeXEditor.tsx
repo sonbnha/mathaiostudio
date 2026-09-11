@@ -124,6 +124,8 @@ export default function TeXEditor({
         const tableSnippet = `\\begin{table}[h!]\n\\centering\n\\begin{tabular}{|c|c|c|}\n\\hline\nCột 1 & Cột 2 & Cột 3 \\\\\n\\hline\nA & B & C \\\\\nD & E & F \\\\\n\\hline\n\\end{tabular}\n\\caption{Bảng mẫu}\n\\end{table}\n`;
         editorRef.executeEdits('ribbon-table', [{ range: sel, text: tableSnippet, forceMoveMarkers: true }]);
       }
+    } else if (action === 'select-all') {
+      editorRef.getAction('editor.action.selectAll')?.run();
     }
     editorRef.focus();
   }, [editorRef, editorActionRequest]);

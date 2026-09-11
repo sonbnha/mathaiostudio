@@ -8,6 +8,7 @@ export interface ProjectItem {
   type: ProjectType;
   updatedAt: number;
   createdAt: number;
+  isStarred?: boolean;
   metadata?: {
     description?: string;
     templateId?: string;
@@ -20,14 +21,13 @@ export interface ProjectItem {
     tikzCode?: string;
     lessonContent?: string;
     source?: string;
+    previewType?: 'triangle' | 'pyramid' | 'circle' | 'exam' | 'lesson';
   };
   content?: any;
 }
 
 const UNIFIED_STORAGE_KEY = 'mathaio_unified_projects_v1';
 const LATEX_STORAGE_KEY = 'mathaio_latex_documents_v1';
-const GEOMETRY_STORAGE_KEY = 'mathviz_history_items';
-const LESSON_STORAGE_KEY = 'mathaio_lesson_plans_v1';
 
 export function getInitialSeedProjects(): ProjectItem[] {
   return [
@@ -37,11 +37,12 @@ export function getInitialSeedProjects(): ProjectItem[] {
       type: 'geometry',
       createdAt: Date.now() - 86400000 * 1,
       updatedAt: Date.now() - 3600000 * 2,
+      isStarred: true,
       metadata: {
         topic: 'Hình học phẳng THCS/THPT',
-        badge: 'SVG Dynamic',
+        badge: 'SVG Vector',
         promptText: 'Cho tam giác ABC nhọn nội tiếp đường tròn (O), kẻ đường cao AH vuông góc với BC tại H...',
-        previewSnippet: 'svg-canvas-diagram-abc.svg',
+        previewType: 'triangle',
       },
     },
     {
@@ -50,11 +51,13 @@ export function getInitialSeedProjects(): ProjectItem[] {
       type: 'lesson-plan',
       createdAt: Date.now() - 86400000 * 3,
       updatedAt: Date.now() - 3600000 * 5,
+      isStarred: true,
       metadata: {
         grade: 'Toán 10',
         topic: 'Hình học & Đo lường',
         badge: 'Chuẩn 5512 BGD',
         previewSnippet: '4 hoạt động: Khởi động -> Hình thành kiến thức -> Luyện tập -> Vận dụng',
+        previewType: 'lesson',
       },
     },
     {
@@ -63,10 +66,12 @@ export function getInitialSeedProjects(): ProjectItem[] {
       type: 'latex',
       createdAt: Date.now() - 86400000 * 2,
       updatedAt: Date.now() - 3600000 * 1,
+      isStarred: false,
       metadata: {
         templateId: 'thpt_2025',
         badge: 'Cấu trúc 2025',
         previewSnippet: '\\documentclass[12pt,a4paper]{article}\n\\usepackage{amsmath,amssymb}',
+        previewType: 'exam',
       },
     },
     {
@@ -75,11 +80,12 @@ export function getInitialSeedProjects(): ProjectItem[] {
       type: 'geometry',
       createdAt: Date.now() - 86400000 * 5,
       updatedAt: Date.now() - 86400000 * 2,
+      isStarred: false,
       metadata: {
         topic: 'Hình học không gian',
         badge: 'TikZ & SVG',
         promptText: 'Cho hình chóp S.ABCD có đáy ABCD là hình vuông cạnh a, SA vuông góc với đáy...',
-        previewSnippet: 'svg-pyramid-sabcd.svg',
+        previewType: 'pyramid',
       },
     },
     {
@@ -88,10 +94,12 @@ export function getInitialSeedProjects(): ProjectItem[] {
       type: 'latex',
       createdAt: Date.now() - 86400000 * 6,
       updatedAt: Date.now() - 86400000 * 3,
+      isStarred: true,
       metadata: {
         templateId: 'topic_advanced',
         badge: 'Chuyên đề',
         previewSnippet: 'Bất đẳng thức AM-GM và kỹ thuật chọn điểm rơi',
+        previewType: 'exam',
       },
     },
   ];
@@ -122,9 +130,11 @@ export function getAllProjects(): ProjectItem[] {
               type: 'latex',
               createdAt: doc.createdAt || Date.now(),
               updatedAt: doc.updatedAt || Date.now(),
+              isStarred: false,
               metadata: {
                 templateId: doc.templateId,
                 previewSnippet: doc.source ? doc.source.slice(0, 120) : '',
+                previewType: 'exam',
               },
               content: doc.source,
             });
@@ -208,6 +218,7 @@ export function createNewProject(
     type,
     createdAt: Date.now(),
     updatedAt: Date.now(),
+    isStarred: false,
     metadata: {
       ...metadata,
     },
@@ -224,7 +235,6 @@ export function deleteProject(id: string): void {
     const list = getAllProjects().filter((p) => p.id !== id);
     localStorage.setItem(UNIFIED_STORAGE_KEY, JSON.stringify(list));
 
-    // Also remove from LaTeX store if matching
     try {
       const rawLatex = localStorage.getItem(LATEX_STORAGE_KEY);
       if (rawLatex) {
@@ -270,4 +280,12 @@ export function renameProject(id: string, newTitle: string): void {
   }
 
   saveProject({ ...proj, title: cleanTitle });
+}
+
+export function toggleStarProject(id: string): boolean {
+  const proj = getProjectById(id);
+  if (!proj) return false;
+  const updatedStarred = !proj.isStarred;
+  saveProject({ ...proj, isStarred: updatedStarred });
+  return updatedStarred;
 }

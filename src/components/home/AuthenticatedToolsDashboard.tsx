@@ -34,7 +34,7 @@ import {
 } from 'lucide-react';
 import { APP_VERSION } from '@/config/version';
 import AppHeader from '@/components/header/AppHeader';
-import { LATEX_TEMPLATES, getTemplateById } from '@/components/latex/LaTeXTemplates';
+import { LATEX_TEMPLATES, getTemplateById, DEFAULT_TEMPLATE_ID } from '@/components/latex/LaTeXTemplates';
 import {
   getAllProjects,
   createNewProject,
@@ -137,7 +137,7 @@ export default function AuthenticatedToolsDashboard({
   const [createType, setCreateType] = useState<ProjectType | null>(null);
   const [newTitle, setNewTitle] = useState('');
   const [newGrade, setNewGrade] = useState('Toán 10');
-  const [selectedTemplateId, setSelectedTemplateId] = useState('thpt_2025');
+  const [selectedTemplateId, setSelectedTemplateId] = useState(DEFAULT_TEMPLATE_ID);
 
   // Rename modal
   const [renamingProject, setRenamingProject] = useState<ProjectItem | null>(null);

@@ -12,6 +12,24 @@ export interface LaTeXTemplate {
 
 export const LATEX_TEMPLATES: LaTeXTemplate[] = [
   {
+    id: 'blank',
+    name: 'Tài liệu trắng cơ bản',
+    category: 'basic',
+    badge: 'Cơ bản',
+    description: 'Khung tài liệu LaTeX tối giản font Times New Roman, thân tài liệu trống',
+    source: `\\documentclass[12pt,a4paper]{article}
+\\usepackage{fontspec}
+\\setmainfont{Times New Roman}
+\\usepackage{amsmath,amssymb,amsthm}
+\\usepackage{geometry}
+\\geometry{margin=2.5cm}
+
+\\begin{document}
+
+\\end{document}
+`,
+  },
+  {
     id: 'thpt_2025',
     name: 'Đề TN THPT Cấu trúc mới (GDPT 2018)',
     category: 'gdpt2018',
@@ -416,40 +434,9 @@ $$P = \\frac{1}{a} + \\frac{1}{b} + \\frac{1}{c} \\geq \\frac{(1+1+1)^2}{a+b+c} 
 \\end{document}
 `,
   },
-  {
-    id: 'blank',
-    name: 'Tài liệu trắng cơ bản',
-    category: 'basic',
-    description: 'Khung tài liệu LaTeX tinh gọn chuẩn tiếng Việt và gói toán',
-    source: `\\documentclass[12pt,a4paper]{article}
-\\usepackage{fontspec}
-\\setmainfont{Times New Roman}
-\\usepackage[vietnamese]{babel}
-\\babelfont{rm}{Times New Roman}
-\\usepackage{amsmath,amssymb,amsthm}
-\\usepackage{geometry}
-\\geometry{margin=2.5cm}
-
-\\title{Tiêu đề tài liệu}
-\\author{MathAIO Studio}
-\\date{\\today}
-
-\\begin{document}
-
-\\maketitle
-
-\\section{Giới thiệu}
-Nhập nội dung tại đây. Công thức toán inline: $E = mc^2$.
-
-Công thức toán block:
-$$\\int_{0}^{\\infty} e^{-x^2} \\, dx = \\frac{\\sqrt{\\pi}}{2}$$
-
-\\end{document}
-`,
-  },
 ];
 
-export const DEFAULT_TEMPLATE_ID = 'thpt_2025';
+export const DEFAULT_TEMPLATE_ID = 'blank';
 
 export function getTemplateById(id: string): LaTeXTemplate | undefined {
   return LATEX_TEMPLATES.find((t) => t.id === id);

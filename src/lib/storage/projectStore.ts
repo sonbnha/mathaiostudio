@@ -1,4 +1,4 @@
-import { LATEX_TEMPLATES, getTemplateById } from '@/components/latex/LaTeXTemplates';
+import { LATEX_TEMPLATES, getTemplateById, DEFAULT_TEMPLATE_ID } from '@/components/latex/LaTeXTemplates';
 
 export type ProjectType = 'geometry' | 'lesson-plan' | 'latex';
 
@@ -198,7 +198,7 @@ export function saveProject(item: ProjectItem): void {
         const latexDoc = {
           id: item.id,
           title: item.title,
-          templateId: item.metadata?.templateId || 'thpt_2025',
+          templateId: item.metadata?.templateId || DEFAULT_TEMPLATE_ID,
           updatedAt: Date.now(),
           createdAt: item.createdAt,
           source: item.content || item.metadata?.source || '',

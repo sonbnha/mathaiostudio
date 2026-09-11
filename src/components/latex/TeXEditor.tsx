@@ -127,6 +127,30 @@ export default function TeXEditor({
       keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter],
       run: onCompile,
     });
+
+    // Smart initial cursor placement (between line 8 and 10, line 9 inside document body)
+    const model = editor.getModel();
+    if (model) {
+      const lineCount = model.getLineCount();
+      if (targetLine && targetLine <= lineCount) {
+        editor.setPosition({ lineNumber: targetLine, column: 1 });
+        editor.revealLineInCenter(targetLine);
+        editor.focus();
+      } else {
+        for (let i = 1; i <= lineCount; i++) {
+          const lineContent = model.getLineContent(i).trim();
+          if (lineContent === '\\begin{document}') {
+            const nextLine = i + 1;
+            if (nextLine <= lineCount) {
+              editor.setPosition({ lineNumber: nextLine, column: 1 });
+              editor.revealLineInCenter(nextLine);
+              editor.focus();
+              break;
+            }
+          }
+        }
+      }
+    }
   };
 
   if (fallback) {

@@ -23,6 +23,15 @@ export function getStoredDocuments(): LatexDocumentItem[] {
       // Seed starter sample documents if empty
       const starterDocs: LatexDocumentItem[] = [
         {
+          id: 'doc-blank-sample',
+          title: 'Tai_lieu_trang_co_ban.tex',
+          templateId: 'blank',
+          createdAt: Date.now() - 86400000 * 1,
+          updatedAt: Date.now() - 3600000 * 1,
+          source: getTemplateById('blank')?.source || '',
+          files: [{ name: 'main.tex', content: getTemplateById('blank')?.source || '' }],
+        },
+        {
           id: 'doc-thpt-2025-sample',
           title: 'Đề_thi_tham_khao_TN_THPT_2025.tex',
           templateId: 'thpt_2025',

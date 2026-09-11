@@ -103,7 +103,7 @@ export default function LaTeXStudio({
   const [outputView, setOutputView] = useState<'pdf' | 'console'>('pdf');
 
   // SyncTeX & Tools state
-  const [targetLine, setTargetLine] = useState<number | undefined>(undefined);
+  const [targetLine, setTargetLine] = useState<number | undefined>(defaultTpl.id === 'blank' ? 9 : undefined);
   const [highlightPage, setHighlightPage] = useState<number | undefined>(undefined);
   const [insertRequest, setInsertRequest] = useState<{ id: number; text: string } | undefined>(undefined);
   const [isPresentation, setIsPresentation] = useState<boolean>(false);
@@ -127,7 +127,7 @@ export default function LaTeXStudio({
       if (proj) {
         setCurrentDocId(proj.id);
         setDocTitle(proj.title);
-        const tplId = proj.metadata?.templateId || stored?.templateId || 'thpt_2025';
+        const tplId = proj.metadata?.templateId || stored?.templateId || DEFAULT_TEMPLATE_ID;
         setTemplate(tplId);
         const src = proj.content || stored?.source || getTemplateById(tplId)?.source || defaultTpl.source;
         setSource(src);
@@ -181,6 +181,9 @@ export default function LaTeXStudio({
       setOpenTabs(['main.tex']);
       setActiveFileName('main.tex');
       setStorageNotice('Đã tạo bản nháp mới');
+      if (defaultTpl.id === 'blank') {
+        setTargetLine(9);
+      }
 
       if (typeof window !== 'undefined') {
         window.history.replaceState(null, '', `/latex?id=${encodeURIComponent(newDoc.id)}`);
@@ -581,6 +584,9 @@ export default function LaTeXStudio({
                     setFiles((prev) =>
                       prev.map((f) => (f.name === activeFileName ? { ...f, content: selected.source } : f))
                     );
+                    if (selected.id === 'blank') {
+                      setTargetLine(9);
+                    }
                   }
                 }
               }}

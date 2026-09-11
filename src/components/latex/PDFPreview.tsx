@@ -151,6 +151,14 @@ export default function PDFPreview({
   useEffect(() => {
     if (!isPresentation) return;
     const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target?.closest('.cm-editor') ||
+        target?.closest('.monaco-editor') ||
+        ['INPUT', 'TEXTAREA'].includes(target?.tagName || '')
+      ) {
+        return;
+      }
       if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
         e.preventDefault();
         setActivePage((p) => Math.min(numPages, p + 1));

@@ -204,6 +204,57 @@ export default function TeXEditor({
       run: onCompile,
     });
 
+    editor.addAction({
+      id: 'format-bold',
+      label: 'Chữ đậm (\\textbf)',
+      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyB],
+      run: (ed) => {
+        const sel = ed.getSelection();
+        const model = ed.getModel();
+        if (sel && model) {
+          const text = model.getValueInRange(sel);
+          const replacement = text ? `\\textbf{${text}}` : `\\textbf{}`;
+          ed.executeEdits('shortcut-bold', [{ range: sel, text: replacement, forceMoveMarkers: true }]);
+        }
+      },
+    });
+
+    editor.addAction({
+      id: 'format-italic',
+      label: 'Chữ nghiêng (\\textit)',
+      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyI],
+      run: (ed) => {
+        const sel = ed.getSelection();
+        const model = ed.getModel();
+        if (sel && model) {
+          const text = model.getValueInRange(sel);
+          const replacement = text ? `\\textit{${text}}` : `\\textit{}`;
+          ed.executeEdits('shortcut-italic', [{ range: sel, text: replacement, forceMoveMarkers: true }]);
+        }
+      },
+    });
+
+    editor.addAction({
+      id: 'insert-inline-math',
+      label: 'Chèn công thức toán (\\( ... \\))',
+      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyM],
+      run: (ed) => {
+        const sel = ed.getSelection();
+        const model = ed.getModel();
+        if (sel && model) {
+          const text = model.getValueInRange(sel);
+          const replacement = text ? `\\( ${text} \\)` : `\\(  \\)`;
+          ed.executeEdits('shortcut-math', [{ range: sel, text: replacement, forceMoveMarkers: true }]);
+          if (!text) {
+            ed.setPosition({
+              lineNumber: sel.startLineNumber,
+              column: sel.startColumn + 3,
+            });
+          }
+        }
+      },
+    });
+
     // Smart initial cursor placement (between line 8 and 10, line 9 inside document body)
     const model = editor.getModel();
     if (model) {
@@ -409,6 +460,9 @@ export default function TeXEditor({
         tabSize: 2,
         ariaLabel: 'Mã nguồn LaTeX',
         glyphMargin: true,
+        contextmenu: true,
+        quickSuggestions: true,
+        copyWithSyntaxHighlighting: true,
       }}
     />
     <style jsx global>{`

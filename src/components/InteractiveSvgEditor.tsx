@@ -602,6 +602,15 @@ export const InteractiveSvgEditor: React.FC<InteractiveSvgEditorProps> = ({
   useEffect(() => {
     if (!isEditMode) return;
     const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target?.closest('.cm-editor') ||
+        target?.closest('.monaco-editor') ||
+        ['INPUT', 'TEXTAREA'].includes(target?.tagName || '')
+      ) {
+        return;
+      }
+
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
         e.preventDefault();
         if (e.shiftKey) {

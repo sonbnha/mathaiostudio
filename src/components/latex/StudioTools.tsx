@@ -212,6 +212,14 @@ export default function StudioTools({
   // Support paste image from clipboard for instant OCR
   useEffect(() => {
     const handlePaste = (event: ClipboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (
+        target?.closest('.cm-editor') ||
+        target?.closest('.monaco-editor') ||
+        ['INPUT', 'TEXTAREA'].includes(target?.tagName || '')
+      ) {
+        return;
+      }
       const file = [...(event.clipboardData?.files || [])].find((item) =>
         item.type.startsWith('image/')
       );

@@ -479,11 +479,11 @@ export default function LaTeXStudio({
   }, []);
   const insertLatexCode = handleInsert;
 
-  const generateTableLatex = useCallback((rows: number, cols: number) => {
+  const generateTableLatex = useCallback((rows: number = 3, cols: number = 3) => {
     const colAlign = Array(cols).fill('c').join('|');
-    const headerRow = Array.from({ length: cols }, (_, i) => `Header ${i + 1}`).join(' & ') + ' \\\\';
+    const headerRow = Array.from({ length: cols }, (_, i) => `Cột ${i + 1}`).join(' & ') + ' \\\\';
     const dataRows = Array.from({ length: Math.max(0, rows - 1) }, (_, r) =>
-      Array.from({ length: cols }, (_, c) => `Cell ${r + 1},${c + 1}`).join(' & ') + ' \\\\'
+      Array.from({ length: cols }, (_, c) => `Dữ liệu ${r + 1},${c + 1}`).join(' & ') + ' \\\\'
     ).join('\n    ');
 
     return `\n\\begin{table}[htbp]
@@ -494,8 +494,8 @@ export default function LaTeXStudio({
     \\hline
     ${dataRows ? dataRows + '\n    \\hline' : ''}
   \\end{tabular}
-  \\caption{Bảng dữ liệu}
-  \\label{tab:table_${Date.now()}}
+  \\caption{Bảng mẫu}
+  \\label{tab:table}
 \\end{table}\n`;
   }, []);
 
@@ -1269,16 +1269,79 @@ export default function LaTeXStudio({
                     <span>Hình ảnh</span>
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveDesktopMenu(null);
-                      triggerEditorAction('table');
-                    }}
-                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
-                  >
-                    <span>Bảng biểu</span>
-                  </button>
+                  {/* Bảng biểu with Flyout Submenu */}
+                  <div className="relative group/table">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveDesktopMenu(null);
+                        handleInsert(generateTableLatex(3, 3));
+                      }}
+                      className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
+                    >
+                      <span>Bảng biểu</span>
+                      <ChevronRight className="w-3.5 h-3.5 text-neutral-500 group-hover/table:text-white" />
+                    </button>
+
+                    <div className="absolute left-full top-0 ml-1 w-64 bg-[#1e2226] border border-white/10 rounded-lg shadow-2xl p-3 text-xs text-neutral-300 z-50 select-none hidden group-hover/table:block animate-in fade-in duration-100">
+                      <div className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider mb-2">
+                        Chèn bảng
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveDesktopMenu(null);
+                          handleInsert(generateTableLatex(3, 3));
+                        }}
+                        className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 transition-colors text-left cursor-pointer mb-2.5 border border-emerald-500/20"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                        <span className="font-medium text-[11px]">✨ Bảng mẫu chuẩn (3 × 3)</span>
+                      </button>
+
+                      <div className="flex items-center justify-between text-[11px] text-neutral-400 mb-1.5 font-medium">
+                        <span>Chọn kích thước</span>
+                        <span className="font-mono text-emerald-400 font-bold">
+                          {tableHoverSize.rows > 0 && tableHoverSize.cols > 0
+                            ? `${tableHoverSize.rows} × ${tableHoverSize.cols}`
+                            : '10 × 10'}
+                        </span>
+                      </div>
+
+                      {/* 10x10 Matrix Grid */}
+                      <div
+                        className="grid grid-cols-10 gap-1 p-1.5 bg-[#141618] rounded border border-white/5"
+                        onMouseLeave={() => setTableHoverSize({ rows: 0, cols: 0 })}
+                      >
+                        {Array.from({ length: 10 }).map((_, rIdx) =>
+                          Array.from({ length: 10 }).map((_, cIdx) => {
+                            const r = rIdx + 1;
+                            const c = cIdx + 1;
+                            const isHighlighted =
+                              r <= tableHoverSize.rows && c <= tableHoverSize.cols;
+                            return (
+                              <div
+                                key={`${r}-${c}`}
+                                onMouseEnter={() =>
+                                  setTableHoverSize({ rows: r, cols: c })
+                                }
+                                onClick={() => {
+                                  setActiveDesktopMenu(null);
+                                  handleInsert(generateTableLatex(r, c));
+                                }}
+                                className={`w-4 h-4 rounded-xs border cursor-pointer transition-colors ${
+                                  isHighlighted
+                                    ? 'bg-emerald-500/40 border-emerald-500'
+                                    : 'bg-white/5 border-white/10 hover:border-emerald-500/50'
+                                }`}
+                                title={`${r} hàng × ${c} cột`}
+                              />
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                  </div>
 
                   <button
                     type="button"
@@ -2783,9 +2846,7 @@ export default function LaTeXStudio({
                             type="button"
                             onClick={() => {
                               setActiveToolbarPopover(null);
-                              handleInsert(
-                                `\n\\begin{table}[htbp]\n  \\centering\n  \\begin{tabular}{|c|c|c|}\n    \\hline\n    Cột 1 & Cột 2 & Cột 3 \\\\\n    \\hline\n    Dữ liệu 1 & Dữ liệu 2 & Dữ liệu 3 \\\\\n    \\hline\n  \\end{tabular}\n  \\caption{Bảng tự động}\n  \\label{tab:ai_table}\n\\end{table}\n`
-                              );
+                              handleInsert(generateTableLatex(3, 3));
                             }}
                             className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 transition-colors text-left cursor-pointer mb-2.5 border border-emerald-500/20"
                           >

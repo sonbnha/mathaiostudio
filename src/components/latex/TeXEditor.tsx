@@ -461,7 +461,7 @@ export default function TeXEditor({
         scrollIntoView: true,
       });
     } else if (action === 'table') {
-      const tableSnippet = `\\begin{table}[h!]\n\\centering\n\\begin{tabular}{|c|c|c|}\n\\hline\nCột 1 & Cột 2 & Cột 3 \\\\\n\\hline\nA & B & C \\\\\nD & E & F \\\\\n\\hline\n\\end{tabular}\n\\caption{Bảng mẫu}\n\\end{table}\n`;
+      const tableSnippet = `\n\\begin{table}[htbp]\n  \\centering\n  \\begin{tabular}{|c|c|c|}\n    \\hline\n    Cột 1 & Cột 2 & Cột 3 \\\\\n    \\hline\n    Dữ liệu 1,1 & Dữ liệu 1,2 & Dữ liệu 1,3 \\\\\n    Dữ liệu 2,1 & Dữ liệu 2,2 & Dữ liệu 2,3 \\\\\n    \\hline\n  \\end{tabular}\n  \\caption{Bảng mẫu}\n  \\label{tab:table}\n\\end{table}\n`;
       view.dispatch({
         changes: { from: range.from, to: range.to, insert: tableSnippet },
         selection: { anchor: range.from + tableSnippet.length },

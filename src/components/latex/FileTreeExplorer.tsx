@@ -285,7 +285,7 @@ export default function FileTreeExplorer({
 
   if (isCollapsed) {
     return (
-      <div className="w-12 shrink-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col items-center py-2.5 gap-3 select-none transition-all h-full">
+      <div className="w-12 flex-shrink-0 shrink-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col items-center py-2.5 gap-3 select-none transition-all h-full">
         <button
           type="button"
           onClick={onToggleCollapse}
@@ -329,7 +329,7 @@ export default function FileTreeExplorer({
   return (
     <aside
       aria-label="Cột quản lý file và mục lục Overleaf"
-      className="w-60 shrink-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col text-xs select-none transition-all h-full overflow-hidden"
+      className="w-64 flex-shrink-0 shrink-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col text-xs select-none transition-all h-full overflow-hidden"
     >
       {/* SECTION 1 (TOP HALF): FILE TREE */}
       <div className="flex flex-col flex-1 min-h-[160px] max-h-[55%] border-b border-slate-200 dark:border-slate-800 overflow-hidden">

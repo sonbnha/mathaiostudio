@@ -342,7 +342,7 @@ export default function PDFPreview({
       {/* Main PDF Scroll Container */}
       <div
         ref={host}
-        className="flex-1 min-h-0 w-full h-full overflow-auto p-4 flex flex-col items-center bg-[#525659] dark:bg-[#3a3d40] transition-colors"
+        className="flex-1 min-h-0 w-full h-full overflow-auto p-4 flex flex-col items-center bg-[#525659] transition-colors"
         aria-label="Tài liệu PDF đã biên dịch"
       >
         <Document

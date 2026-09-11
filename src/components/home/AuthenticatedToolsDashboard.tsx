@@ -111,7 +111,7 @@ export default function AuthenticatedToolsDashboard({
     } else if (item.type === 'lesson-plan') {
       router.push(`/lesson-plan?id=${encodeURIComponent(item.id)}`);
     } else if (item.type === 'latex') {
-      router.push(`/latex/${encodeURIComponent(item.id)}`);
+      router.push(`/latex?id=${encodeURIComponent(item.id)}`);
     }
   };
 

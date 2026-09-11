@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
 import {
   Code2,
   Download,
@@ -21,12 +22,19 @@ import {
   Edit3,
   FileCode,
   Share2,
+  Home,
 } from 'lucide-react';
 import { APP_VERSION } from '@/config/version';
 import AppHeader from '@/components/header/AppHeader';
 import StudioTools, { type StudioFile, type StudioImage, type RestorePoint } from '@/components/latex/StudioTools';
 import { LATEX_TEMPLATES, DEFAULT_TEMPLATE_ID, getTemplateById } from '@/components/latex/LaTeXTemplates';
 import { getDocumentById, saveDocument, type LatexDocumentItem } from '@/lib/latexStorage';
+import {
+  getProjectById,
+  saveProject,
+  createNewProject,
+  type ProjectItem,
+} from '@/lib/storage/projectStore';
 
 const TeXEditor = dynamic(() => import('@/components/latex/TeXEditor'), {
   ssr: false,
@@ -47,15 +55,16 @@ const button =
 
 export default function LaTeXStudio({
   docId,
-  engineLabel,
+  engineLabel = 'XeLaTeX Engine',
 }: {
   docId?: string;
-  engineLabel: string;
+  engineLabel?: string;
 }) {
+  const router = useRouter();
   const defaultTpl = getTemplateById(DEFAULT_TEMPLATE_ID) || LATEX_TEMPLATES[0];
 
   // Document metadata & project state
-  const [currentDocId, setCurrentDocId] = useState<string>(docId || 'temp-doc');
+  const [currentDocId, setCurrentDocId] = useState<string>(docId || '');
   const [docTitle, setDocTitle] = useState<string>('Tai_lieu_Toan_chua_dat_ten.tex');
   const [template, setTemplate] = useState<string>(defaultTpl.id);
   const [source, setSource] = useState<string>(defaultTpl.source);
@@ -86,11 +95,25 @@ export default function LaTeXStudio({
   const [ocrBusy, setOcrBusy] = useState<boolean>(false);
   const [fixBusy, setFixBusy] = useState<boolean>(false);
 
-  // Load document from storage on mount
+  // Initial load: either load existing project by docId OR auto-generate a new draft
   useEffect(() => {
     if (docId) {
+      // 1. Try to find in Unified Project Store or LaTeX storage
+      const proj = getProjectById(docId);
       const stored = getDocumentById(docId);
-      if (stored) {
+
+      if (proj) {
+        setCurrentDocId(proj.id);
+        setDocTitle(proj.title);
+        const tplId = proj.metadata?.templateId || stored?.templateId || 'thpt_2025';
+        setTemplate(tplId);
+        const src = proj.content || stored?.source || getTemplateById(tplId)?.source || defaultTpl.source;
+        setSource(src);
+        setFiles(stored?.files && stored.files.length > 0 ? stored.files : [{ name: 'main.tex', content: src }]);
+        setImages(stored?.images || []);
+        setHistory(stored?.history || []);
+        setStorageNotice('Đã tải từ dự án');
+      } else if (stored) {
         setCurrentDocId(stored.id);
         setDocTitle(stored.title);
         setTemplate(stored.templateId);
@@ -99,13 +122,35 @@ export default function LaTeXStudio({
         setImages(stored.images || []);
         setHistory(stored.history || []);
         setStorageNotice('Đã tải từ kho lưu trữ');
+      } else {
+        // ID not found -> initialize new project with this ID
+        setCurrentDocId(docId);
+        setStorageNotice('Bản nháp mới');
+      }
+    } else {
+      // No ID in URL -> auto-create new project, save, and update URL
+      const newDoc = createNewProject('latex', `Tai_lieu_Toan_${new Date().toISOString().slice(0, 10)}.tex`, {
+        templateId: defaultTpl.id,
+        badge: defaultTpl.badge || 'XeLaTeX',
+      }, defaultTpl.source);
+
+      setCurrentDocId(newDoc.id);
+      setDocTitle(newDoc.title);
+      setTemplate(defaultTpl.id);
+      setSource(defaultTpl.source);
+      setFiles([{ name: 'main.tex', content: defaultTpl.source }]);
+      setStorageNotice('Đã tạo bản nháp mới');
+
+      if (typeof window !== 'undefined') {
+        window.history.replaceState(null, '', `/latex?id=${encodeURIComponent(newDoc.id)}`);
       }
     }
   }, [docId]);
 
-  // Auto-save debounced to Storage
+  // Auto-save debounced to Storage (both unified projectStore and latexStorage)
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   useEffect(() => {
+    if (!currentDocId) return;
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = setTimeout(() => {
       try {
@@ -121,6 +166,24 @@ export default function LaTeXStudio({
           history: history.slice(-25),
         };
         saveDocument(itemToSave);
+
+        // Also save to unified project store
+        const projItem: ProjectItem = {
+          id: currentDocId,
+          title: docTitle,
+          type: 'latex',
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          metadata: {
+            templateId: template,
+            badge: getTemplateById(template)?.badge || 'XeLaTeX',
+            previewSnippet: source.slice(0, 140),
+            source,
+          },
+          content: source,
+        };
+        saveProject(projItem);
+
         setStorageNotice(`Đã lưu lúc ${new Date().toLocaleTimeString('vi-VN')}`);
       } catch {
         // quota
@@ -358,15 +421,15 @@ export default function LaTeXStudio({
       <div className="relative z-10 mx-4 md:mx-6 mt-2.5 p-2.5 sm:p-3 border border-slate-200 dark:border-slate-800 rounded-2xl bg-white/85 dark:bg-slate-900/70 shadow-xs backdrop-blur-sm flex flex-wrap items-center justify-between gap-2 shrink-0">
         <h1 className="sr-only">Biên Soạn &amp; Biên Dịch LaTeX Sang PDF</h1>
 
-        {/* Left: Back button & Editable Document Title */}
+        {/* Left: Back to Home Hub Button & Editable Document Title */}
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <Link
-            href="/latex"
+            href="/"
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100/70 dark:bg-slate-800/70 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 transition cursor-pointer shrink-0"
-            title="Quay lại danh sách dự án"
+            title="Quay lại Trung tâm Dự án Trang chủ"
           >
             <ChevronLeft className="w-4 h-4" />
-            <span className="hidden sm:inline">Danh sách tài liệu</span>
+            <span className="hidden sm:inline">Trang chủ</span>
           </Link>
 
           <span className="h-4 w-px bg-slate-200 dark:bg-slate-700 hidden sm:inline" />

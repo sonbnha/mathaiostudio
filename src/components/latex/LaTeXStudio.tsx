@@ -84,6 +84,13 @@ import {
   createNewProject,
   type ProjectItem,
 } from '@/lib/storage/projectStore';
+import {
+  ProjectSettings,
+  DEFAULT_PROJECT_SETTINGS,
+  loadProjectSettings,
+  saveProjectSettings,
+} from '@/components/latex/projectSettings';
+import ProjectSettingsModal from '@/components/latex/ProjectSettingsModal';
 
 const TeXEditor = dynamic(() => import('@/components/latex/TeXEditor'), {
   ssr: false,
@@ -301,8 +308,35 @@ export default function LaTeXStudio({
   }, []);
 
   // Topbar and utility state
-  const { resolvedTheme, toggleTheme } = useTheme();
+  const { resolvedTheme, toggleTheme, setTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
+  const [projectSettings, setProjectSettings] = useState<ProjectSettings>(() =>
+    loadProjectSettings(docId || undefined)
+  );
+
+  const handleUpdateSettings = useCallback(
+    (newPartial: Partial<ProjectSettings>) => {
+      setProjectSettings((prev) => {
+        const next = { ...prev, ...newPartial };
+        saveProjectSettings(next, currentDocId);
+        if (newPartial.compiler && newPartial.compiler !== engine) {
+          setEngine(newPartial.compiler);
+        }
+        if (newPartial.fontSize && newPartial.fontSize !== fontSize) {
+          setFontSize(newPartial.fontSize);
+        }
+        if (
+          newPartial.theme &&
+          newPartial.theme !== (resolvedTheme === 'dark' ? 'dark' : 'light')
+        ) {
+          setTheme?.(newPartial.theme);
+        }
+        return next;
+      });
+    },
+    [currentDocId, engine, fontSize, resolvedTheme, setTheme]
+  );
+
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState(docTitle);
   const [activeDesktopMenu, setActiveDesktopMenu] = useState<'file' | 'edit' | 'insert' | 'view' | 'format' | 'help' | null>(null);
@@ -315,6 +349,18 @@ export default function LaTeXStudio({
   const desktopMenuRef = useRef<HTMLDivElement>(null);
   const layoutMenuRef = useRef<HTMLDivElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
+
+  // Global shortcut for Settings (Ctrl/Cmd + ,)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === ',') {
+        e.preventDefault();
+        setIsSettingsOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Sync titleInput when docTitle changes
   useEffect(() => {
@@ -362,6 +408,10 @@ export default function LaTeXStudio({
     if (docId) {
       const proj = getProjectById(docId);
       const stored = getDocumentById(docId);
+      const loadedSettings = loadProjectSettings(docId);
+      setProjectSettings(loadedSettings);
+      if (loadedSettings.compiler) setEngine(loadedSettings.compiler);
+      if (loadedSettings.fontSize) setFontSize(loadedSettings.fontSize);
 
       if (proj) {
         setCurrentDocId(proj.id);
@@ -411,6 +461,11 @@ export default function LaTeXStudio({
         },
         defaultTpl.source
       );
+
+      const loadedSettings = loadProjectSettings(newDoc.id);
+      setProjectSettings(loadedSettings);
+      if (loadedSettings.compiler) setEngine(loadedSettings.compiler);
+      if (loadedSettings.fontSize) setFontSize(loadedSettings.fontSize);
 
       setCurrentDocId(newDoc.id);
       setDocTitle(newDoc.title);
@@ -499,8 +554,9 @@ export default function LaTeXStudio({
     async (sourceToCompile?: string) => {
       let code = sourceToCompile;
       if (!code) {
-        const mainFile = files.find((f) => f.name === 'main.tex');
-        code = activeFileName === 'main.tex' ? source : mainFile?.content || source;
+        const targetMain = projectSettings.mainDocument || 'main.tex';
+        const mainFile = files.find((f) => f.name === targetMain) || files.find((f) => f.name === 'main.tex');
+        code = activeFileName === (mainFile?.name || 'main.tex') ? source : mainFile?.content || source;
       }
 
       if (!code?.trim()) return;
@@ -548,8 +604,21 @@ export default function LaTeXStudio({
         setOutputView('console');
       }
     },
-    [source, files, activeFileName, pdf, engine]
+    [source, files, activeFileName, pdf, engine, projectSettings.mainDocument]
   );
+
+  // Debounced Auto-compile (2.5 seconds after stopping typing)
+  const autoCompileTimerRef = useRef<NodeJS.Timeout | null>(null);
+  useEffect(() => {
+    if (!projectSettings.autoCompile) return;
+    if (autoCompileTimerRef.current) clearTimeout(autoCompileTimerRef.current);
+    autoCompileTimerRef.current = setTimeout(() => {
+      void compile();
+    }, 2500);
+    return () => {
+      if (autoCompileTimerRef.current) clearTimeout(autoCompileTimerRef.current);
+    };
+  }, [source, projectSettings.autoCompile, compile]);
 
   // 1-Click AI Auto-Fix
   const handleAIFix = async () => {
@@ -2034,57 +2103,16 @@ export default function LaTeXStudio({
             <div className="relative">
               <button
                 type="button"
-                onClick={() => setIsSettingsOpen((prev) => !prev)}
+                onClick={() => setIsSettingsOpen(true)}
                 className={`p-2 rounded-lg transition-colors cursor-pointer flex items-center justify-center ${
                   isSettingsOpen
                     ? 'text-white bg-white/10'
                     : 'text-neutral-400 hover:text-white hover:bg-white/5'
                 }`}
-                title="Cài đặt biên dịch & cỡ chữ"
+                title="Cài đặt dự án (Ctrl+,)"
               >
                 <Settings className="w-4.5 h-4.5" />
               </button>
-
-              {isSettingsOpen && (
-                <div className="absolute left-full bottom-0 ml-2 w-64 bg-[#1e2124] border border-[#3e444b] rounded-xl shadow-2xl p-3 z-50 text-xs text-slate-200 animate-in fade-in duration-100">
-                  <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/10 font-bold">
-                    <span>Cài đặt trình soạn thảo</span>
-                    <button
-                      type="button"
-                      onClick={() => setIsSettingsOpen(false)}
-                      className="p-1 text-slate-400 hover:text-white cursor-pointer"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                  <div className="space-y-2.5 text-[11px]">
-                    <div>
-                      <label className="text-slate-400 block mb-1">Trình biên dịch:</label>
-                      <select
-                        value={engine}
-                        onChange={(e) => setEngine(e.target.value as any)}
-                        className="w-full bg-[#2a2e33] border border-white/10 rounded px-2 py-1 outline-none text-white cursor-pointer"
-                      >
-                        <option value="xelatex">XeLaTeX (Khuyên dùng - Chuẩn tiếng Việt)</option>
-                        <option value="pdflatex">pdfLaTeX (Biên dịch nhanh)</option>
-                        <option value="lualatex">LuaLaTeX</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-slate-400 block mb-1">Cỡ chữ soạn thảo:</label>
-                      <select
-                        value={fontSize}
-                        onChange={(e) => setFontSize(Number(e.target.value))}
-                        className="w-full bg-[#2a2e33] border border-white/10 rounded px-2 py-1 outline-none text-white cursor-pointer"
-                      >
-                        {[12, 13, 14, 15, 16, 18, 20].map((s) => (
-                          <option key={s} value={s}>{s}px</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Help / Shortcuts button */}
@@ -2955,7 +2983,8 @@ export default function LaTeXStudio({
                     prev.map((f) => (f.name === activeFileName ? { ...f, content: newSource } : f))
                   );
                 }}
-                fontSize={fontSize}
+                fontSize={projectSettings.fontSize || fontSize}
+                settings={projectSettings}
                 onCompile={compile}
                 insertRequest={insertRequest}
                 editorActionRequest={editorActionRequest}
@@ -3571,6 +3600,14 @@ export default function LaTeXStudio({
           <span className="text-[10px]">{engine.toUpperCase()} qua {engineLabel}</span>
         </div>
       </footer>
+      {/* Project Settings Modal */}
+      <ProjectSettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        settings={projectSettings}
+        onUpdateSettings={handleUpdateSettings}
+        texFiles={files.filter((f) => f.name.endsWith('.tex')).map((f) => f.name)}
+      />
     </div>
   );
 }

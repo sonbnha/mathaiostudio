@@ -44,9 +44,12 @@ import {
   CompletionContext,
   CompletionResult,
   snippet,
+  closeBrackets,
 } from '@codemirror/autocomplete';
+import { vim } from '@replit/codemirror-vim';
 import { useTheme } from '@/context/ThemeContext';
 import type { ParsedTeXIssue } from '@/components/latex/ErrorConsole';
+import type { ProjectSettings } from '@/components/latex/projectSettings';
 
 export interface TeXEditorProps {
   source: string;
@@ -59,6 +62,7 @@ export interface TeXEditorProps {
   targetLine?: number;
   errors?: ParsedTeXIssue[];
   onMount?: (view: EditorView) => void;
+  settings?: ProjectSettings;
 }
 
 export const insertTextAtCursor = (
@@ -188,7 +192,16 @@ const errorField = StateField.define<DecorationSet>({
   provide: (f) => EditorView.decorations.from(f),
 });
 
-const getThemeExtensions = (isDark: boolean) => {
+const getThemeExtensions = (
+  isDark: boolean,
+  fontFamily: string = 'JetBrains Mono',
+  nonBlinkingCursor: boolean = false
+) => {
+  const fontStack =
+    fontFamily === 'monospace'
+      ? 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'
+      : `"${fontFamily}", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace`;
+
   const baseTheme = EditorView.theme({
     '&': {
       height: '100%',
@@ -196,16 +209,22 @@ const getThemeExtensions = (isDark: boolean) => {
       color: isDark ? '#cbd5e1' : '#1e293b',
     },
     '.cm-content': {
-      fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+      fontFamily: fontStack,
       padding: '12px 0',
       caretColor: isDark ? '#22d3ee' : '#0284c7',
       lineHeight: '1.6',
     },
+    '.cm-cursor': nonBlinkingCursor
+      ? {
+          animation: 'none !important',
+        }
+      : {},
     '.cm-gutters': {
       backgroundColor: isDark ? '#020617' : '#f8fafc',
       color: isDark ? '#475569' : '#94a3b8',
       borderRight: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.08)'}`,
       minWidth: '40px',
+      fontFamily: fontStack,
     },
     '.cm-activeLineGutter': {
       backgroundColor: isDark ? 'rgba(34, 211, 238, 0.1)' : 'rgba(6, 182, 212, 0.1)',
@@ -236,6 +255,7 @@ export default function TeXEditor({
   targetLine,
   errors,
   onMount,
+  settings,
 }: TeXEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -243,6 +263,9 @@ export default function TeXEditor({
 
   const fontSizeCompartment = useRef(new Compartment());
   const themeCompartment = useRef(new Compartment());
+  const bracketsCompartment = useRef(new Compartment());
+  const autocompleteCompartment = useRef(new Compartment());
+  const vimCompartment = useRef(new Compartment());
 
   // Ref callbacks to avoid stale closures in CodeMirror extensions
   const onCompileRef = useRef(onCompile);
@@ -339,13 +362,29 @@ export default function TeXEditor({
         crosshairCursor(),
         highlightActiveLine(),
         bracketMatching(),
-        autocompletion({ override: [latexCompletionSource] }),
+        bracketsCompartment.current.of(
+          settings?.autoCloseBrackets !== false ? closeBrackets() : []
+        ),
+        autocompleteCompartment.current.of(
+          settings?.autoComplete !== false
+            ? autocompletion({ override: [latexCompletionSource] })
+            : []
+        ),
+        vimCompartment.current.of(
+          settings?.keybindings === 'vim' ? vim() : []
+        ),
         StreamLanguage.define(stex),
         syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
         EditorView.lineWrapping,
         customKeymap,
         errorField,
-        themeCompartment.current.of(getThemeExtensions(isDark)),
+        themeCompartment.current.of(
+          getThemeExtensions(
+            isDark,
+            settings?.fontFamily || 'JetBrains Mono',
+            settings?.nonBlinkingCursor || false
+          )
+        ),
         fontSizeCompartment.current.of(
           EditorView.theme({
             '&': { fontSize: `${fontSize}px` },
@@ -381,6 +420,41 @@ export default function TeXEditor({
     }
   }, [source]);
 
+  // Sync autoCloseBrackets
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+    view.dispatch({
+      effects: bracketsCompartment.current.reconfigure(
+        settings?.autoCloseBrackets !== false ? closeBrackets() : []
+      ),
+    });
+  }, [settings?.autoCloseBrackets]);
+
+  // Sync autoComplete
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+    view.dispatch({
+      effects: autocompleteCompartment.current.reconfigure(
+        settings?.autoComplete !== false
+          ? autocompletion({ override: [latexCompletionSource] })
+          : []
+      ),
+    });
+  }, [settings?.autoComplete]);
+
+  // Sync Vim keybindings
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+    view.dispatch({
+      effects: vimCompartment.current.reconfigure(
+        settings?.keybindings === 'vim' ? vim() : []
+      ),
+    });
+  }, [settings?.keybindings]);
+
   // Sync font size changes
   useEffect(() => {
     const view = viewRef.current;
@@ -394,15 +468,21 @@ export default function TeXEditor({
     });
   }, [fontSize]);
 
-  // Sync theme changes
+  // Sync theme changes, fontFamily, nonBlinkingCursor
   useEffect(() => {
     const view = viewRef.current;
     if (!view) return;
     const isDark = resolvedTheme === 'dark';
     view.dispatch({
-      effects: themeCompartment.current.reconfigure(getThemeExtensions(isDark)),
+      effects: themeCompartment.current.reconfigure(
+        getThemeExtensions(
+          isDark,
+          settings?.fontFamily || 'JetBrains Mono',
+          settings?.nonBlinkingCursor || false
+        )
+      ),
     });
-  }, [resolvedTheme]);
+  }, [resolvedTheme, settings?.fontFamily, settings?.nonBlinkingCursor]);
 
   // Sync LaTeX errors squiggles / lines
   useEffect(() => {

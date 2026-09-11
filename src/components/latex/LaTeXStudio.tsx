@@ -968,206 +968,206 @@ export default function LaTeXStudio({
             className="min-w-[350px] flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xs overflow-hidden h-full flex flex-shrink-0 shrink-0"
           >
             {/* File Tabs Bar */}
-            <div className="flex items-center justify-between px-2 bg-slate-100/90 dark:bg-slate-950/90 border-b border-slate-200 dark:border-slate-800 text-xs shrink-0 h-9">
-            <div className="flex items-center gap-1 overflow-x-auto min-w-0 py-0.5">
-              {openTabs.map((tab) => {
-                const isActive = tab === activeFileName;
-                return (
-                  <div
-                    key={tab}
-                    onClick={() => handleSelectFile(tab)}
-                    className={`group flex items-center gap-1.5 px-3 py-1 rounded-lg cursor-pointer font-mono text-[11px] transition shrink-0 ${
-                      isActive
-                        ? 'bg-white dark:bg-slate-900 text-cyan-600 dark:text-cyan-400 font-bold border border-slate-200 dark:border-slate-700 shadow-2xs'
-                        : 'text-slate-500 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800/60'
+            <div className="flex items-center justify-between px-2 bg-slate-100/90 dark:bg-slate-950/90 border-b border-slate-200 dark:border-slate-800 text-xs shrink-0 h-8">
+              <div className="flex items-center gap-1 overflow-x-auto min-w-0 py-0.5">
+                {openTabs.map((tab) => {
+                  const isActive = tab === activeFileName;
+                  return (
+                    <div
+                      key={tab}
+                      onClick={() => handleSelectFile(tab)}
+                      className={`group flex items-center gap-1.5 px-2 py-0.5 rounded cursor-pointer font-mono text-[11px] transition shrink-0 ${
+                        isActive
+                          ? 'bg-white dark:bg-slate-900 text-cyan-600 dark:text-cyan-400 font-semibold border border-slate-200 dark:border-slate-700 shadow-2xs'
+                          : 'text-slate-500 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800/60'
+                      }`}
+                    >
+                      <FileCode className="w-3 h-3 text-cyan-500" />
+                      <span>{tab}</span>
+                      {openTabs.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCloseTab(tab);
+                          }}
+                          className="p-0.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition"
+                        >
+                          <X className="w-2.5 h-2.5" />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const name = prompt('Nhập tên tệp LaTeX mới (vd: baitap.tex):');
+                    if (name) handleCreateFile(name);
+                  }}
+                  className="p-0.5 rounded text-slate-400 hover:text-cyan-600 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition"
+                  title="Tạo tệp mới"
+                >
+                  <Plus className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+
+            {/* Overleaf Flat Editor Ribbon */}
+            <div className="h-8 px-2 bg-slate-50 dark:bg-slate-950/80 border-b border-slate-200 dark:border-white/10 flex items-center justify-between gap-1 text-xs shrink-0 select-none overflow-x-auto">
+              {/* Left icons group */}
+              <div className="flex items-center gap-0.5">
+                <button
+                  type="button"
+                  onClick={() => triggerEditorAction('undo')}
+                  className="p-1 rounded-sm hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 transition"
+                  title="Hoàn tác (Undo / Ctrl+Z)"
+                >
+                  <Undo2 className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => triggerEditorAction('redo')}
+                  className="p-1 rounded-sm hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 transition"
+                  title="Làm lại (Redo / Ctrl+Y)"
+                >
+                  <Redo2 className="w-3.5 h-3.5" />
+                </button>
+
+                <span className="h-3 w-px bg-slate-200 dark:bg-slate-800 mx-0.5" />
+
+                <button
+                  type="button"
+                  onClick={() => triggerEditorAction('find')}
+                  className="p-1 rounded-sm hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 transition"
+                  title="Tìm kiếm & Thay thế (Ctrl+F)"
+                >
+                  <Search className="w-3.5 h-3.5" />
+                </button>
+
+                <span className="h-3 w-px bg-slate-200 dark:bg-slate-800 mx-0.5" />
+
+                {/* Font size TT */}
+                <div className="flex items-center gap-0.5 px-0.5 text-slate-600 dark:text-slate-300">
+                  <Type className="w-3.5 h-3.5 text-slate-400" />
+                  <select
+                    aria-label="Cỡ chữ soạn thảo"
+                    value={fontSize}
+                    onChange={(e) => setFontSize(Number(e.target.value))}
+                    className="bg-transparent border-0 text-[11px] font-medium text-slate-700 dark:text-slate-200 outline-none cursor-pointer pr-0.5"
+                    title="Cỡ chữ soạn thảo (TT)"
+                  >
+                    {[12, 13, 14, 15, 16, 18, 20].map((s) => (
+                      <option key={s} value={s} className="dark:bg-slate-900">
+                        {s}px
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <span className="h-3 w-px bg-slate-200 dark:bg-slate-800 mx-0.5" />
+
+                <button
+                  type="button"
+                  onClick={() => triggerEditorAction('bold')}
+                  className="p-1 h-6 w-6 flex items-center justify-center rounded-sm font-bold hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 font-serif text-xs transition"
+                  title="In đậm (\textbf{...})"
+                >
+                  B
+                </button>
+                <button
+                  type="button"
+                  onClick={() => triggerEditorAction('italic')}
+                  className="p-1 h-6 w-6 flex items-center justify-center rounded-sm italic font-serif hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 text-xs transition"
+                  title="In nghiêng (\textit{...})"
+                >
+                  I
+                </button>
+
+                {/* Math symbols palette launcher (Sigma/Omega) */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsSymbolsOpen((prev) => !prev)}
+                    className="p-1 rounded-sm hover:bg-cyan-500/15 hover:text-cyan-600 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 transition"
+                    title="Bảng ký hiệu toán học MathType (Omega/Sigma)"
+                  >
+                    <Sigma className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                  </button>
+
+                  <MathSymbolsPopover
+                    isOpen={isSymbolsOpen}
+                    onClose={() => setIsSymbolsOpen(false)}
+                    onInsert={handleInsert}
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => triggerEditorAction('link')}
+                  className="p-1 rounded-sm hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 transition"
+                  title="Chèn liên kết (\href{...})"
+                >
+                  <LinkIcon className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => triggerEditorAction('table')}
+                  className="p-1 rounded-sm hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 transition"
+                  title="Chèn bảng (\begin{tabular}...)"
+                >
+                  <Table className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* Right icons group: [ Code | Visual ], [ Editing / Reviewing ], Search */}
+              <div className="flex items-center gap-1.5">
+                <div className="flex items-center h-6 p-0.5 rounded bg-slate-200/80 dark:bg-slate-800/80 text-[11px] font-medium border border-slate-300/60 dark:border-slate-700">
+                  <button
+                    type="button"
+                    onClick={() => setEditorMode('code')}
+                    className={`h-5 px-2 flex items-center rounded transition cursor-pointer text-[11px] ${
+                      editorMode === 'code'
+                        ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold shadow-2xs'
+                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
                     }`}
                   >
-                    <FileCode className="w-3.5 h-3.5 text-cyan-500" />
-                    <span>{tab}</span>
-                    {openTabs.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleCloseTab(tab);
-                        }}
-                        className="p-0.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
+                    Code
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditorMode('visual')}
+                    className={`h-5 px-2 flex items-center rounded transition cursor-pointer text-[11px] ${
+                      editorMode === 'visual'
+                        ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold shadow-2xs'
+                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    Visual
+                  </button>
+                </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  const name = prompt('Nhập tên tệp LaTeX mới (vd: baitap.tex):');
-                  if (name) handleCreateFile(name);
-                }}
-                className="p-1 rounded-lg text-slate-400 hover:text-cyan-600 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition"
-                title="Tạo tệp mới"
-              >
-                <Plus className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-
-          {/* Overleaf Flat Editor Ribbon */}
-          <div className="h-9 px-2.5 bg-slate-50 dark:bg-slate-950/80 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-1 text-xs shrink-0 select-none overflow-x-auto">
-            {/* Left icons group */}
-            <div className="flex items-center gap-0.5">
-              <button
-                type="button"
-                onClick={() => triggerEditorAction('undo')}
-                className="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition"
-                title="Hoàn tác (Undo / Ctrl+Z)"
-              >
-                <Undo2 className="w-3.5 h-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => triggerEditorAction('redo')}
-                className="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition"
-                title="Làm lại (Redo / Ctrl+Y)"
-              >
-                <Redo2 className="w-3.5 h-3.5" />
-              </button>
-
-              <span className="h-3.5 w-px bg-slate-200 dark:bg-slate-800 mx-1" />
-
-              <button
-                type="button"
-                onClick={() => triggerEditorAction('find')}
-                className="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition"
-                title="Tìm kiếm & Thay thế (Ctrl+F)"
-              >
-                <Search className="w-3.5 h-3.5" />
-              </button>
-
-              <span className="h-3.5 w-px bg-slate-200 dark:bg-slate-800 mx-1" />
-
-              {/* Font size TT */}
-              <div className="flex items-center gap-1 px-1 text-slate-600 dark:text-slate-300">
-                <Type className="w-3.5 h-3.5 text-slate-400" />
                 <select
-                  aria-label="Cỡ chữ soạn thảo"
-                  value={fontSize}
-                  onChange={(e) => setFontSize(Number(e.target.value))}
-                  className="bg-transparent border-0 text-xs font-medium text-slate-700 dark:text-slate-200 outline-none cursor-pointer pr-1"
-                  title="Cỡ chữ soạn thảo (TT)"
+                  aria-label="Chế độ làm việc"
+                  value={reviewMode}
+                  onChange={(e) => setReviewMode(e.target.value as any)}
+                  className="h-6 bg-transparent border border-slate-200 dark:border-slate-700 rounded px-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 outline-none cursor-pointer"
                 >
-                  {[12, 13, 14, 15, 16, 18, 20].map((s) => (
-                    <option key={s} value={s} className="dark:bg-slate-900">
-                      {s}px
-                    </option>
-                  ))}
+                  <option value="editing" className="dark:bg-slate-900">Editing ▾</option>
+                  <option value="reviewing" className="dark:bg-slate-900">Reviewing</option>
                 </select>
-              </div>
 
-              <span className="h-3.5 w-px bg-slate-200 dark:bg-slate-800 mx-1" />
-
-              <button
-                type="button"
-                onClick={() => triggerEditorAction('bold')}
-                className="px-2 py-1 rounded font-bold hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-serif text-xs transition"
-                title="In đậm (\textbf{...})"
-              >
-                B
-              </button>
-              <button
-                type="button"
-                onClick={() => triggerEditorAction('italic')}
-                className="px-2 py-1 rounded italic font-serif hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs transition"
-                title="In nghiêng (\textit{...})"
-              >
-                I
-              </button>
-
-              {/* Math symbols palette launcher (Sigma/Omega) */}
-              <div className="relative">
                 <button
                   type="button"
-                  onClick={() => setIsSymbolsOpen((prev) => !prev)}
-                  className="p-1.5 rounded hover:bg-cyan-500/15 hover:text-cyan-600 text-slate-700 dark:text-slate-300 transition"
-                  title="Bảng ký hiệu toán học MathType (Omega/Sigma)"
+                  onClick={() => triggerEditorAction('find')}
+                  className="p-1 rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition"
+                  title="Tìm kiếm trong tệp"
                 >
-                  <Sigma className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                  <Search className="w-3.5 h-3.5" />
                 </button>
-
-                <MathSymbolsPopover
-                  isOpen={isSymbolsOpen}
-                  onClose={() => setIsSymbolsOpen(false)}
-                  onInsert={handleInsert}
-                />
               </div>
-
-              <button
-                type="button"
-                onClick={() => triggerEditorAction('link')}
-                className="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition"
-                title="Chèn liên kết (\href{...})"
-              >
-                <LinkIcon className="w-3.5 h-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => triggerEditorAction('table')}
-                className="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition"
-                title="Chèn bảng (\begin{tabular}...)"
-              >
-                <Table className="w-3.5 h-3.5" />
-              </button>
             </div>
-
-            {/* Right icons group: [ Code | Visual ], [ Editing / Reviewing ], Search */}
-            <div className="flex items-center gap-2">
-              <div className="flex items-center p-0.5 rounded-lg bg-slate-200/80 dark:bg-slate-800/80 text-[11px] font-medium border border-slate-300/60 dark:border-slate-700">
-                <button
-                  type="button"
-                  onClick={() => setEditorMode('code')}
-                  className={`px-2 py-0.5 rounded transition cursor-pointer ${
-                    editorMode === 'code'
-                      ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold shadow-2xs'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                  }`}
-                >
-                  Code
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setEditorMode('visual')}
-                  className={`px-2 py-0.5 rounded transition cursor-pointer ${
-                    editorMode === 'visual'
-                      ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold shadow-2xs'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                  }`}
-                >
-                  Visual
-                </button>
-              </div>
-
-              <select
-                aria-label="Chế độ làm việc"
-                value={reviewMode}
-                onChange={(e) => setReviewMode(e.target.value as any)}
-                className="bg-transparent border border-slate-200 dark:border-slate-700 rounded-md px-1.5 py-0.5 text-[11px] font-medium text-slate-700 dark:text-slate-300 outline-none cursor-pointer"
-              >
-                <option value="editing" className="dark:bg-slate-900">Editing ▾</option>
-                <option value="reviewing" className="dark:bg-slate-900">Reviewing</option>
-              </select>
-
-              <button
-                type="button"
-                onClick={() => triggerEditorAction('find')}
-                className="p-1 rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition"
-                title="Tìm kiếm trong tệp"
-              >
-                <Search className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
 
           {/* Monaco Editor Canvas or Visual Mode */}
           <div className="flex-1 min-h-0 relative">
@@ -1257,23 +1257,21 @@ export default function LaTeXStudio({
           className="flex-1 min-w-[350px] overflow-hidden relative flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xs h-full"
         >
           {/* Overleaf Authentic Viewer Toolbar */}
-          <div className="flex justify-between items-center px-3 py-1.5 border-b border-white/10 bg-[#1e2124] shrink-0 min-h-9 text-xs overflow-hidden select-none">
+          <div className="flex justify-between items-center px-2.5 h-8 border-b border-white/10 bg-[#1e2124] shrink-0 text-xs overflow-hidden select-none">
             {/* Left Group: Green Recompile + Engine + Download + Logs */}
-            <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="flex items-center gap-1.5 flex-shrink-0">
               {/* Overleaf Green Recompile Button */}
-              <div className="inline-flex items-center rounded-md shadow-xs overflow-hidden bg-[#2d884d] hover:bg-[#246e3e] transition">
+              <div className="inline-flex items-center rounded-sm overflow-hidden bg-[#2d884d] hover:bg-[#246e3e] transition h-6">
                 <button
                   type="button"
                   onClick={() => void compile()}
                   disabled={status === 'compiling'}
-                  className={`inline-flex items-center justify-center text-xs font-bold text-white cursor-pointer active:bg-[#1f5f36] transition ${
-                    pdfWidth < 380 ? 'p-1.5' : 'px-2.5 py-1 gap-1.5'
-                  }`}
+                  className="h-6 bg-[#2d884d] hover:bg-[#246e3e] text-white font-normal text-xs px-2.5 py-0.5 rounded-sm flex items-center gap-1 cursor-pointer active:bg-[#1f5f36] transition"
                   title="Biên dịch tài liệu (Ctrl+Enter)"
                 >
-                  <RefreshCw className={`w-3.5 h-3.5 ${status === 'compiling' ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`w-3 h-3 ${status === 'compiling' ? 'animate-spin' : ''}`} />
                   {pdfWidth >= 380 && (
-                    <span>{status === 'compiling' ? 'Đang dịch…' : 'Recompile'}</span>
+                    <span className="text-[11px]">{status === 'compiling' ? 'Đang dịch…' : 'Recompile'}</span>
                   )}
                 </button>
 
@@ -1283,7 +1281,7 @@ export default function LaTeXStudio({
                     aria-label="Chọn engine biên dịch"
                     value={engine}
                     onChange={(e) => setEngine(e.target.value as any)}
-                    className="bg-[#246e3e] hover:bg-[#1f5f36] text-white border-l border-emerald-700/50 text-[10px] font-bold px-1.5 py-1 outline-none cursor-pointer"
+                    className="h-6 bg-[#246e3e] hover:bg-[#1f5f36] text-white border-l border-emerald-700/50 text-[10px] font-medium px-1 outline-none cursor-pointer"
                     title="Trình biên dịch TeX Engine"
                   >
                     <option value="xelatex" className="text-slate-900 bg-white">{pdfWidth < 440 ? 'Xe' : 'XeLaTeX'}</option>
@@ -1298,7 +1296,7 @@ export default function LaTeXStudio({
                 <a
                   href={pdf}
                   download={`${docTitle.replace(/\.tex$/, '')}.pdf`}
-                  className="p-1 rounded-md border border-slate-700 hover:bg-slate-800 text-slate-300 transition shrink-0"
+                  className="h-6 w-6 flex items-center justify-center rounded-sm border border-slate-700 hover:bg-slate-800 text-slate-300 transition shrink-0"
                   title="Tải PDF nhanh về máy"
                 >
                   <Download className="w-3.5 h-3.5 text-emerald-400" />
@@ -1309,7 +1307,7 @@ export default function LaTeXStudio({
               <button
                 type="button"
                 onClick={() => setOutputView(outputView === 'console' ? 'pdf' : 'console')}
-                className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-bold transition cursor-pointer border shrink-0 ${
+                className={`h-6 inline-flex items-center gap-1 px-2 rounded-sm text-[11px] font-medium transition cursor-pointer border shrink-0 ${
                   errors.length > 0 || status === 'error'
                     ? 'bg-rose-500/20 border-rose-500/40 text-rose-300 hover:bg-rose-500/30'
                     : 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/30'
@@ -1323,7 +1321,7 @@ export default function LaTeXStudio({
                 )}
                 {pdfWidth >= 400 && <span>Logs</span>}
                 <span
-                  className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                  className={`px-1 py-0.1 rounded-full text-[9px] font-bold ${
                     errors.length > 0 || status === 'error'
                       ? 'bg-rose-500 text-white'
                       : 'bg-emerald-600 text-white'
@@ -1341,7 +1339,7 @@ export default function LaTeXStudio({
                 <button
                   type="button"
                   onClick={() => setOutputView('pdf')}
-                  className="px-2 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition cursor-pointer shrink-0"
+                  className="h-6 px-2 rounded-sm bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-medium transition cursor-pointer shrink-0"
                 >
                   Xem PDF
                 </button>
@@ -1349,27 +1347,27 @@ export default function LaTeXStudio({
             </div>
 
             {/* Right Group: Page Navigator + Zoom (+ History & Layout Switcher if space permits) */}
-            <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="flex items-center gap-1.5 flex-shrink-0">
               {/* History Button (shown if width >= 620) */}
               {pdfWidth >= 620 && (
                 <button
                   type="button"
                   onClick={() => setIsHistoryOpen(true)}
-                  className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-slate-700 hover:bg-slate-800 text-slate-300 text-xs font-medium transition cursor-pointer"
+                  className="h-6 inline-flex items-center gap-1 px-2 rounded-sm border border-slate-700 hover:bg-slate-800 text-slate-300 text-[11px] font-medium transition cursor-pointer"
                   title="Xem lịch sử phiên bản (History)"
                 >
-                  <History className="w-3.5 h-3.5 text-slate-400" />
+                  <History className="w-3 h-3 text-slate-400" />
                   <span>History</span>
                 </button>
               )}
 
               {/* Layout Switcher: Split / Code / PDF (shown if width >= 680) */}
               {pdfWidth >= 680 && (
-                <div className="hidden md:flex items-center p-0.5 rounded-lg bg-slate-800 border border-slate-700">
+                <div className="hidden md:flex items-center h-6 p-0.5 rounded bg-slate-800 border border-slate-700">
                   <button
                     type="button"
                     onClick={() => setLayoutMode('split')}
-                    className={`p-1 rounded transition cursor-pointer ${
+                    className={`h-5 w-5 flex items-center justify-center rounded transition cursor-pointer ${
                       layoutMode === 'split' ? 'bg-slate-900 text-cyan-400 shadow-2xs' : 'text-slate-400'
                     }`}
                     title="Chia 2 cột (Split)"
@@ -1379,7 +1377,7 @@ export default function LaTeXStudio({
                   <button
                     type="button"
                     onClick={() => setLayoutMode('code')}
-                    className={`p-1 rounded transition cursor-pointer ${
+                    className={`h-5 w-5 flex items-center justify-center rounded transition cursor-pointer ${
                       layoutMode === 'code' ? 'bg-slate-900 text-cyan-400 shadow-2xs' : 'text-slate-400'
                     }`}
                     title="Toàn màn hình Code"
@@ -1389,7 +1387,7 @@ export default function LaTeXStudio({
                   <button
                     type="button"
                     onClick={() => setLayoutMode('pdf')}
-                    className={`p-1 rounded transition cursor-pointer ${
+                    className={`h-5 w-5 flex items-center justify-center rounded transition cursor-pointer ${
                       layoutMode === 'pdf' ? 'bg-slate-900 text-cyan-400 shadow-2xs' : 'text-slate-400'
                     }`}
                     title="Toàn màn hình PDF"
@@ -1400,7 +1398,7 @@ export default function LaTeXStudio({
               )}
 
               {/* Horizontal Page Counter: < 1 / X > */}
-              <div className="flex items-center gap-0.5 bg-slate-800/90 rounded-md p-0.5 border border-slate-700 shrink-0">
+              <div className="h-6 flex items-center gap-0.5 bg-slate-800/90 rounded-sm px-1 border border-slate-700 shrink-0 text-[11px] font-mono">
                 <button
                   type="button"
                   disabled={pdfCurrentPage <= 1}
@@ -1409,15 +1407,15 @@ export default function LaTeXStudio({
                     setPdfCurrentPage(prev);
                     setJumpToPage(prev);
                   }}
-                  className="p-1 rounded hover:bg-slate-700 text-slate-300 disabled:opacity-30 cursor-pointer"
+                  className="p-0.5 rounded hover:bg-slate-700 text-slate-300 disabled:opacity-30 cursor-pointer"
                   title="Trang trước"
                 >
-                  <ChevronLeft className="w-3.5 h-3.5" />
+                  <ChevronLeft className="w-3 h-3" />
                 </button>
 
-                <div className="flex items-center px-1 font-mono text-[11px] text-slate-200 font-bold">
+                <div className="flex items-center px-1.5 py-0.5 font-mono text-[11px] text-slate-200">
                   {pdfWidth >= 440 && (
-                    <span className="text-[10px] text-slate-400 mr-1 hidden sm:inline">Trang</span>
+                    <span className="text-[10px] text-slate-400 mr-1 hidden sm:inline font-sans">Trang</span>
                   )}
                   <input
                     type="number"
@@ -1431,7 +1429,7 @@ export default function LaTeXStudio({
                         setJumpToPage(val);
                       }
                     }}
-                    className="w-5 text-center bg-transparent border-0 outline-none text-[11px] font-mono font-bold text-slate-100"
+                    className="w-4 text-center bg-transparent border-0 outline-none text-[11px] font-mono text-slate-100 p-0"
                   />
                   <span className="text-slate-500">/</span>
                   <span className="ml-0.5 text-slate-400">{pdfTotalPages || 1}</span>
@@ -1445,26 +1443,26 @@ export default function LaTeXStudio({
                     setPdfCurrentPage(next);
                     setJumpToPage(next);
                   }}
-                  className="p-1 rounded hover:bg-slate-700 text-slate-300 disabled:opacity-30 cursor-pointer"
+                  className="p-0.5 rounded hover:bg-slate-700 text-slate-300 disabled:opacity-30 cursor-pointer"
                   title="Trang kế tiếp"
                 >
-                  <ChevronRight className="w-3.5 h-3.5" />
+                  <ChevronRight className="w-3 h-3" />
                 </button>
               </div>
 
               {/* Zoom Controls: - [%] + */}
-              <div className="flex items-center gap-0.5 bg-slate-800/90 rounded-md p-0.5 border border-slate-700 shrink-0">
+              <div className="h-6 flex items-center gap-0.5 bg-slate-800/90 rounded-sm px-1 border border-slate-700 shrink-0 text-[11px]">
                 <button
                   type="button"
                   disabled={!pdf}
                   onClick={() => setZoom((z) => Math.max(25, (typeof z === 'number' ? z : 100) - 25))}
-                  className="p-1 rounded hover:bg-slate-700 text-slate-300 disabled:opacity-30 cursor-pointer"
+                  className="p-0.5 rounded hover:bg-slate-700 text-slate-300 disabled:opacity-30 cursor-pointer"
                   title="Thu nhỏ"
                 >
-                  <ZoomOut className="w-3.5 h-3.5" />
+                  <ZoomOut className="w-3 h-3" />
                 </button>
 
-                <span className="font-mono text-[10px] font-bold px-1 text-slate-200 min-w-7 text-center">
+                <span className="font-mono text-[10px] px-1 text-slate-200 min-w-6 text-center">
                   {typeof zoom === 'number' ? `${zoom}%` : 'Rộng'}
                 </span>
 
@@ -1472,10 +1470,10 @@ export default function LaTeXStudio({
                   type="button"
                   disabled={!pdf}
                   onClick={() => setZoom((z) => Math.min(300, (typeof z === 'number' ? z : 100) + 25))}
-                  className="p-1 rounded hover:bg-slate-700 text-slate-300 disabled:opacity-30 cursor-pointer"
+                  className="p-0.5 rounded hover:bg-slate-700 text-slate-300 disabled:opacity-30 cursor-pointer"
                   title="Phóng to"
                 >
-                  <ZoomIn className="w-3.5 h-3.5" />
+                  <ZoomIn className="w-3 h-3" />
                 </button>
               </div>
             </div>

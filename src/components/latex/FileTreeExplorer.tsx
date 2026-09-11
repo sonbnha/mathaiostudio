@@ -334,8 +334,8 @@ export default function FileTreeExplorer({
       {/* SECTION 1 (TOP HALF): FILE TREE */}
       <div className="flex flex-col flex-1 min-h-[160px] max-h-[55%] border-b border-slate-200 dark:border-slate-800 overflow-hidden">
         {/* File Tree Header */}
-        <div className="px-3 py-2 bg-slate-50/90 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-200 text-[11px] tracking-wide uppercase">
+        <div className="px-2 py-1.5 bg-slate-50/90 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-1.5 font-semibold text-[11px] uppercase tracking-wider text-neutral-400">
             <Layers className="w-3.5 h-3.5 text-cyan-500" />
             <span>File tree</span>
           </div>
@@ -348,7 +348,7 @@ export default function FileTreeExplorer({
                 setIsAddingFolder(false);
                 setNewFileName('');
               }}
-              className="p-1 rounded text-slate-500 hover:text-cyan-600 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition cursor-pointer"
+              className="p-0.5 rounded text-neutral-400 hover:text-cyan-500 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition cursor-pointer"
               title="Tạo tệp mới (+ File)"
             >
               <FilePlus className="w-3.5 h-3.5" />
@@ -360,7 +360,7 @@ export default function FileTreeExplorer({
                 setIsAddingFile(false);
                 setNewFolderName('');
               }}
-              className="p-1 rounded text-slate-500 hover:text-cyan-600 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition cursor-pointer"
+              className="p-0.5 rounded text-neutral-400 hover:text-cyan-500 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition cursor-pointer"
               title="Tạo thư mục mới (+ Folder)"
             >
               <FolderPlus className="w-3.5 h-3.5" />
@@ -368,7 +368,7 @@ export default function FileTreeExplorer({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="p-1 rounded text-slate-500 hover:text-emerald-600 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition cursor-pointer"
+              className="p-0.5 rounded text-neutral-400 hover:text-emerald-500 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition cursor-pointer"
               title="Tải tệp / ảnh lên"
             >
               <Upload className="w-3.5 h-3.5" />
@@ -383,7 +383,7 @@ export default function FileTreeExplorer({
             <button
               type="button"
               onClick={onToggleCollapse}
-              className="p-1 rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition ml-0.5 cursor-pointer"
+              className="p-0.5 rounded text-neutral-400 hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition ml-0.5 cursor-pointer"
               title="Thu gọn cột trái"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
@@ -498,7 +498,7 @@ export default function FileTreeExplorer({
                       className="w-full text-xs font-mono bg-white dark:bg-slate-950 border border-cyan-500 rounded px-1 py-0.2 outline-none text-slate-900 dark:text-slate-100"
                     />
                   ) : (
-                    <span className="truncate font-mono text-[11px]" title={file.name}>
+                    <span className="truncate font-mono text-xs" title={file.name}>
                       {file.name}
                     </span>
                   )}
@@ -549,12 +549,12 @@ export default function FileTreeExplorer({
       {/* SECTION 2 (BOTTOM HALF): FILE OUTLINE */}
       <div className="flex flex-col flex-1 min-h-[140px] overflow-hidden bg-slate-50/40 dark:bg-slate-950/20">
         {/* File Outline Header */}
-        <div className="px-3 py-2 bg-slate-50/90 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-200 text-[11px] tracking-wide uppercase">
+        <div className="px-2 py-1.5 bg-slate-50/90 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-1.5 font-semibold text-[11px] uppercase tracking-wider text-neutral-400">
             <ListTree className="w-3.5 h-3.5 text-indigo-500" />
             <span>File outline</span>
           </div>
-          <span className="text-[10px] font-mono text-slate-400">
+          <span className="text-[10px] font-mono text-neutral-400">
             {outlineItems.length} mục
           </span>
         </div>
@@ -571,12 +571,12 @@ export default function FileTreeExplorer({
                   key={item.id}
                   type="button"
                   onClick={() => onJumpToLine?.(item.line)}
-                  className={`w-full text-left flex items-center justify-between py-1 px-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition group cursor-pointer ${paddingLeft}`}
+                  className={`w-full text-left flex items-center justify-between py-1 px-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition group cursor-pointer text-xs ${paddingLeft}`}
                   title={`Dòng ${item.line}: ${item.title}`}
                 >
                   <div className="flex items-center gap-1.5 min-w-0 flex-1">
                     {getOutlineIcon(item)}
-                    <span className="truncate text-[11px] font-medium group-hover:text-cyan-600 dark:group-hover:text-cyan-400">
+                    <span className="truncate text-xs font-medium group-hover:text-cyan-600 dark:group-hover:text-cyan-400">
                       {item.title}
                     </span>
                   </div>

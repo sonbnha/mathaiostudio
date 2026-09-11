@@ -36,15 +36,20 @@ import {
   Table,
   Columns,
   Maximize2,
+  Minimize2,
   ChevronLeft,
   ChevronRight,
   ArrowLeft,
   ArrowRight,
   History,
   RefreshCw,
+  Sun,
+  Moon,
+  ChevronDown,
+  Edit2,
 } from 'lucide-react';
 import { APP_VERSION } from '@/config/version';
-import AppHeader from '@/components/header/AppHeader';
+import { useTheme } from '@/context/ThemeContext';
 import type { StudioFile, StudioImage, RestorePoint } from '@/components/latex/StudioTools';
 import FileTreeExplorer from '@/components/latex/FileTreeExplorer';
 import ErrorConsole, { parseTeXLog } from '@/components/latex/ErrorConsole';
@@ -147,6 +152,51 @@ export default function LaTeXStudio({
 
   // Resizer dragging state
   const isDraggingRef = useRef(false);
+
+  // Topbar and utility state
+  const { resolvedTheme, toggleTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [titleInput, setTitleInput] = useState(docTitle);
+  const [isUtilsMenuOpen, setIsUtilsMenuOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const utilsMenuRef = useRef<HTMLDivElement>(null);
+
+  // Sync titleInput when docTitle changes
+  useEffect(() => {
+    setTitleInput(docTitle);
+  }, [docTitle]);
+
+  // Close utils menu on outside click
+  useEffect(() => {
+    if (!isUtilsMenuOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (utilsMenuRef.current && !utilsMenuRef.current.contains(e.target as Node)) {
+        setIsUtilsMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [isUtilsMenuOpen]);
+
+  // Fullscreen toggle handler
+  const toggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen().catch(() => {});
+      setIsFullscreen(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleFsChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFsChange);
+    return () => document.removeEventListener('fullscreenchange', handleFsChange);
+  }, []);
 
   // Initial load
   useEffect(() => {
@@ -596,28 +646,28 @@ export default function LaTeXStudio({
 
   return (
     <div className="h-screen overflow-hidden bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors duration-200">
-      {/* 1. Global Header with Title */}
-      <AppHeader
-        docTitle={docTitle}
-        onDocTitleChange={(newTitle) => setDocTitle(newTitle)}
-        saveStatus="saved"
-        saveStatusLabel={storageNotice || 'Đã lưu'}
-        toolType="latex"
-      />
+      {/* 1. Overleaf Single Desktop Topbar (h-10) */}
+      <header className="h-10 px-3 bg-[#1e2124] border-b border-[#2d3136] flex items-center justify-between gap-2 shrink-0 z-30 select-none text-xs text-slate-200">
+        {/* Left Side: Brand Logo, Template Picker, "Tiện ích ▾" Dropdown */}
+        <div className="flex items-center gap-2 min-w-0">
+          <Link
+            href="/"
+            className="flex items-center gap-1.5 text-white hover:text-emerald-400 font-bold text-xs tracking-tight transition shrink-0 mr-1"
+            title="Về trang chủ MathAIO Studio"
+          >
+            <div className="w-5 h-5 rounded bg-emerald-600 flex items-center justify-center text-white font-serif font-black text-xs shadow-xs">
+              T
+            </div>
+            <span className="hidden sm:inline font-semibold">LaTeX Studio</span>
+          </Link>
 
-      {/* 2. Top Compact Utility Bar */}
-      <div className="relative z-30 mx-2 sm:mx-3 my-1 px-2.5 py-1 bg-white/95 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xs backdrop-blur-sm flex items-center justify-between gap-2 shrink-0 h-9 overflow-visible">
-        {/* Left Side: Template selector & AI */}
-        <div className="flex items-center gap-1.5 min-w-0 overflow-visible">
-          <div className="flex items-center gap-1 shrink-0">
-            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 hidden sm:inline">
-              Mẫu:
-            </span>
+          {/* Templates Dropdown */}
+          <div className="relative shrink-0">
             <select
               aria-label="Chọn mẫu tài liệu"
               value={template}
               disabled={status === 'compiling'}
-              className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-0.5 text-xs font-medium text-slate-800 dark:text-slate-200 outline-none max-w-36 sm:max-w-44 truncate cursor-pointer"
+              className="bg-[#2a2e33] hover:bg-[#32373e] text-slate-200 border border-[#3e444b] rounded-md px-2 py-1 text-[11px] font-medium outline-none cursor-pointer max-w-36 sm:max-w-44 truncate transition"
               onChange={(e) => {
                 const selected = LATEX_TEMPLATES.find((t) => t.id === e.target.value);
                 if (selected) {
@@ -640,7 +690,7 @@ export default function LaTeXStudio({
               }}
             >
               {LATEX_TEMPLATES.map((t) => (
-                <option key={t.id} value={t.id}>
+                <option key={t.id} value={t.id} className="bg-[#1e2124] text-slate-200">
                   {t.badge ? `[${t.badge}] ` : ''}
                   {t.name}
                 </option>
@@ -648,25 +698,88 @@ export default function LaTeXStudio({
             </select>
           </div>
 
-          <span className="h-3.5 w-px bg-slate-200 dark:bg-slate-800" />
+          {/* "Tiện ích ▾" Popover Dropdown */}
+          <div className="relative shrink-0" ref={utilsMenuRef}>
+            <button
+              type="button"
+              onClick={() => setIsUtilsMenuOpen((prev) => !prev)}
+              className="inline-flex items-center gap-1 bg-[#2a2e33] hover:bg-[#32373e] text-slate-200 border border-[#3e444b] rounded-md px-2 py-1 text-[11px] font-medium outline-none cursor-pointer transition"
+              title="Tiện ích mở rộng (OCR, Word, Tex...)"
+            >
+              <span>Tiện ích</span>
+              <ChevronDown className="w-3 h-3 text-slate-400" />
+            </button>
 
-          {/* AI Assistant Dropdown */}
-          <AIAssistantDropdown onAI={handleAI} aiBusy={aiBusy} />
-        </div>
+            {isUtilsMenuOpen && (
+              <div className="absolute top-full left-0 mt-1 w-48 bg-[#1e2124] border border-[#3e444b] rounded-xl shadow-2xl py-1 z-50 text-xs animate-in fade-in duration-100">
+                <button
+                  type="button"
+                  disabled={ocrBusy}
+                  onClick={() => {
+                    setIsUtilsMenuOpen(false);
+                    ocrInputRef.current?.click();
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                >
+                  <Camera className="w-3.5 h-3.5 text-violet-400" />
+                  <span>{ocrBusy ? 'Đang OCR ảnh…' : 'OCR ảnh công thức'}</span>
+                </button>
 
-        {/* Right Side: Utility Tools (OCR, Word, Presentation, Export) */}
-        <div className="flex items-center gap-1 shrink-0 ml-auto">
-          {/* OCR Image Button */}
-          <button
-            type="button"
-            disabled={ocrBusy}
-            onClick={() => ocrInputRef.current?.click()}
-            className={ribbonButton}
-            title="Quét ảnh công thức/đề thi thành mã LaTeX"
-          >
-            <Camera className="w-3.5 h-3.5 text-violet-500" />
-            <span className="hidden md:inline">{ocrBusy ? 'Đang OCR…' : 'OCR ảnh'}</span>
-          </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsUtilsMenuOpen(false);
+                    wordInputRef.current?.click();
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                >
+                  <FileText className="w-3.5 h-3.5 text-blue-400" />
+                  <span>Nhập Word (.docx)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsUtilsMenuOpen(false);
+                    handleExportWord();
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                >
+                  <FileDown className="w-3.5 h-3.5 text-blue-400" />
+                  <span>Xuất Word (.docx)</span>
+                </button>
+
+                <div className="h-px bg-[#2d3136] my-1" />
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsUtilsMenuOpen(false);
+                    exportTex();
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                >
+                  <Code2 className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Xuất mã nguồn (.tex)</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={!pdf}
+                  onClick={() => {
+                    setIsUtilsMenuOpen(false);
+                    setIsPresentation(true);
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer disabled:opacity-40"
+                >
+                  <Tv className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>Trình chiếu máy chiếu</span>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Hidden file inputs for OCR and Word */}
           <input
             ref={ocrInputRef}
             type="file"
@@ -678,17 +791,6 @@ export default function LaTeXStudio({
               e.target.value = '';
             }}
           />
-
-          {/* Word Import Button */}
-          <button
-            type="button"
-            onClick={() => wordInputRef.current?.click()}
-            className={ribbonButton}
-            title="Nhập tài liệu Word (.docx) sang LaTeX"
-          >
-            <FileText className="w-3.5 h-3.5 text-blue-500" />
-            <span className="hidden lg:inline">Nhập Word</span>
-          </button>
           <input
             ref={wordInputRef}
             type="file"
@@ -700,44 +802,95 @@ export default function LaTeXStudio({
               e.target.value = '';
             }}
           />
-
-          {/* Word Export Button */}
-          <button
-            type="button"
-            onClick={handleExportWord}
-            className={ribbonButton}
-            title="Xuất tài liệu sang file Word (.docx)"
-          >
-            <FileDown className="w-3.5 h-3.5 text-blue-500" />
-            <span className="hidden lg:inline">Xuất Word</span>
-          </button>
-
-          {/* Presentation Mode Button */}
-          <button
-            type="button"
-            disabled={!pdf}
-            onClick={() => setIsPresentation(true)}
-            className={ribbonButton}
-            title="Trình chiếu toàn màn hình cho máy chiếu"
-          >
-            <Tv className="w-3.5 h-3.5 text-indigo-500" />
-            <span className="hidden xl:inline">Trình chiếu</span>
-          </button>
-
-          <span className="h-3.5 w-px bg-slate-200 dark:bg-slate-800 hidden sm:inline" />
-
-          {/* Export .tex */}
-          <button
-            type="button"
-            onClick={exportTex}
-            className={ribbonButton}
-            title="Tải mã nguồn .tex về máy"
-          >
-            <Code2 className="w-3.5 h-3.5 text-cyan-500" />
-            <span className="hidden sm:inline">Xuất .tex</span>
-          </button>
         </div>
-      </div>
+
+        {/* Center Side: Document Title (Click-to-rename) & Autosave Status */}
+        <div className="flex items-center gap-2 min-w-0 max-w-[40%] justify-center">
+          {isEditingTitle ? (
+            <input
+              type="text"
+              autoFocus
+              value={titleInput}
+              onChange={(e) => setTitleInput(e.target.value)}
+              onBlur={() => {
+                const clean = titleInput.trim();
+                if (clean) setDocTitle(clean.endsWith('.tex') ? clean : `${clean}.tex`);
+                setIsEditingTitle(false);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  const clean = titleInput.trim();
+                  if (clean) setDocTitle(clean.endsWith('.tex') ? clean : `${clean}.tex`);
+                  setIsEditingTitle(false);
+                } else if (e.key === 'Escape') {
+                  setTitleInput(docTitle);
+                  setIsEditingTitle(false);
+                }
+              }}
+              className="bg-[#2a2e33] text-white border border-emerald-500 rounded px-2 py-0.5 text-xs font-semibold outline-none text-center truncate max-w-full"
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setTitleInput(docTitle);
+                setIsEditingTitle(true);
+              }}
+              className="flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-semibold text-slate-200 hover:text-white hover:bg-[#2a2e33] transition truncate max-w-full cursor-pointer group"
+              title="Bấm để đổi tên tài liệu"
+            >
+              <span className="truncate">{docTitle}</span>
+              <Edit2 className="w-3 h-3 text-slate-400 group-hover:text-emerald-400 shrink-0 opacity-60 group-hover:opacity-100 transition" />
+            </button>
+          )}
+
+          <span className="hidden md:inline-flex items-center gap-1 text-[10px] text-slate-400 shrink-0 select-none">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span>{storageNotice || 'Tự động lưu'}</span>
+          </span>
+        </div>
+
+        {/* Right Side: Theme Toggle, Fullscreen Toggle, AI Assistant Launcher */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {/* Dark / Light Toggle */}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="p-1.5 rounded-md text-slate-300 hover:text-white hover:bg-[#2a2e33] transition cursor-pointer"
+            title={isDark ? 'Chuyển sang giao diện Sáng' : 'Chuyển sang giao diện Tối'}
+          >
+            {isDark ? (
+              <Sun className="w-3.5 h-3.5 text-amber-400" />
+            ) : (
+              <Moon className="w-3.5 h-3.5 text-slate-300" />
+            )}
+          </button>
+
+          {/* Fullscreen Toggle */}
+          <button
+            type="button"
+            onClick={toggleFullscreen}
+            className="p-1.5 rounded-md text-slate-300 hover:text-white hover:bg-[#2a2e33] transition cursor-pointer"
+            title={isFullscreen ? 'Thoát toàn màn hình' : 'Toàn màn hình'}
+          >
+            {isFullscreen ? (
+              <Minimize2 className="w-3.5 h-3.5 text-slate-300" />
+            ) : (
+              <Maximize2 className="w-3.5 h-3.5 text-slate-300" />
+            )}
+          </button>
+
+          <span className="h-3.5 w-px bg-[#2d3136] mx-0.5" />
+
+          {/* AI Assistant Button */}
+          <AIAssistantDropdown
+            onAI={handleAI}
+            aiBusy={aiBusy}
+            align="right"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-gradient-to-r from-indigo-600/30 to-purple-600/30 hover:from-indigo-600/50 hover:to-purple-600/50 text-indigo-300 border border-indigo-500/40 transition cursor-pointer disabled:opacity-50"
+          />
+        </div>
+      </header>
 
       {/* 3. Main Overleaf Authentic Workspace */}
       <main className="relative z-10 flex-1 min-h-0 w-full px-2 sm:px-3 pb-1 flex flex-row overflow-hidden gap-1.5">
@@ -1058,10 +1211,10 @@ export default function LaTeXStudio({
         >
           {/* Overleaf Authentic Viewer Toolbar */}
           <div className="flex items-center justify-between px-2.5 bg-slate-100/90 dark:bg-slate-950/90 border-b border-slate-200 dark:border-slate-800 shrink-0 h-9 text-xs">
-            {/* Left: Green Recompile Button + Engine Picker + Quick Download + Log Count */}
+            {/* Left: Green Recompile Button + Engine Picker + Quick Download */}
             <div className="flex items-center gap-1.5">
               {/* Overleaf Green Recompile Button */}
-              <div className="inline-flex items-center rounded-lg shadow-xs overflow-hidden bg-[#2d884d] hover:bg-[#257341] transition">
+              <div className="inline-flex items-center rounded-md shadow-xs overflow-hidden bg-[#2d884d] hover:bg-[#246e3e] transition">
                 <button
                   type="button"
                   onClick={() => void compile()}
@@ -1078,7 +1231,7 @@ export default function LaTeXStudio({
                   aria-label="Chọn engine biên dịch"
                   value={engine}
                   onChange={(e) => setEngine(e.target.value as any)}
-                  className="bg-[#257341] hover:bg-[#1f5f36] text-white border-l border-emerald-700/50 text-[10px] font-bold px-1.5 py-1 outline-none cursor-pointer"
+                  className="bg-[#246e3e] hover:bg-[#1f5f36] text-white border-l border-emerald-700/50 text-[10px] font-bold px-1.5 py-1 outline-none cursor-pointer"
                   title="Trình biên dịch TeX Engine"
                 >
                   <option value="xelatex" className="text-slate-900 bg-white">XeLaTeX</option>
@@ -1098,59 +1251,46 @@ export default function LaTeXStudio({
                   <Download className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                 </a>
               )}
+            </div>
 
-              {/* Status / Error Badge */}
-              {status === 'error' || errors.length > 0 ? (
-                <button
-                  type="button"
-                  onClick={() => setOutputView(outputView === 'console' ? 'pdf' : 'console')}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-rose-500/15 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs font-bold hover:bg-rose-500/25 transition cursor-pointer"
-                  title="Xem chi tiết lỗi biên dịch"
-                >
+            {/* Center: Overleaf Logs Button with Badge */}
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setOutputView(outputView === 'console' ? 'pdf' : 'console')}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold transition cursor-pointer border ${
+                  errors.length > 0 || status === 'error'
+                    ? 'bg-rose-500/15 border-rose-500/40 text-rose-700 dark:text-rose-300 hover:bg-rose-500/25'
+                    : 'bg-emerald-500/15 border-emerald-500/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/25'
+                }`}
+                title={outputView === 'console' ? 'Quay lại xem PDF' : 'Mở bảng nhật ký & lỗi biên dịch'}
+              >
+                {errors.length > 0 || status === 'error' ? (
                   <AlertCircle className="w-3.5 h-3.5 text-rose-500" />
-                  <span>{errors.length || 1} Lỗi</span>
-                </button>
-              ) : warnings.length > 0 ? (
-                <button
-                  type="button"
-                  onClick={() => setOutputView(outputView === 'console' ? 'pdf' : 'console')}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-bold hover:bg-amber-500/25 transition cursor-pointer"
-                  title="Xem cảnh báo TeX"
+                ) : (
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                )}
+                <span>Logs</span>
+                <span
+                  className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                    errors.length > 0 || status === 'error'
+                      ? 'bg-rose-500 text-white'
+                      : 'bg-emerald-600 text-white'
+                  }`}
                 >
-                  <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                  <span>{warnings.length}</span>
-                </button>
-              ) : (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-lg text-emerald-600 dark:text-emerald-400 text-[11px] font-semibold">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  {errors.length > 0 ? `${errors.length} Errors` : status === 'error' ? '1 Error' : '0 Errors'}
                 </span>
-              )}
+              </button>
 
-              {/* View Switcher: PDF / Logs */}
-              <div className="flex items-center p-0.5 rounded-lg bg-slate-200/80 dark:bg-slate-800/80 border border-slate-300/60 dark:border-slate-700 text-[11px] font-semibold">
+              {outputView === 'console' && (
                 <button
                   type="button"
                   onClick={() => setOutputView('pdf')}
-                  className={`px-2 py-0.5 rounded transition cursor-pointer ${
-                    outputView === 'pdf'
-                      ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs font-bold'
-                      : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-                  }`}
+                  className="px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-semibold transition cursor-pointer"
                 >
-                  PDF
+                  Xem PDF
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setOutputView('console')}
-                  className={`px-2 py-0.5 rounded transition cursor-pointer ${
-                    outputView === 'console'
-                      ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs font-bold'
-                      : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-                  }`}
-                >
-                  Logs
-                </button>
-              </div>
+              )}
             </div>
 
             {/* Right: History + Layout Switcher + Horizontal Page Counter + Zoom */}

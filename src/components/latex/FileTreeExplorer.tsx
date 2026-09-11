@@ -20,6 +20,10 @@ import {
   ListTree,
   Hash,
   Bookmark,
+  HelpCircle,
+  CheckSquare,
+  Dot,
+  FileSpreadsheet,
 } from 'lucide-react';
 import type { StudioFile } from '@/components/latex/StudioTools';
 
@@ -27,7 +31,141 @@ export interface OutlineItem {
   id: string;
   title: string;
   level: 1 | 2 | 3;
+  type: 'section' | 'part_vn' | 'subsection' | 'question' | 'subsub' | 'item';
   line: number;
+}
+
+function cleanTexText(raw: string): string {
+  return raw
+    .replace(/\\textbf\{([^}]+)\}/g, '$1')
+    .replace(/\\textit\{([^}]+)\}/g, '$1')
+    .replace(/\\underline\{([^}]+)\}/g, '$1')
+    .replace(/\$([^$]+)\$/g, '$1')
+    .replace(/\\[a-zA-Z]+/g, ' ')
+    .replace(/[{}]/g, '')
+    .replace(/\\\\/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+export function parseTexOutline(source: string): OutlineItem[] {
+  if (!source) return [];
+  const lines = source.split('\n');
+  const items: OutlineItem[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const rawLine = lines[i];
+    const line = rawLine.trim();
+    if (line.startsWith('%')) continue;
+
+    // 1. \title{...}
+    const titleMatch = line.match(/\\title\*?\{([^}]+)\}/);
+    if (titleMatch) {
+      items.push({
+        id: `outline-title-${i}`,
+        title: cleanTexText(titleMatch[1]),
+        level: 1,
+        type: 'section',
+        line: i + 1,
+      });
+      continue;
+    }
+
+    // 2. \part, \chapter, \section
+    const secMatch = line.match(/\\(part|chapter|section)\*?\{([^}]+)\}/);
+    if (secMatch) {
+      items.push({
+        id: `outline-sec-${i}`,
+        title: cleanTexText(secMatch[2]),
+        level: 1,
+        type: 'section',
+        line: i + 1,
+      });
+      continue;
+    }
+
+    // 3. \textbf{PHẦN ...}
+    const phanMatch = line.match(/\\textbf\{(PHẦN\s+[^\}]+)\}/i);
+    if (phanMatch) {
+      items.push({
+        id: `outline-phan-${i}`,
+        title: cleanTexText(phanMatch[1]),
+        level: 1,
+        type: 'part_vn',
+        line: i + 1,
+      });
+      continue;
+    }
+
+    // 4. \subsection
+    const subsecMatch = line.match(/\\subsection\*?\{([^}]+)\}/);
+    if (subsecMatch) {
+      items.push({
+        id: `outline-subsec-${i}`,
+        title: cleanTexText(subsecMatch[1]),
+        level: 2,
+        type: 'subsection',
+        line: i + 1,
+      });
+      continue;
+    }
+
+    // 5. \textbf{Câu ...} or standalone Câu \d+
+    const cauMatch = line.match(/\\textbf\{(Câu\s+\d+[^}]*)\}/i) || line.match(/^(Câu\s+\d+[\.:]?\s*[^\\]*)/i);
+    if (cauMatch) {
+      const qText = cleanTexText(cauMatch[1]);
+      items.push({
+        id: `outline-cau-${i}`,
+        title: qText.slice(0, 45) + (qText.length > 45 ? '…' : ''),
+        level: 2,
+        type: 'question',
+        line: i + 1,
+      });
+      continue;
+    }
+
+    // 6. \subsubsection or \paragraph
+    const subsubMatch = line.match(/\\(subsubsection|paragraph)\*?\{([^}]+)\}/);
+    if (subsubMatch) {
+      items.push({
+        id: `outline-subsub-${i}`,
+        title: cleanTexText(subsubMatch[2]),
+        level: 3,
+        type: 'subsub',
+        line: i + 1,
+      });
+      continue;
+    }
+
+    // 7. \item (with label or descriptive text)
+    const itemMatch = line.match(/^\\item(?:\[([^\]]+)\])?\s*(.*)/);
+    if (itemMatch) {
+      const label = itemMatch[1];
+      const text = itemMatch[2];
+      if (label) {
+        items.push({
+          id: `outline-item-${i}`,
+          title: cleanTexText(label + (text ? ': ' + text.slice(0, 30) : '')),
+          level: 3,
+          type: 'item',
+          line: i + 1,
+        });
+      } else if (text && text.length > 4 && !text.startsWith('\\begin')) {
+        const itemClean = cleanTexText(text);
+        if (itemClean) {
+          items.push({
+            id: `outline-item-${i}`,
+            title: itemClean.slice(0, 38) + (itemClean.length > 38 ? '…' : ''),
+            level: 3,
+            type: 'item',
+            line: i + 1,
+          });
+        }
+      }
+    }
+  }
+
+  return items;
 }
 
 export interface FileTreeExplorerProps {
@@ -42,50 +180,6 @@ export interface FileTreeExplorerProps {
   onJumpToLine?: (line: number) => void;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
-}
-
-export function parseTexOutline(source: string): OutlineItem[] {
-  if (!source) return [];
-  const lines = source.split('\n');
-  const items: OutlineItem[] = [];
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (line.startsWith('%')) continue;
-
-    // Detect \title{...}
-    const titleMatch = line.match(/\\title\*?\{([^}]+)\}/);
-    if (titleMatch) {
-      items.push({
-        id: `outline-title-${i}`,
-        title: titleMatch[1].replace(/\\\\/g, ' ').trim(),
-        level: 1,
-        line: i + 1,
-      });
-      continue;
-    }
-
-    // Detect sections: \part, \chapter, \section, \subsection, \subsubsection
-    const headingMatch = line.match(/\\(part|chapter|section|subsection|subsubsection)\*?\{([^}]+)\}/);
-    if (headingMatch) {
-      const type = headingMatch[1];
-      const headingTitle = headingMatch[2].replace(/\\\\/g, ' ').trim();
-      const level =
-        type === 'part' || type === 'chapter' || type === 'section'
-          ? 1
-          : type === 'subsection'
-          ? 2
-          : 3;
-      items.push({
-        id: `outline-${i}`,
-        title: headingTitle,
-        level,
-        line: i + 1,
-      });
-    }
-  }
-
-  return items;
 }
 
 export default function FileTreeExplorer({
@@ -176,13 +270,26 @@ export default function FileTreeExplorer({
     return <FileText className="w-3.5 h-3.5 text-slate-400 shrink-0" />;
   };
 
+  const getOutlineIcon = (item: OutlineItem) => {
+    if (item.type === 'part_vn' || item.type === 'section') {
+      return <Bookmark className="w-3 h-3 text-cyan-500 shrink-0" />;
+    }
+    if (item.type === 'question') {
+      return <CheckSquare className="w-3 h-3 text-emerald-500 shrink-0" />;
+    }
+    if (item.type === 'subsection') {
+      return <ChevronRight className="w-3 h-3 text-indigo-400 shrink-0" />;
+    }
+    return <Dot className="w-4 h-4 text-slate-400 -mx-1 shrink-0" />;
+  };
+
   if (isCollapsed) {
     return (
       <div className="w-12 shrink-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col items-center py-2.5 gap-3 select-none transition-all h-full">
         <button
           type="button"
           onClick={onToggleCollapse}
-          className="p-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+          className="p-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
           title="Mở rộng cây thư mục & mục lục"
         >
           <Layers className="w-4 h-4 text-cyan-500" />
@@ -195,7 +302,7 @@ export default function FileTreeExplorer({
               key={file.name}
               type="button"
               onClick={() => onSelectFile(file.name)}
-              className={`p-1.5 rounded-lg transition ${
+              className={`p-1.5 rounded-lg transition cursor-pointer ${
                 isActive
                   ? 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30'
                   : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -210,7 +317,7 @@ export default function FileTreeExplorer({
         <button
           type="button"
           onClick={onToggleCollapse}
-          className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+          className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
           title="Mục lục tài liệu (Outline)"
         >
           <ListTree className="w-4 h-4 text-amber-500" />
@@ -241,7 +348,7 @@ export default function FileTreeExplorer({
                 setIsAddingFolder(false);
                 setNewFileName('');
               }}
-              className="p-1 rounded text-slate-500 hover:text-cyan-600 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition"
+              className="p-1 rounded text-slate-500 hover:text-cyan-600 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition cursor-pointer"
               title="Tạo tệp mới (+ File)"
             >
               <FilePlus className="w-3.5 h-3.5" />
@@ -253,7 +360,7 @@ export default function FileTreeExplorer({
                 setIsAddingFile(false);
                 setNewFolderName('');
               }}
-              className="p-1 rounded text-slate-500 hover:text-cyan-600 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition"
+              className="p-1 rounded text-slate-500 hover:text-cyan-600 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition cursor-pointer"
               title="Tạo thư mục mới (+ Folder)"
             >
               <FolderPlus className="w-3.5 h-3.5" />
@@ -261,7 +368,7 @@ export default function FileTreeExplorer({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="p-1 rounded text-slate-500 hover:text-emerald-600 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition"
+              className="p-1 rounded text-slate-500 hover:text-emerald-600 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition cursor-pointer"
               title="Tải tệp / ảnh lên"
             >
               <Upload className="w-3.5 h-3.5" />
@@ -276,7 +383,7 @@ export default function FileTreeExplorer({
             <button
               type="button"
               onClick={onToggleCollapse}
-              className="p-1 rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition ml-0.5"
+              className="p-1 rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition ml-0.5 cursor-pointer"
               title="Thu gọn cột trái"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
@@ -307,13 +414,13 @@ export default function FileTreeExplorer({
                 <button
                   type="button"
                   onClick={() => setIsAddingFile(false)}
-                  className="px-1.5 py-0.5 rounded text-[10px] text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800"
+                  className="px-1.5 py-0.5 rounded text-[10px] text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800 cursor-pointer"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  className="px-2 py-0.5 rounded text-[10px] bg-cyan-600 hover:bg-cyan-500 text-white font-bold"
+                  className="px-2 py-0.5 rounded text-[10px] bg-cyan-600 hover:bg-cyan-500 text-white font-bold cursor-pointer"
                 >
                   Tạo
                 </button>
@@ -342,13 +449,13 @@ export default function FileTreeExplorer({
                 <button
                   type="button"
                   onClick={() => setIsAddingFolder(false)}
-                  className="px-1.5 py-0.5 rounded text-[10px] text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800"
+                  className="px-1.5 py-0.5 rounded text-[10px] text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800 cursor-pointer"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  className="px-2 py-0.5 rounded text-[10px] bg-amber-600 hover:bg-amber-500 text-white font-bold"
+                  className="px-2 py-0.5 rounded text-[10px] bg-amber-600 hover:bg-amber-500 text-white font-bold cursor-pointer"
                 >
                   Tạo
                 </button>
@@ -412,7 +519,7 @@ export default function FileTreeExplorer({
                           setEditingFileName(file.name);
                           setRenameInput(file.name);
                         }}
-                        className="p-1 rounded hover:text-cyan-600 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
+                        className="p-1 rounded hover:text-cyan-600 hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer"
                         title="Đổi tên"
                       >
                         <Edit2 className="w-3 h-3" />
@@ -425,7 +532,7 @@ export default function FileTreeExplorer({
                             onDeleteFile(file.name);
                           }
                         }}
-                        className="p-1 rounded hover:text-rose-600 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
+                        className="p-1 rounded hover:text-rose-600 hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer"
                         title="Xóa"
                       >
                         <Trash2 className="w-3 h-3" />
@@ -468,15 +575,7 @@ export default function FileTreeExplorer({
                   title={`Dòng ${item.line}: ${item.title}`}
                 >
                   <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                    <span
-                      className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                        item.level === 1
-                          ? 'bg-cyan-500'
-                          : item.level === 2
-                          ? 'bg-indigo-400'
-                          : 'bg-slate-400'
-                      }`}
-                    />
+                    {getOutlineIcon(item)}
                     <span className="truncate text-[11px] font-medium group-hover:text-cyan-600 dark:group-hover:text-cyan-400">
                       {item.title}
                     </span>
@@ -490,7 +589,7 @@ export default function FileTreeExplorer({
           ) : (
             <div className="p-3 text-center text-slate-400 dark:text-slate-500 text-[11px]">
               <Bookmark className="w-4 h-4 mx-auto mb-1 opacity-50" />
-              <p>Chưa có \\section hoặc tiêu đề trong tệp hiện tại.</p>
+              <p>Chưa có \section hoặc tiêu đề trong tệp hiện tại.</p>
             </div>
           )}
         </div>

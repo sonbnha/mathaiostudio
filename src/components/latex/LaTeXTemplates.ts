@@ -22,7 +22,7 @@ export const LATEX_TEMPLATES: LaTeXTemplate[] = [
 \\setmainfont{Times New Roman}
 \\usepackage{amsmath,amssymb,amsthm}
 \\usepackage{geometry}
-\\geometry{margin=2.5cm}
+\\geometry{margin=2cm}
 
 \\begin{document}
 

@@ -93,6 +93,7 @@ export default function PDFPreview({
   onActivePageChange,
   isPresentation,
   onClosePresentation,
+  showSubToolbar = false,
 }: {
   url: string;
   zoom: number | 'page-width';
@@ -104,6 +105,7 @@ export default function PDFPreview({
   onActivePageChange?: (page: number) => void;
   isPresentation?: boolean;
   onClosePresentation?: () => void;
+  showSubToolbar?: boolean;
 }) {
   const host = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(500);
@@ -281,59 +283,61 @@ export default function PDFPreview({
 
   return (
     <div className="flex-1 min-h-0 flex flex-col">
-      {/* Sub-toolbar for preview options */}
-      <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2 border-b border-slate-200 dark:border-slate-800 text-xs bg-slate-50/80 dark:bg-slate-900/50 shrink-0">
-        <div className="flex items-center gap-1">
-          <button
-            disabled={!url}
-            onClick={() =>
-              setZoom((z) => Math.max(25, (typeof z === 'number' ? z : 100) - 25))
-            }
-            className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 cursor-pointer"
-            title="Thu nhỏ"
-          >
-            <ZoomOut className="w-3.5 h-3.5" />
-          </button>
-          <span className="font-mono text-[11px] px-1.5 text-slate-600 dark:text-slate-400">
-            {typeof zoom === 'number' ? `${zoom}%` : 'Vừa rộng'}
-          </span>
-          <button
-            disabled={!url}
-            onClick={() =>
-              setZoom((z) => Math.min(300, (typeof z === 'number' ? z : 100) + 25))
-            }
-            className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 cursor-pointer"
-            title="Phóng to"
-          >
-            <ZoomIn className="w-3.5 h-3.5" />
-          </button>
-          <button
-            disabled={!url}
-            onClick={() => setZoom('page-width')}
-            className="px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-[11px] disabled:opacity-40 cursor-pointer"
-          >
-            Vừa rộng
-          </button>
-        </div>
-
-        <div className="flex items-center gap-1.5">
-          <button
-            disabled={!url || exportingImage}
-            onClick={handleExportPNG}
-            title="Xuất trang đầu ra ảnh PNG 300 DPI trong suốt để dán vào PowerPoint"
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-[11px] text-slate-700 dark:text-slate-300 disabled:opacity-40 cursor-pointer"
-          >
-            <ImageIcon className="w-3.5 h-3.5 text-indigo-500" />
-            <span>{exportingImage ? 'Đang xuất…' : 'PNG 300 DPI'}</span>
-          </button>
-
-          {numPages > 0 && (
-            <span className="text-[11px] font-mono text-slate-500">
-              {numPages} trang
+      {/* Sub-toolbar for preview options (optional) */}
+      {showSubToolbar && (
+        <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2 border-b border-slate-200 dark:border-slate-800 text-xs bg-slate-50/80 dark:bg-slate-900/50 shrink-0">
+          <div className="flex items-center gap-1">
+            <button
+              disabled={!url}
+              onClick={() =>
+                setZoom((z) => Math.max(25, (typeof z === 'number' ? z : 100) - 25))
+              }
+              className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 cursor-pointer"
+              title="Thu nhỏ"
+            >
+              <ZoomOut className="w-3.5 h-3.5" />
+            </button>
+            <span className="font-mono text-[11px] px-1.5 text-slate-600 dark:text-slate-400">
+              {typeof zoom === 'number' ? `${zoom}%` : 'Vừa rộng'}
             </span>
-          )}
+            <button
+              disabled={!url}
+              onClick={() =>
+                setZoom((z) => Math.min(300, (typeof z === 'number' ? z : 100) + 25))
+              }
+              className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 cursor-pointer"
+              title="Phóng to"
+            >
+              <ZoomIn className="w-3.5 h-3.5" />
+            </button>
+            <button
+              disabled={!url}
+              onClick={() => setZoom('page-width')}
+              className="px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-[11px] disabled:opacity-40 cursor-pointer"
+            >
+              Vừa rộng
+            </button>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              disabled={!url || exportingImage}
+              onClick={handleExportPNG}
+              title="Xuất trang đầu ra ảnh PNG 300 DPI trong suốt để dán vào PowerPoint"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-[11px] text-slate-700 dark:text-slate-300 disabled:opacity-40 cursor-pointer"
+            >
+              <ImageIcon className="w-3.5 h-3.5 text-indigo-500" />
+              <span>{exportingImage ? 'Đang xuất…' : 'PNG 300 DPI'}</span>
+            </button>
+
+            {numPages > 0 && (
+              <span className="text-[11px] font-mono text-slate-500">
+                {numPages} trang
+              </span>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Main PDF Scroll Container */}
       <div

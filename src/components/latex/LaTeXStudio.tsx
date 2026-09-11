@@ -1,4 +1,5 @@
 'use client';
+
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
@@ -8,25 +9,26 @@ import {
   Download,
   FileText,
   Loader2,
-  Maximize2,
   Play,
   Save,
   WandSparkles,
-  ZoomIn,
-  ZoomOut,
-  Sparkles,
   AlertCircle,
+  AlertTriangle,
   CheckCircle2,
-  History as HistoryIcon,
   ChevronLeft,
-  Edit3,
+  X,
   FileCode,
-  Share2,
-  Home,
+  Layers,
+  Plus,
+  Tv,
+  Eye,
+  Terminal,
 } from 'lucide-react';
 import { APP_VERSION } from '@/config/version';
 import AppHeader from '@/components/header/AppHeader';
 import StudioTools, { type StudioFile, type StudioImage, type RestorePoint } from '@/components/latex/StudioTools';
+import FileTreeExplorer from '@/components/latex/FileTreeExplorer';
+import ErrorConsole, { parseTeXLog } from '@/components/latex/ErrorConsole';
 import { LATEX_TEMPLATES, DEFAULT_TEMPLATE_ID, getTemplateById } from '@/components/latex/LaTeXTemplates';
 import { getDocumentById, saveDocument, type LatexDocumentItem } from '@/lib/latexStorage';
 import {
@@ -51,7 +53,7 @@ const PDFPreview = dynamic(() => import('@/components/latex/PDFPreview'), {
 });
 
 const button =
-  'inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-50 cursor-pointer';
+  'inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-50 cursor-pointer';
 
 export default function LaTeXStudio({
   docId,
@@ -68,20 +70,27 @@ export default function LaTeXStudio({
   const [docTitle, setDocTitle] = useState<string>('Tai_lieu_Toan_chua_dat_ten.tex');
   const [template, setTemplate] = useState<string>(defaultTpl.id);
   const [source, setSource] = useState<string>(defaultTpl.source);
+
+  // Multi-file state
   const [activeFileName, setActiveFileName] = useState<string>('main.tex');
+  const [openTabs, setOpenTabs] = useState<string[]>(['main.tex']);
   const [files, setFiles] = useState<StudioFile[]>([
     { name: 'main.tex', content: defaultTpl.source },
   ]);
   const [images, setImages] = useState<StudioImage[]>([]);
   const [history, setHistory] = useState<RestorePoint[]>([]);
+  const [isFileTreeCollapsed, setIsFileTreeCollapsed] = useState<boolean>(false);
 
   // Compiler state
   const [status, setStatus] = useState<'ready' | 'compiling' | 'success' | 'error'>('ready');
-  const [error, setError] = useState<string>('');
+  const [errorLog, setErrorLog] = useState<string>('');
   const [pdf, setPdf] = useState<string | null>(null);
   const [compiledSource, setCompiledSource] = useState<string>('');
   const [zoom, setZoom] = useState<number | 'page-width'>('page-width');
   const [fontSize, setFontSize] = useState<number>(14);
+
+  // Output view: 'pdf' or 'console'
+  const [outputView, setOutputView] = useState<'pdf' | 'console'>('pdf');
 
   // SyncTeX & Tools state
   const [targetLine, setTargetLine] = useState<number | undefined>(undefined);
@@ -98,7 +107,6 @@ export default function LaTeXStudio({
   // Initial load: either load existing project by docId OR auto-generate a new draft
   useEffect(() => {
     if (docId) {
-      // 1. Try to find in Unified Project Store or LaTeX storage
       const proj = getProjectById(docId);
       const stored = getDocumentById(docId);
 
@@ -109,7 +117,15 @@ export default function LaTeXStudio({
         setTemplate(tplId);
         const src = proj.content || stored?.source || getTemplateById(tplId)?.source || defaultTpl.source;
         setSource(src);
-        setFiles(stored?.files && stored.files.length > 0 ? stored.files : [{ name: 'main.tex', content: src }]);
+        const initialFiles =
+          proj.files && proj.files.length > 0
+            ? (proj.files as StudioFile[])
+            : stored?.files && stored.files.length > 0
+            ? stored.files
+            : [{ name: 'main.tex', content: src }];
+        setFiles(initialFiles);
+        setOpenTabs(['main.tex']);
+        setActiveFileName('main.tex');
         setImages(stored?.images || []);
         setHistory(stored?.history || []);
         setStorageNotice('Đã tải từ dự án');
@@ -118,27 +134,38 @@ export default function LaTeXStudio({
         setDocTitle(stored.title);
         setTemplate(stored.templateId);
         setSource(stored.source);
-        setFiles(stored.files && stored.files.length > 0 ? stored.files : [{ name: 'main.tex', content: stored.source }]);
+        const initialFiles =
+          stored.files && stored.files.length > 0
+            ? stored.files
+            : [{ name: 'main.tex', content: stored.source }];
+        setFiles(initialFiles);
+        setOpenTabs(['main.tex']);
+        setActiveFileName('main.tex');
         setImages(stored.images || []);
         setHistory(stored.history || []);
         setStorageNotice('Đã tải từ kho lưu trữ');
       } else {
-        // ID not found -> initialize new project with this ID
         setCurrentDocId(docId);
         setStorageNotice('Bản nháp mới');
       }
     } else {
-      // No ID in URL -> auto-create new project, save, and update URL
-      const newDoc = createNewProject('latex', `Tai_lieu_Toan_${new Date().toISOString().slice(0, 10)}.tex`, {
-        templateId: defaultTpl.id,
-        badge: defaultTpl.badge || 'XeLaTeX',
-      }, defaultTpl.source);
+      const newDoc = createNewProject(
+        'latex',
+        `Tai_lieu_Toan_${new Date().toISOString().slice(0, 10)}.tex`,
+        {
+          templateId: defaultTpl.id,
+          badge: defaultTpl.badge || 'XeLaTeX',
+        },
+        defaultTpl.source
+      );
 
       setCurrentDocId(newDoc.id);
       setDocTitle(newDoc.title);
       setTemplate(defaultTpl.id);
       setSource(defaultTpl.source);
       setFiles([{ name: 'main.tex', content: defaultTpl.source }]);
+      setOpenTabs(['main.tex']);
+      setActiveFileName('main.tex');
       setStorageNotice('Đã tạo bản nháp mới');
 
       if (typeof window !== 'undefined') {
@@ -147,21 +174,28 @@ export default function LaTeXStudio({
     }
   }, [docId]);
 
-  // Auto-save debounced to Storage (both unified projectStore and latexStorage)
+  // Debounced Auto-save (2 seconds)
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   useEffect(() => {
     if (!currentDocId) return;
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = setTimeout(() => {
       try {
+        const updatedFiles = files.map((f) =>
+          f.name === activeFileName ? { ...f, content: source } : f
+        );
+
+        const mainFile = updatedFiles.find((f) => f.name === 'main.tex');
+        const mainSource = mainFile ? mainFile.content : source;
+
         const itemToSave: LatexDocumentItem = {
           id: currentDocId,
           title: docTitle,
           templateId: template,
           createdAt: Date.now(),
           updatedAt: Date.now(),
-          source,
-          files: files.map((f) => (f.name === activeFileName ? { ...f, content: source } : f)),
+          source: mainSource,
+          files: updatedFiles,
           images,
           history: history.slice(-25),
         };
@@ -174,21 +208,24 @@ export default function LaTeXStudio({
           type: 'latex',
           createdAt: Date.now(),
           updatedAt: Date.now(),
+          files: updatedFiles,
           metadata: {
             templateId: template,
             badge: getTemplateById(template)?.badge || 'XeLaTeX',
-            previewSnippet: source.slice(0, 140),
-            source,
+            previewSnippet: mainSource.slice(0, 140),
+            source: mainSource,
+            files: updatedFiles,
           },
-          content: source,
+          content: mainSource,
         };
         saveProject(projItem);
 
         setStorageNotice(`Đã lưu lúc ${new Date().toLocaleTimeString('vi-VN')}`);
       } catch {
-        // quota
+        // storage quota
       }
-    }, 1000);
+    }, 2000);
+
     return () => {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     };
@@ -199,14 +236,20 @@ export default function LaTeXStudio({
     setInsertRequest({ id: Date.now(), text });
   }, []);
 
-  // Compile LaTeX to PDF
+  // Compile LaTeX to PDF (Always compiles main.tex or composite source)
   const compile = useCallback(
     async (sourceToCompile?: string) => {
-      const code = sourceToCompile || source;
-      if (!code.trim()) return;
+      // Find main source
+      let code = sourceToCompile;
+      if (!code) {
+        const mainFile = files.find((f) => f.name === 'main.tex');
+        code = activeFileName === 'main.tex' ? source : mainFile?.content || source;
+      }
+
+      if (!code?.trim()) return;
 
       setStatus('compiling');
-      setError('');
+      setErrorLog('');
 
       try {
         const res = await fetch('/api/latex/compile', {
@@ -231,23 +274,26 @@ export default function LaTeXStudio({
         setPdf(url);
         setCompiledSource(code);
         setStatus('success');
+        setOutputView('pdf');
 
-        // Add to history restore points
         setHistory((prev) => [
           ...prev,
-          { at: Date.now(), source: code, label: 'Biên dịch thành công' },
+          { at: Date.now(), source: code!, label: 'Biên dịch thành công' },
         ]);
       } catch (err: any) {
         setStatus('error');
-        setError(err.message || 'Lỗi không xác định khi biên dịch.');
+        const rawLog = err.message || 'Lỗi không xác định khi biên dịch.';
+        setErrorLog(rawLog);
+        // Switch to console view automatically on compile error
+        setOutputView('console');
       }
     },
-    [source, pdf]
+    [source, files, activeFileName, pdf]
   );
 
   // 1-Click AI Auto-Fix
   const handleAIFix = async () => {
-    if (!error) {
+    if (!errorLog) {
       alert('Chưa phát hiện lỗi biên dịch để sửa.');
       return;
     }
@@ -256,7 +302,7 @@ export default function LaTeXStudio({
       const res = await fetch('/api/latex/ai-fix', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ source, errorLog: error }),
+        body: JSON.stringify({ source, errorLog }),
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
@@ -392,6 +438,88 @@ export default function LaTeXStudio({
     }
   };
 
+  // Multi-file management actions
+  const handleSelectFile = (fileName: string) => {
+    // Save current active file first
+    setFiles((prev) =>
+      prev.map((f) => (f.name === activeFileName ? { ...f, content: source } : f))
+    );
+
+    // Switch active file
+    const targetFile = files.find((f) => f.name === fileName);
+    if (targetFile) {
+      setActiveFileName(fileName);
+      setSource(targetFile.content);
+      if (!openTabs.includes(fileName)) {
+        setOpenTabs((prev) => [...prev, fileName]);
+      }
+    }
+  };
+
+  const handleCreateFile = (fileName: string) => {
+    const initialContent = `% ${fileName}\n\\section{${fileName.replace(/\.tex$/, '')}}\n% Nội dung phần mở rộng...\n`;
+    const newFile: StudioFile = { name: fileName, content: initialContent };
+    setFiles((prev) => [...prev, newFile]);
+    setOpenTabs((prev) => [...prev, fileName]);
+    setActiveFileName(fileName);
+    setSource(initialContent);
+  };
+
+  const handleDeleteFile = (fileName: string) => {
+    if (fileName === 'main.tex') {
+      alert('Không thể xóa tệp chính main.tex.');
+      return;
+    }
+    setFiles((prev) => prev.filter((f) => f.name !== fileName));
+    setOpenTabs((prev) => prev.filter((t) => t !== fileName));
+
+    if (activeFileName === fileName) {
+      handleSelectFile('main.tex');
+    }
+  };
+
+  const handleRenameFile = (oldName: string, newName: string) => {
+    setFiles((prev) =>
+      prev.map((f) => (f.name === oldName ? { ...f, name: newName } : f))
+    );
+    setOpenTabs((prev) =>
+      prev.map((t) => (t === oldName ? newName : t))
+    );
+    if (activeFileName === oldName) {
+      setActiveFileName(newName);
+    }
+  };
+
+  const handleCloseTab = (tabName: string) => {
+    const nextTabs = openTabs.filter((t) => t !== tabName);
+    if (nextTabs.length === 0) {
+      setOpenTabs(['main.tex']);
+      handleSelectFile('main.tex');
+      return;
+    }
+    setOpenTabs(nextTabs);
+    if (activeFileName === tabName) {
+      handleSelectFile(nextTabs[nextTabs.length - 1]);
+    }
+  };
+
+  const handleUploadAsset = async (file: File) => {
+    if (file.name.endsWith('.tex')) {
+      const text = await file.text();
+      const newFile: StudioFile = { name: file.name, content: text };
+      setFiles((prev) => [...prev.filter((f) => f.name !== file.name), newFile]);
+      handleSelectFile(file.name);
+    } else {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result as string;
+        setImages((prev) => [...prev, { name: file.name, dataUrl }]);
+        handleInsert(`\n\\includegraphics[width=0.7\\linewidth]{${file.name}}\n`);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   // 2-Way SyncTeX Click Handlers
   const handleSyncPDFToCode = (page: number, ratio: number) => {
     const lines = source.split('\n');
@@ -409,6 +537,8 @@ export default function LaTeXStudio({
     setHighlightPage(page);
   };
 
+  const { errors, warnings } = parseTeXLog(errorLog);
+
   return (
     <div className="h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors duration-200">
       {/* 1. Global Standard Header with Breadcrumb & Inline Title */}
@@ -420,21 +550,21 @@ export default function LaTeXStudio({
         toolType="latex"
       />
 
-      {/* 2. Top Action Controls */}
-      <div className="relative z-10 mx-4 md:mx-6 mt-2.5 p-2 sm:p-2.5 border border-slate-200 dark:border-slate-800 rounded-2xl bg-white/85 dark:bg-slate-900/70 shadow-xs backdrop-blur-sm flex flex-wrap items-center justify-between gap-2 shrink-0">
-        <h1 className="sr-only">Biên Soạn &amp; Biên Dịch LaTeX Sang PDF</h1>
+      {/* 2. Top Quick Toolbar (GDPT 2018 Template, Snippets, AI, Tools) */}
+      <div className="relative z-10 mx-3 md:mx-4 mt-2 px-3 py-1.5 border border-slate-200 dark:border-slate-800 rounded-2xl bg-white/90 dark:bg-slate-900/80 shadow-xs backdrop-blur-sm flex flex-wrap items-center justify-between gap-2 shrink-0">
+        <h1 className="sr-only">Biên Soạn &amp; Biên Dịch LaTeX Sang PDF Overleaf</h1>
 
         {/* Template Selector with GDPT 2018 badges */}
         <div className="flex items-center gap-2 flex-wrap">
           <div className="flex items-center gap-1.5">
-            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+            <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
               Mẫu:
             </label>
             <select
               aria-label="Chọn mẫu tài liệu"
               value={template}
               disabled={status === 'compiling'}
-              className={`${button} bg-white dark:bg-slate-900 max-w-48 font-medium`}
+              className={`${button} bg-white dark:bg-slate-900 max-w-44 font-medium py-1 text-xs`}
               onChange={(e) => {
                 const selected = LATEX_TEMPLATES.find((t) => t.id === e.target.value);
                 if (selected) {
@@ -461,33 +591,45 @@ export default function LaTeXStudio({
               ))}
             </select>
           </div>
+
+          <span className="h-4 w-px bg-slate-200 dark:bg-slate-800 hidden sm:inline" />
+
+          {/* Ribbon quick math symbols & tools */}
+          <StudioTools
+            source={source}
+            setSource={(newSource) => {
+              setSource(newSource);
+              setFiles((prev) =>
+                prev.map((f) => (f.name === activeFileName ? { ...f, content: newSource } : f))
+              );
+            }}
+            insert={handleInsert}
+            onAI={handleAI}
+            aiBusy={aiBusy}
+            onAIFix={handleAIFix}
+            fixBusy={fixBusy}
+            onOCR={handleOCR}
+            ocrBusy={ocrBusy}
+            onImportWord={handleImportWord}
+            onExportWord={handleExportWord}
+            files={files}
+            setFiles={setFiles}
+            images={images}
+            setImages={setImages}
+            history={history}
+            restore={handleRestore}
+            activeFileName={activeFileName}
+            setActiveFileName={setActiveFileName}
+            onTogglePresentation={() => setIsPresentation(true)}
+          />
         </div>
 
-        {/* Right: Actions, Compile, Export */}
-        <div className="flex items-center gap-2 ml-auto">
-
-          {/* Compile Action Button */}
-          <button
-            onClick={() => void compile()}
-            disabled={status === 'compiling' || !source.trim()}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white px-3.5 py-2 text-xs font-bold shadow-md shadow-cyan-500/20 transition-all disabled:opacity-50 cursor-pointer"
-            title="Phím tắt: Ctrl+Enter / Cmd+Enter"
-          >
-            {status === 'compiling' ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Play className="w-4 h-4 fill-white" />
-            )}
-            <span>{status === 'compiling' ? 'Đang dịch…' : 'Biên dịch PDF'}</span>
-          </button>
-
-          {/* Export .tex */}
+        {/* Right action utilities */}
+        <div className="flex items-center gap-1.5 ml-auto">
           <button className={button} onClick={exportTex} title="Tải file mã nguồn .tex">
             <Code2 className="w-3.5 h-3.5 text-cyan-500" />
             <span className="hidden sm:inline">Xuất .tex</span>
           </button>
-
-          {/* Download PDF */}
           {pdf ? (
             <a
               href={pdf}
@@ -503,91 +645,90 @@ export default function LaTeXStudio({
               <span className="hidden sm:inline">Tải PDF</span>
             </button>
           )}
-
-          {/* Status indicator badge */}
-          <span
-            role="status"
-            className={`hidden xl:inline-flex items-center gap-1 text-[11px] font-medium rounded-full border px-2.5 py-1 ${
-              status === 'error'
-                ? 'bg-rose-500/10 border-rose-500/30 text-rose-700 dark:text-rose-300'
-                : status === 'success'
-                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300'
-                : 'bg-cyan-500/10 border-cyan-500/20 text-cyan-700 dark:text-cyan-300'
-            }`}
-          >
-            {status === 'ready' && <span>Sẵn sàng</span>}
-            {status === 'compiling' && <span>Đang dịch…</span>}
-            {status === 'success' && (
-              <>
-                <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                <span>Thành công</span>
-              </>
-            )}
-            {status === 'error' && (
-              <>
-                <AlertCircle className="w-3 h-3 text-rose-500" />
-                <span>Lỗi TeX</span>
-              </>
-            )}
-          </span>
         </div>
       </div>
 
-      {/* 3. Studio Tools: Ribbon, Project, AI, Geometry, History */}
-      <StudioTools
-        source={source}
-        setSource={(newSource) => {
-          setSource(newSource);
-          setFiles((prev) =>
-            prev.map((f) => (f.name === activeFileName ? { ...f, content: newSource } : f))
-          );
-        }}
-        insert={handleInsert}
-        onAI={handleAI}
-        aiBusy={aiBusy}
-        onAIFix={handleAIFix}
-        fixBusy={fixBusy}
-        onOCR={handleOCR}
-        ocrBusy={ocrBusy}
-        onImportWord={handleImportWord}
-        onExportWord={handleExportWord}
-        files={files}
-        setFiles={setFiles}
-        images={images}
-        setImages={setImages}
-        history={history}
-        restore={handleRestore}
-        activeFileName={activeFileName}
-        setActiveFileName={setActiveFileName}
-        onTogglePresentation={() => setIsPresentation(true)}
-      />
+      {/* 3. Main 3-Pane Overleaf Workspace (Fixed Height calc(100vh - 4.5rem)) */}
+      <main className="relative z-10 flex-1 min-h-0 w-full px-3 md:px-4 py-2 flex flex-row gap-2.5 overflow-hidden">
+        {/* COLUMN 1: File Tree Explorer (Left - Collapsible) */}
+        <div className="h-full rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xs flex shrink-0">
+          <FileTreeExplorer
+            files={files}
+            activeFileName={activeFileName}
+            onSelectFile={handleSelectFile}
+            onCreateFile={handleCreateFile}
+            onDeleteFile={handleDeleteFile}
+            onRenameFile={handleRenameFile}
+            onUploadAsset={handleUploadAsset}
+            isCollapsed={isFileTreeCollapsed}
+            onToggleCollapse={() => setIsFileTreeCollapsed(!isFileTreeCollapsed)}
+          />
+        </div>
 
-      {/* 4. Main Split-Pane Workspace */}
-      <main className="relative z-10 flex-1 min-h-0 w-full px-4 md:px-6 py-2 grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* LEFT COLUMN: TeX Editor */}
+        {/* COLUMN 2: Code Editor Panel (Center - Flex 1) */}
         <section
           aria-label="Trình soạn thảo mã LaTeX"
-          className="min-w-0 flex flex-col bg-white/85 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs overflow-hidden backdrop-blur-sm h-[55vh] lg:h-auto"
+          className="flex-1 min-w-0 flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs overflow-hidden h-full"
         >
-          <div className="flex items-center justify-between px-3.5 py-2 border-b border-slate-200 dark:border-slate-800 text-xs bg-slate-50/80 dark:bg-slate-900/50">
-            <span className="flex items-center gap-2 font-semibold text-slate-700 dark:text-slate-300">
-              <Code2 className="w-4 h-4 text-cyan-500" />
-              <span>Mã nguồn LaTeX</span>
-              <span className="text-[11px] font-mono text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
-                {activeFileName}
-              </span>
-            </span>
+          {/* File Tabs Navigation Bar */}
+          <div className="flex items-center justify-between px-2 bg-slate-100/80 dark:bg-slate-950/80 border-b border-slate-200 dark:border-slate-800 text-xs shrink-0 overflow-x-auto">
+            <div className="flex items-center gap-1 py-1">
+              {openTabs.map((tab) => {
+                const isActive = tab === activeFileName;
+                return (
+                  <div
+                    key={tab}
+                    onClick={() => handleSelectFile(tab)}
+                    className={`group flex items-center gap-1.5 px-3 py-1.5 rounded-xl cursor-pointer font-mono text-[11px] transition ${
+                      isActive
+                        ? 'bg-white dark:bg-slate-900 text-cyan-600 dark:text-cyan-400 font-bold border border-slate-200 dark:border-slate-700 shadow-2xs'
+                        : 'text-slate-500 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800/60'
+                    }`}
+                  >
+                    <FileCode className="w-3.5 h-3.5" />
+                    <span>{tab}</span>
+                    {openTabs.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCloseTab(tab);
+                        }}
+                        className="p-0.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
 
-            <div className="flex items-center gap-2">
-              <label className="text-[11px] text-slate-500 flex items-center gap-1">
-                Cỡ chữ:
+              {/* Quick Add File Tab Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  const name = prompt('Nhập tên tệp LaTeX mới (vd: cau_hoi.tex):');
+                  if (name) handleCreateFile(name);
+                }}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-cyan-600 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition"
+                title="Tạo tệp mới"
+              >
+                <Plus className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Font Size and Shortcut Help */}
+            <div className="flex items-center gap-2 text-slate-400 text-[11px] py-1">
+              <span className="hidden xl:inline font-mono text-[10px]">Ctrl+Enter: Biên dịch</span>
+              <label className="flex items-center gap-1 font-sans text-[11px] text-slate-500">
+                <span>Cỡ:</span>
                 <select
-                  aria-label="Cỡ chữ mã nguồn"
-                  className="bg-transparent border border-slate-200 dark:border-slate-700 rounded-lg px-1.5 py-0.5 text-xs"
+                  aria-label="Cỡ chữ soạn thảo"
+                  className="bg-transparent border border-slate-200 dark:border-slate-700 rounded-lg px-1.5 py-0.5 text-xs text-slate-700 dark:text-slate-200 outline-none"
                   value={fontSize}
                   onChange={(e) => setFontSize(Number(e.target.value))}
                 >
-                  {[12, 13, 14, 15, 16, 18, 20, 24].map((n) => (
+                  {[12, 13, 14, 15, 16, 18, 20].map((n) => (
                     <option key={n} value={n}>
                       {n}px
                     </option>
@@ -597,6 +738,7 @@ export default function LaTeXStudio({
             </div>
           </div>
 
+          {/* Monaco Editor Canvas */}
           <div className="flex-1 min-h-0">
             <TeXEditor
               source={source}
@@ -615,87 +757,156 @@ export default function LaTeXStudio({
           </div>
         </section>
 
-        {/* RIGHT COLUMN: PDF Preview Panel */}
+        {/* COLUMN 3: PDF Preview & Overleaf Green Recompile Panel (Right - Flex 1) */}
         <section
-          aria-label="Khung xem trước tài liệu PDF"
-          className="min-w-0 flex flex-col bg-white/85 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs overflow-hidden backdrop-blur-sm h-[65vh] lg:h-auto"
+          aria-label="Khung xem trước PDF và Nhật ký Overleaf"
+          className="flex-1 min-w-0 flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs overflow-hidden h-full"
         >
-          {pdf && source !== compiledSource && (
-            <div
-              role="status"
-              className="text-xs px-3 py-1.5 bg-amber-500/10 border-b border-amber-500/20 text-amber-800 dark:text-amber-300 flex items-center justify-between"
-            >
-              <span>Mã nguồn đã thay đổi. Biên dịch lại (Ctrl+Enter) để cập nhật PDF.</span>
+          {/* Overleaf Green Recompile Center Bar */}
+          <div className="flex items-center justify-between px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 shrink-0">
+            {/* Signature Overleaf Green Recompile Button */}
+            <div className="flex items-center gap-2">
               <button
+                type="button"
                 onClick={() => void compile()}
-                className="underline font-bold hover:text-amber-900 cursor-pointer"
+                disabled={status === 'compiling'}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white px-4 py-1.5 text-xs font-bold shadow-md shadow-emerald-600/25 transition-all disabled:opacity-50 cursor-pointer group"
+                title="Phím tắt: Ctrl+Enter / Cmd+Enter"
               >
-                Cập nhật ngay
+                {status === 'compiling' ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-white" />
+                ) : (
+                  <Play className="w-3.5 h-3.5 fill-white text-white group-hover:scale-110 transition-transform" />
+                )}
+                <span>{status === 'compiling' ? 'Đang biên dịch…' : 'Biên dịch'}</span>
+              </button>
+
+              {/* Status & Error Count Badges */}
+              {status === 'error' || errors.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => setOutputView('console')}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs font-bold cursor-pointer hover:bg-rose-500/25 transition"
+                >
+                  <AlertCircle className="w-3.5 h-3.5 text-rose-500" />
+                  <span>{errors.length || 1} Lỗi</span>
+                </button>
+              ) : warnings.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => setOutputView('console')}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-bold cursor-pointer hover:bg-amber-500/25 transition"
+                >
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                  <span>{warnings.length} Cảnh báo</span>
+                </button>
+              ) : (
+                <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[11px] font-semibold">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>0 Lỗi</span>
+                </span>
+              )}
+            </div>
+
+            {/* View switcher: PDF Preview vs. Console Log */}
+            <div className="flex items-center gap-1 bg-slate-200/70 dark:bg-slate-800/70 p-0.5 rounded-xl border border-slate-200 dark:border-slate-700">
+              <button
+                type="button"
+                onClick={() => setOutputView('pdf')}
+                className={`px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
+                  outputView === 'pdf'
+                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs font-bold'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                }`}
+              >
+                <Eye className="w-3.5 h-3.5 text-cyan-500" />
+                <span>PDF</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setOutputView('console')}
+                className={`px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
+                  outputView === 'console'
+                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs font-bold'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                }`}
+              >
+                <Terminal className="w-3.5 h-3.5 text-amber-500" />
+                <span>Logs {errors.length > 0 && `(${errors.length})`}</span>
               </button>
             </div>
-          )}
+          </div>
 
-          {pdf ? (
-            <PDFPreview
-              key={pdf}
-              url={pdf}
-              zoom={zoom}
-              setZoom={setZoom}
-              onSync={handleSyncPDFToCode}
-              highlightPage={highlightPage}
-              isPresentation={isPresentation}
-              onClosePresentation={() => setIsPresentation(false)}
-            />
-          ) : (
-            <div className="flex-1 flex flex-col justify-center items-center p-8 text-center text-slate-500">
-              <div className="w-16 h-16 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/60 flex items-center justify-center mb-4">
-                <FileText className="w-8 h-8 text-slate-400 dark:text-slate-500" />
-              </div>
-              <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Chưa có tài liệu PDF
-              </p>
-              <p className="text-xs max-w-sm leading-relaxed text-slate-500">
-                Chọn mẫu chuẩn GDPT 2018 hoặc nhập mã LaTeX ở cột bên trái, rồi bấm{' '}
-                <strong className="text-cyan-600">“Biên dịch PDF”</strong> (Ctrl+Enter / Cmd+Enter).
-              </p>
-            </div>
-          )}
-
-          {/* Compiler Error Console & AI Auto-Fix Bar */}
-          {error && (
-            <div
-              role="alert"
-              className="max-h-56 overflow-auto p-3.5 border-t border-rose-300 dark:border-rose-900/80 bg-rose-50/90 dark:bg-rose-950/80 text-rose-900 dark:text-rose-200 text-xs shrink-0"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1.5 font-bold text-rose-700 dark:text-rose-300">
-                  <AlertCircle className="w-4 h-4" />
-                  <span>Nhật ký lỗi biên dịch TeX</span>
+          {/* Main Output Body */}
+          <div className="flex-1 min-h-0 flex flex-col relative overflow-hidden">
+            {outputView === 'pdf' ? (
+              pdf ? (
+                <div className="flex-1 min-h-0 flex flex-col">
+                  {source !== compiledSource && (
+                    <div
+                      role="status"
+                      className="text-xs px-3 py-1 bg-amber-500/10 border-b border-amber-500/20 text-amber-800 dark:text-amber-300 flex items-center justify-between shrink-0"
+                    >
+                      <span>Mã nguồn đã thay đổi. Bấm Biên dịch lại để cập nhật.</span>
+                      <button
+                        onClick={() => void compile()}
+                        className="underline font-bold hover:text-amber-900 cursor-pointer ml-2"
+                      >
+                        Cập nhật
+                      </button>
+                    </div>
+                  )}
+                  <PDFPreview
+                    key={pdf}
+                    url={pdf}
+                    zoom={zoom}
+                    setZoom={setZoom}
+                    onSync={handleSyncPDFToCode}
+                    highlightPage={highlightPage}
+                    isPresentation={isPresentation}
+                    onClosePresentation={() => setIsPresentation(false)}
+                  />
                 </div>
-
-                <button
-                  disabled={fixBusy}
-                  onClick={handleAIFix}
-                  className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-xs transition cursor-pointer disabled:opacity-50"
-                >
-                  <WandSparkles className="w-3.5 h-3.5" />
-                  <span>{fixBusy ? 'AI đang sửa…' : '1-Click AI Auto-Fix'}</span>
-                </button>
-              </div>
-              <pre className="whitespace-pre-wrap break-words font-mono text-[11px] max-h-36 overflow-auto bg-white/60 dark:bg-slate-950/60 p-2 rounded-lg border border-rose-200 dark:border-rose-900/40">
-                {error}
-              </pre>
-            </div>
-          )}
+              ) : (
+                <div className="flex-1 flex flex-col justify-center items-center p-8 text-center text-slate-500 bg-slate-50/50 dark:bg-slate-950/30">
+                  <div className="w-16 h-16 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-center mb-4 shadow-xs">
+                    <FileText className="w-8 h-8 text-slate-400 dark:text-slate-500" />
+                  </div>
+                  <p className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-1">
+                    Chưa có tài liệu PDF
+                  </p>
+                  <p className="text-xs max-w-xs leading-relaxed text-slate-500 mb-4">
+                    Bấm nút <strong className="text-emerald-600">“Biên dịch”</strong> màu xanh phía trên (Ctrl+Enter) để biên dịch sang tài liệu PDF chất lượng cao.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => void compile()}
+                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-600/20 flex items-center gap-1.5 transition cursor-pointer"
+                  >
+                    <Play className="w-3.5 h-3.5 fill-white" />
+                    <span>Biên dịch ngay</span>
+                  </button>
+                </div>
+              )
+            ) : (
+              <ErrorConsole
+                log={errorLog}
+                onJumpToLine={(line) => setTargetLine(line)}
+                onAIFix={handleAIFix}
+                fixBusy={fixBusy}
+                onClose={() => setOutputView('pdf')}
+              />
+            )}
+          </div>
         </section>
       </main>
 
-      {/* 5. Footer Status Bar */}
-      <footer className="relative z-10 shrink-0 px-4 md:px-6 py-2 border-t border-slate-200 dark:border-slate-800 bg-white/85 dark:bg-slate-900/80 backdrop-blur text-[11px] text-slate-500 dark:text-slate-400 flex flex-wrap items-center justify-between gap-2">
+      {/* 4. Footer Status Bar */}
+      <footer className="relative z-10 shrink-0 px-4 py-1.5 border-t border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur text-[11px] text-slate-500 dark:text-slate-400 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-3">
           <span>MathAIO Studio © {new Date().getFullYear()}</span>
           <span className="hidden md:inline text-slate-300 dark:text-slate-700">|</span>
-          <span className="hidden md:inline-flex items-center gap-1.5">
+          <span className="hidden md:inline-flex items-center gap-1.5 font-mono text-[10px]">
             <Save className="w-3 h-3 text-emerald-500" />
             {storageNotice}
           </span>

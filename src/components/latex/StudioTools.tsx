@@ -28,8 +28,8 @@ import {
 } from 'lucide-react';
 import katex from 'katex';
 
-export type StudioFile = { name: string; content: string };
-export type StudioImage = { name: string; url: string; size: string };
+export type StudioFile = { name: string; content: string; path?: string };
+export type StudioImage = { name: string; url?: string; dataUrl?: string; size?: string };
 export type RestorePoint = { at: number; source: string; label?: string };
 
 // Các nhóm ký hiệu toán học Ribbon đầy đủ

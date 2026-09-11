@@ -10,6 +10,7 @@ export interface ProjectItem {
   createdAt: number;
   isStarred?: boolean;
   thumbnail?: string;
+  files?: Array<{ name: string; content: string; path?: string }>;
   metadata?: {
     description?: string;
     templateId?: string;
@@ -22,6 +23,7 @@ export interface ProjectItem {
     tikzCode?: string;
     lessonContent?: string;
     source?: string;
+    files?: Array<{ name: string; content: string; path?: string }>;
     activities?: string[];
     previewType?: 'triangle' | 'pyramid' | 'circle' | 'exam' | 'lesson';
   };

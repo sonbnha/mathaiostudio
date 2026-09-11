@@ -451,6 +451,7 @@ export default function TeXEditor({
       }}
       loading={<div className="p-4 text-xs text-slate-500">Đang tải trình soạn thảo LaTeX Monaco…</div>}
       options={{
+        readOnly: false,
         fontSize,
         lineNumbers: 'on',
         minimap: { enabled: false },

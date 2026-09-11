@@ -216,6 +216,7 @@ export default function StudioTools({
       if (
         target?.closest('.cm-editor') ||
         target?.closest('.monaco-editor') ||
+        target?.classList?.contains('inputarea') ||
         ['INPUT', 'TEXTAREA'].includes(target?.tagName || '')
       ) {
         return;

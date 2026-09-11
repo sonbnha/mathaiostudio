@@ -203,6 +203,14 @@ export default function MathSymbolsPopover({
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (
+        target?.closest('.monaco-editor') ||
+        target?.classList?.contains('inputarea') ||
+        ['INPUT', 'TEXTAREA'].includes(target?.tagName)
+      ) {
+        return;
+      }
       if (e.key === 'Escape') onClose();
     };
     document.addEventListener('keydown', handleKeyDown);

@@ -1214,35 +1214,47 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Ký hiệu toán học (Bottom Panel)</span>
+                    <span>Ký hiệu toán học</span>
                     <span className="text-neutral-500 font-mono text-[11px]">Ω</span>
                   </button>
 
                   <div className="border-b border-white/10 my-1 mx-1" />
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveDesktopMenu(null);
-                      handleInsert('\\( ${1:} \\)');
-                    }}
-                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
-                  >
-                    <span>Công thức trong dòng (Inline)</span>
-                    <span className="text-neutral-500 font-mono text-[11px]">\( ... \)</span>
-                  </button>
+                  {/* Submenu: Công thức toán học */}
+                  <div className="relative group/math">
+                    <button
+                      type="button"
+                      className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
+                    >
+                      <span>Công thức toán học</span>
+                      <ChevronRight className="w-3.5 h-3.5 text-neutral-500 group-hover/math:text-white" />
+                    </button>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveDesktopMenu(null);
-                      handleInsert('\n\\[\n  ${1:}\n\\]\n');
-                    }}
-                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
-                  >
-                    <span>Công thức hiển thị (Display)</span>
-                    <span className="text-neutral-500 font-mono text-[11px]">\[ ... \]</span>
-                  </button>
+                    <div className="absolute left-full top-0 ml-1 w-52 bg-[#1e2226] border border-white/10 rounded shadow-xl py-1 text-[13px] text-neutral-300 z-50 select-none hidden group-hover/math:block animate-in fade-in duration-100">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveDesktopMenu(null);
+                          handleInsert('\\( ${1:} \\)');
+                        }}
+                        className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
+                      >
+                        <span>Trên dòng (Inline)</span>
+                        <span className="text-emerald-400 font-mono text-[11px]">\(x\)</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveDesktopMenu(null);
+                          handleInsert('\n\\[\n  ${1:}\n\\]\n');
+                        }}
+                        className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
+                      >
+                        <span>Dòng riêng (Display)</span>
+                        <span className="text-emerald-400 font-mono text-[11px]">\[x\]</span>
+                      </button>
+                    </div>
+                  </div>
 
                   <div className="border-b border-white/10 my-1 mx-1" />
 

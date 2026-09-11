@@ -769,41 +769,7 @@ export default function LaTeXStudio({
               </button>
 
               {activeDesktopMenu === 'file' && (
-                <div className="absolute left-0 top-full mt-1 w-60 bg-[#1e2124] border border-[#3e444b] rounded-lg shadow-2xl py-1 z-50 text-xs animate-in fade-in duration-100 select-none">
-                  <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    Mẫu tài liệu (Templates)
-                  </div>
-                  <div className="max-h-36 overflow-y-auto px-1 space-y-0.5">
-                    {LATEX_TEMPLATES.map((t) => (
-                      <button
-                        key={t.id}
-                        type="button"
-                        onClick={() => {
-                          setActiveDesktopMenu(null);
-                          if (
-                            source === LATEX_TEMPLATES.find((tpl) => tpl.id === template)?.source ||
-                            window.confirm(`Chuyển sang mẫu "${t.name}"? Nội dung hiện tại sẽ được lưu vào lịch sử.`)
-                          ) {
-                            setTemplate(t.id);
-                            setSource(t.source);
-                            setFiles((prev) =>
-                              prev.map((f) => (f.name === activeFileName ? { ...f, content: t.source } : f))
-                            );
-                            if (t.id === 'blank') setTargetLine(9);
-                          }
-                        }}
-                        className={`w-full flex items-center justify-between px-2 py-1 rounded text-left text-xs transition cursor-pointer ${
-                          template === t.id ? 'bg-emerald-600/30 text-emerald-300 font-semibold' : 'text-slate-200 hover:bg-[#2a2e33] hover:text-white'
-                        }`}
-                      >
-                        <span className="truncate">{t.name}</span>
-                        {t.badge && <span className="text-[9px] px-1 bg-white/10 rounded ml-1">{t.badge}</span>}
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="h-px bg-[#2d3136] my-1" />
-
+                <div className="absolute left-0 top-full mt-1 w-56 bg-[#1e2226] border border-white/10 rounded shadow-xl py-1 text-[13px] text-neutral-300 z-50 select-none animate-in fade-in duration-100">
                   <button
                     type="button"
                     onClick={() => {
@@ -811,10 +777,9 @@ export default function LaTeXStudio({
                       const name = prompt('Nhập tên tệp LaTeX mới (vd: baitap.tex):');
                       if (name) handleCreateFile(name);
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <Plus className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>Tạo tệp mới (.tex)</span>
+                    <span>New file</span>
                   </button>
 
                   <button
@@ -824,10 +789,9 @@ export default function LaTeXStudio({
                       const folderName = prompt('Nhập tên thư mục mới (vd: figures, sections):');
                       if (folderName) handleCreateFile(`${folderName}/main.tex`);
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <Plus className="w-3.5 h-3.5 text-blue-400" />
-                    <span>Tạo thư mục mới</span>
+                    <span>New folder</span>
                   </button>
 
                   <button
@@ -860,10 +824,9 @@ export default function LaTeXStudio({
                       };
                       input.click();
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <Upload className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Tải lên tệp (Upload)</span>
+                    <span>Upload file</span>
                   </button>
 
                   <button
@@ -873,10 +836,9 @@ export default function LaTeXStudio({
                       setActiveDesktopMenu(null);
                       ocrInputRef.current?.click();
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer disabled:opacity-40"
                   >
-                    <Camera className="w-3.5 h-3.5 text-violet-400" />
-                    <span>{ocrBusy ? 'Đang OCR ảnh…' : 'OCR ảnh công thức'}</span>
+                    <span>{ocrBusy ? 'OCR in progress…' : 'OCR formula image'}</span>
                   </button>
 
                   <button
@@ -885,13 +847,12 @@ export default function LaTeXStudio({
                       setActiveDesktopMenu(null);
                       wordInputRef.current?.click();
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <FileText className="w-3.5 h-3.5 text-blue-400" />
-                    <span>Nhập Word (.docx)</span>
+                    <span>Import Word (.docx)</span>
                   </button>
 
-                  <div className="h-px bg-[#2d3136] my-1" />
+                  <div className="border-b border-white/10 my-1 mx-1" />
 
                   <button
                     type="button"
@@ -901,10 +862,9 @@ export default function LaTeXStudio({
                       setDocTitle(newName);
                       setStorageNotice('Đã nhân bản tài liệu');
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <Copy className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Tạo bản sao (Make a copy)</span>
+                    <span>Make a copy</span>
                   </button>
 
                   <button
@@ -913,10 +873,9 @@ export default function LaTeXStudio({
                       setActiveDesktopMenu(null);
                       setIsHistoryOpen(true);
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <History className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>Lịch sử phiên bản (History)</span>
+                    <span>Show version history</span>
                   </button>
 
                   <button
@@ -928,13 +887,12 @@ export default function LaTeXStudio({
                       const lines = source.split('\n').length;
                       alert(`Thống kê tài liệu:\n- Số từ: ${words.toLocaleString()}\n- Số ký tự: ${chars.toLocaleString()}\n- Số dòng: ${lines.toLocaleString()}`);
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <Type className="w-3.5 h-3.5 text-indigo-400" />
-                    <span>Đếm từ (Word count)</span>
+                    <span>Word count</span>
                   </button>
 
-                  <div className="h-px bg-[#2d3136] my-1" />
+                  <div className="border-b border-white/10 my-1 mx-1" />
 
                   <button
                     type="button"
@@ -942,11 +900,21 @@ export default function LaTeXStudio({
                       setActiveDesktopMenu(null);
                       setIsShareModalOpen(true);
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <Share2 className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Xuất bản & Chia sẻ (Submit)</span>
+                    <span>Submit</span>
                   </button>
+
+                  {pdf && (
+                    <a
+                      href={pdf}
+                      download={`${docTitle.replace(/\.tex$/, '')}.pdf`}
+                      onClick={() => setActiveDesktopMenu(null)}
+                      className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
+                    >
+                      <span>Download PDF</span>
+                    </a>
+                  )}
 
                   <button
                     type="button"
@@ -954,10 +922,9 @@ export default function LaTeXStudio({
                       setActiveDesktopMenu(null);
                       exportTex();
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <Code2 className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>Xuất mã nguồn (.tex)</span>
+                    <span>Download Source (.tex)</span>
                   </button>
 
                   <button
@@ -966,25 +933,12 @@ export default function LaTeXStudio({
                       setActiveDesktopMenu(null);
                       handleExportWord();
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <FileDown className="w-3.5 h-3.5 text-blue-400" />
-                    <span>Xuất Word (.docx)</span>
+                    <span>Download Word (.docx)</span>
                   </button>
 
-                  {pdf && (
-                    <a
-                      href={pdf}
-                      download={`${docTitle.replace(/\.tex$/, '')}.pdf`}
-                      onClick={() => setActiveDesktopMenu(null)}
-                      className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
-                    >
-                      <Download className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>Tải tệp PDF</span>
-                    </a>
-                  )}
-
-                  <div className="h-px bg-[#2d3136] my-1" />
+                  <div className="border-b border-white/10 my-1 mx-1" />
 
                   <button
                     type="button"
@@ -992,10 +946,9 @@ export default function LaTeXStudio({
                       setActiveDesktopMenu(null);
                       setIsSettingsOpen(true);
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <Settings className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Cài đặt (Settings)</span>
+                    <span>Settings</span>
                   </button>
                 </div>
               )}
@@ -1019,20 +972,17 @@ export default function LaTeXStudio({
               </button>
 
               {activeDesktopMenu === 'edit' && (
-                <div className="absolute left-0 top-full mt-1 w-52 bg-[#1e2124] border border-[#3e444b] rounded-lg shadow-2xl py-1 z-50 text-xs animate-in fade-in duration-100 select-none">
+                <div className="absolute left-0 top-full mt-1 w-56 bg-[#1e2226] border border-white/10 rounded shadow-xl py-1 text-[13px] text-neutral-300 z-50 select-none animate-in fade-in duration-100">
                   <button
                     type="button"
                     onClick={() => {
                       setActiveDesktopMenu(null);
                       triggerEditorAction('undo');
                     }}
-                    className="w-full flex items-center justify-between px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <div className="flex items-center gap-2">
-                      <Undo2 className="w-3.5 h-3.5 text-slate-400" />
-                      <span>Hoàn tác (Undo)</span>
-                    </div>
-                    <kbd className="text-[10px] text-slate-400 font-mono">Ctrl+Z</kbd>
+                    <span>Undo</span>
+                    <span className="text-neutral-500 font-mono text-[11px]">Ctrl+Z</span>
                   </button>
 
                   <button
@@ -1041,16 +991,13 @@ export default function LaTeXStudio({
                       setActiveDesktopMenu(null);
                       triggerEditorAction('redo');
                     }}
-                    className="w-full flex items-center justify-between px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <div className="flex items-center gap-2">
-                      <Redo2 className="w-3.5 h-3.5 text-slate-400" />
-                      <span>Làm lại (Redo)</span>
-                    </div>
-                    <kbd className="text-[10px] text-slate-400 font-mono">Ctrl+Y</kbd>
+                    <span>Redo</span>
+                    <span className="text-neutral-500 font-mono text-[11px]">Ctrl+Y</span>
                   </button>
 
-                  <div className="h-px bg-[#2d3136] my-1" />
+                  <div className="border-b border-white/10 my-1 mx-1" />
 
                   <button
                     type="button"
@@ -1058,13 +1005,10 @@ export default function LaTeXStudio({
                       setActiveDesktopMenu(null);
                       triggerEditorAction('find');
                     }}
-                    className="w-full flex items-center justify-between px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <div className="flex items-center gap-2">
-                      <Search className="w-3.5 h-3.5 text-slate-400" />
-                      <span>Tìm kiếm & Thay thế</span>
-                    </div>
-                    <kbd className="text-[10px] text-slate-400 font-mono">Ctrl+F</kbd>
+                    <span>Find and replace</span>
+                    <span className="text-neutral-500 font-mono text-[11px]">Ctrl+F</span>
                   </button>
 
                   <button
@@ -1073,45 +1017,10 @@ export default function LaTeXStudio({
                       setActiveDesktopMenu(null);
                       triggerEditorAction('select-all');
                     }}
-                    className="w-full flex items-center justify-between px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <div className="flex items-center gap-2">
-                      <FileText className="w-3.5 h-3.5 text-slate-400" />
-                      <span>Chọn tất cả (Select all)</span>
-                    </div>
-                    <kbd className="text-[10px] text-slate-400 font-mono">Ctrl+A</kbd>
-                  </button>
-
-                  <div className="h-px bg-[#2d3136] my-1" />
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveDesktopMenu(null);
-                      triggerEditorAction('bold');
-                    }}
-                    className="w-full flex items-center justify-between px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold font-serif w-3.5 text-center text-xs">B</span>
-                      <span>In đậm</span>
-                    </div>
-                    <kbd className="text-[10px] text-slate-400 font-mono">Ctrl+B</kbd>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveDesktopMenu(null);
-                      triggerEditorAction('italic');
-                    }}
-                    className="w-full flex items-center justify-between px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="italic font-serif w-3.5 text-center text-xs">I</span>
-                      <span>In nghiêng</span>
-                    </div>
-                    <kbd className="text-[10px] text-slate-400 font-mono">Ctrl+I</kbd>
+                    <span>Select all</span>
+                    <span className="text-neutral-500 font-mono text-[11px]">Ctrl+A</span>
                   </button>
                 </div>
               )}
@@ -1135,17 +1044,17 @@ export default function LaTeXStudio({
               </button>
 
               {activeDesktopMenu === 'insert' && (
-                <div className="absolute left-0 top-full mt-1 w-64 bg-[#1e2124] border border-[#3e444b] rounded-lg shadow-2xl py-1 z-50 text-xs animate-in fade-in duration-100 select-none">
+                <div className="absolute left-0 top-full mt-1 w-56 bg-[#1e2226] border border-white/10 rounded shadow-xl py-1 text-[13px] text-neutral-300 z-50 select-none animate-in fade-in duration-100">
                   <button
                     type="button"
                     onClick={() => {
                       setActiveDesktopMenu(null);
                       setIsSymbolsOpen(true);
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <Sigma className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>Bảng ký hiệu toán học (Omega Ω)</span>
+                    <span>Symbol</span>
+                    <span className="text-neutral-500 font-mono text-[11px]">Ω</span>
                   </button>
 
                   <button
@@ -1154,48 +1063,21 @@ export default function LaTeXStudio({
                       setActiveDesktopMenu(null);
                       handleInsert(' $x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$ ');
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer font-mono text-[11px]"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span className="text-cyan-400 font-bold">$</span>
-                    <span>Công thức toán inline ($...$)</span>
+                    <span>Math</span>
+                    <span className="text-neutral-500 font-mono text-[11px]">Ctrl+M</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => {
                       setActiveDesktopMenu(null);
-                      handleInsert('\n$$\n\\int_{a}^{b} f(x)\\,dx = F(b) - F(a)\n$$\n');
+                      handleInsert('\n\\begin{figure}[htbp]\n  \\centering\n  \\includegraphics[width=0.7\\linewidth]{example-image}\n  \\caption{Caption}\n  \\label{fig:sample}\n\\end{figure}\n');
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer font-mono text-[11px]"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span className="text-cyan-400 font-bold">$$</span>
-                    <span>Công thức khối ($$...$$)</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveDesktopMenu(null);
-                      handleInsert('\n\\begin{pmatrix}\n  a & b \\\\\n  c & d\n\\end{pmatrix}\n');
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
-                  >
-                    <span className="text-cyan-400 font-mono">[M]</span>
-                    <span>Ma trận (pmatrix)</span>
-                  </button>
-
-                  <div className="h-px bg-[#2d3136] my-1" />
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveDesktopMenu(null);
-                      handleInsert('\n\\begin{figure}[htbp]\n  \\centering\n  \\includegraphics[width=0.7\\linewidth]{example-image}\n  \\caption{Chú thích hình}\n  \\label{fig:vd1}\n\\end{figure}\n');
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
-                  >
-                    <Layers className="w-3.5 h-3.5 text-violet-400" />
-                    <span>Hình ảnh (\\includegraphics)</span>
+                    <span>Figure</span>
                   </button>
 
                   <button
@@ -1204,10 +1086,9 @@ export default function LaTeXStudio({
                       setActiveDesktopMenu(null);
                       triggerEditorAction('table');
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <Table className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Bảng dữ liệu (tabular)</span>
+                    <span>Table</span>
                   </button>
 
                   <button
@@ -1216,10 +1097,10 @@ export default function LaTeXStudio({
                       setActiveDesktopMenu(null);
                       handleInsert('\\cite{key}');
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span className="text-amber-400 font-mono text-[11px]">[C]</span>
-                    <span>Trích dẫn (\\cite)</span>
+                    <span>Citation</span>
+                    <span className="text-neutral-500 font-mono text-[11px]">\\cite</span>
                   </button>
 
                   <button
@@ -1228,10 +1109,10 @@ export default function LaTeXStudio({
                       setActiveDesktopMenu(null);
                       triggerEditorAction('link');
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <LinkIcon className="w-3.5 h-3.5 text-blue-400" />
-                    <span>Chèn liên kết (\\href)</span>
+                    <span>Link</span>
+                    <span className="text-neutral-500 font-mono text-[11px]">\\href</span>
                   </button>
 
                   <button
@@ -1240,10 +1121,10 @@ export default function LaTeXStudio({
                       setActiveDesktopMenu(null);
                       handleInsert('\\ref{sec:label}');
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span className="text-blue-400 font-mono text-[11px]">[#]</span>
-                    <span>Tham chiếu chéo (\\ref)</span>
+                    <span>Cross reference</span>
+                    <span className="text-neutral-500 font-mono text-[11px]">\\ref</span>
                   </button>
 
                   <button
@@ -1252,48 +1133,45 @@ export default function LaTeXStudio({
                       setActiveDesktopMenu(null);
                       handleInsert('% ');
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span className="text-slate-400 font-mono text-[11px]">%</span>
-                    <span>Ghi chú bình luận (% )</span>
+                    <span>Comment</span>
+                    <span className="text-neutral-500 font-mono text-[11px]">%</span>
                   </button>
 
-                  <div className="h-px bg-[#2d3136] my-1" />
+                  <div className="border-b border-white/10 my-1 mx-1" />
 
                   <button
                     type="button"
                     onClick={() => {
                       setActiveDesktopMenu(null);
-                      handleInsert('\n\\begin{abstract}\n  Tóm tắt nội dung tài liệu tại đây...\n\\end{abstract}\n');
+                      handleInsert('\n\\begin{abstract}\n  \n\\end{abstract}\n');
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <FileText className="w-3.5 h-3.5 text-indigo-400" />
-                    <span>Tóm tắt (abstract)</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveDesktopMenu(null);
-                      handleInsert('\n\\textbf{Keywords:} LaTeX, MathAIO, Toan hoc.\n');
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
-                  >
-                    <FileCode className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Từ khóa (Keywords)</span>
+                    <span>Abstract</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => {
                       setActiveDesktopMenu(null);
-                      handleInsert('\n\\title{Tiêu đề tài liệu}\n\\author{Tác giả}\n\\date{\\today}\n\\maketitle\n');
+                      handleInsert('\n\\textbf{Keywords:} LaTeX, MathAIO.\n');
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <Type className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Tiêu đề & Tác giả (\\title)</span>
+                    <span>Keywords</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveDesktopMenu(null);
+                      handleInsert('\n\\title{Document Title}\n\\author{Author}\n\\date{\\today}\n\\maketitle\n');
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
+                  >
+                    <span>Title</span>
                   </button>
                 </div>
               )}
@@ -1317,22 +1195,17 @@ export default function LaTeXStudio({
               </button>
 
               {activeDesktopMenu === 'view' && (
-                <div className="absolute left-0 top-full mt-1 w-56 bg-[#1e2124] border border-[#3e444b] rounded-lg shadow-2xl py-1 z-50 text-xs animate-in fade-in duration-100 select-none">
+                <div className="absolute left-0 top-full mt-1 w-56 bg-[#1e2226] border border-white/10 rounded shadow-xl py-1 text-[13px] text-neutral-300 z-50 select-none animate-in fade-in duration-100">
                   <button
                     type="button"
                     onClick={() => {
                       setLayoutMode('split');
                       setActiveDesktopMenu(null);
                     }}
-                    className={`w-full flex items-center justify-between px-3 py-1.5 text-left transition cursor-pointer ${
-                      layoutMode === 'split' ? 'bg-[#2a2e33] text-emerald-400 font-semibold' : 'text-slate-200 hover:bg-[#2a2e33] hover:text-white'
-                    }`}
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <div className="flex items-center gap-2">
-                      <Columns className="w-3.5 h-3.5" />
-                      <span>Code + PDF (Split)</span>
-                    </div>
-                    {layoutMode === 'split' && <span className="text-[10px]">✓</span>}
+                    <span className={layoutMode === 'split' ? 'text-white font-medium' : ''}>Split view</span>
+                    {layoutMode === 'split' && <span className="text-emerald-400 text-xs">✓</span>}
                   </button>
 
                   <button
@@ -1341,15 +1214,10 @@ export default function LaTeXStudio({
                       setLayoutMode('code');
                       setActiveDesktopMenu(null);
                     }}
-                    className={`w-full flex items-center justify-between px-3 py-1.5 text-left transition cursor-pointer ${
-                      layoutMode === 'code' ? 'bg-[#2a2e33] text-emerald-400 font-semibold' : 'text-slate-200 hover:bg-[#2a2e33] hover:text-white'
-                    }`}
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <div className="flex items-center gap-2">
-                      <Code2 className="w-3.5 h-3.5" />
-                      <span>Chỉ Code (Editor only)</span>
-                    </div>
-                    {layoutMode === 'code' && <span className="text-[10px]">✓</span>}
+                    <span className={layoutMode === 'code' ? 'text-white font-medium' : ''}>Editor only</span>
+                    {layoutMode === 'code' && <span className="text-emerald-400 text-xs">✓</span>}
                   </button>
 
                   <button
@@ -1358,15 +1226,10 @@ export default function LaTeXStudio({
                       setLayoutMode('pdf');
                       setActiveDesktopMenu(null);
                     }}
-                    className={`w-full flex items-center justify-between px-3 py-1.5 text-left transition cursor-pointer ${
-                      layoutMode === 'pdf' ? 'bg-[#2a2e33] text-emerald-400 font-semibold' : 'text-slate-200 hover:bg-[#2a2e33] hover:text-white'
-                    }`}
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <div className="flex items-center gap-2">
-                      <Maximize2 className="w-3.5 h-3.5" />
-                      <span>Chỉ PDF (PDF only)</span>
-                    </div>
-                    {layoutMode === 'pdf' && <span className="text-[10px]">✓</span>}
+                    <span className={layoutMode === 'pdf' ? 'text-white font-medium' : ''}>PDF only</span>
+                    {layoutMode === 'pdf' && <span className="text-emerald-400 text-xs">✓</span>}
                   </button>
 
                   <button
@@ -1376,10 +1239,9 @@ export default function LaTeXStudio({
                       setActiveDesktopMenu(null);
                       if (pdf) window.open(pdf, '_blank');
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer disabled:opacity-40"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer disabled:opacity-40"
                   >
-                    <ExternalLink className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Mở PDF ở tab riêng</span>
+                    <span>Open PDF in separate tab</span>
                   </button>
 
                   <button
@@ -1388,13 +1250,13 @@ export default function LaTeXStudio({
                       setActiveDesktopMenu(null);
                       toggleFullscreen();
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <Maximize2 className="w-3.5 h-3.5 text-slate-400" />
-                    <span>{isFullscreen ? 'Thoát toàn màn hình' : 'Toàn màn hình (Focus mode)'}</span>
+                    <span>Focus mode</span>
+                    {isFullscreen && <span className="text-emerald-400 text-xs">✓</span>}
                   </button>
 
-                  <div className="h-px bg-[#2d3136] my-1" />
+                  <div className="border-b border-white/10 my-1 mx-1" />
 
                   <button
                     type="button"
@@ -1402,15 +1264,10 @@ export default function LaTeXStudio({
                       setEditorMode('code');
                       setActiveDesktopMenu(null);
                     }}
-                    className={`w-full flex items-center justify-between px-3 py-1.5 text-left transition cursor-pointer ${
-                      editorMode === 'code' ? 'bg-[#2a2e33] text-emerald-400 font-semibold' : 'text-slate-200 hover:bg-[#2a2e33] hover:text-white'
-                    }`}
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <div className="flex items-center gap-2">
-                      <Code2 className="w-3.5 h-3.5 text-slate-400" />
-                      <span>Chế độ Code (Normal)</span>
-                    </div>
-                    {editorMode === 'code' && <span className="text-[10px]">✓</span>}
+                    <span className={editorMode === 'code' ? 'text-white font-medium' : ''}>Normal mode</span>
+                    {editorMode === 'code' && <span className="text-emerald-400 text-xs">✓</span>}
                   </button>
 
                   <button
@@ -1419,18 +1276,13 @@ export default function LaTeXStudio({
                       setEditorMode('visual');
                       setActiveDesktopMenu(null);
                     }}
-                    className={`w-full flex items-center justify-between px-3 py-1.5 text-left transition cursor-pointer ${
-                      editorMode === 'visual' ? 'bg-[#2a2e33] text-emerald-400 font-semibold' : 'text-slate-200 hover:bg-[#2a2e33] hover:text-white'
-                    }`}
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <div className="flex items-center gap-2">
-                      <Eye className="w-3.5 h-3.5 text-slate-400" />
-                      <span>Chế độ trực quan (Visual)</span>
-                    </div>
-                    {editorMode === 'visual' && <span className="text-[10px]">✓</span>}
+                    <span className={editorMode === 'visual' ? 'text-white font-medium' : ''}>Visual Editor mode</span>
+                    {editorMode === 'visual' && <span className="text-emerald-400 text-xs">✓</span>}
                   </button>
 
-                  <div className="h-px bg-[#2d3136] my-1" />
+                  <div className="border-b border-white/10 my-1 mx-1" />
 
                   <button
                     type="button"
@@ -1438,13 +1290,10 @@ export default function LaTeXStudio({
                       setIsSidebarOpen((prev) => !prev);
                       setActiveDesktopMenu(null);
                     }}
-                    className="w-full flex items-center justify-between px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <div className="flex items-center gap-2">
-                      <Files className="w-3.5 h-3.5 text-slate-400" />
-                      <span>{isSidebarOpen ? 'Ẩn thanh Sidebar tệp' : 'Hiện thanh Sidebar tệp'}</span>
-                    </div>
-                    {isSidebarOpen && <span className="text-[10px] text-emerald-400">Bật</span>}
+                    <span className={isSidebarOpen ? 'text-white font-medium' : ''}>Show file tree</span>
+                    {isSidebarOpen && <span className="text-emerald-400 text-xs">✓</span>}
                   </button>
 
                   <button
@@ -1454,10 +1303,9 @@ export default function LaTeXStudio({
                       setActiveDesktopMenu(null);
                       setIsPresentation(true);
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer disabled:opacity-40"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer disabled:opacity-40"
                   >
-                    <Tv className="w-3.5 h-3.5 text-indigo-400" />
-                    <span>Trình chiếu máy chiếu</span>
+                    <span>Presentation mode</span>
                   </button>
 
                   <button
@@ -1466,10 +1314,10 @@ export default function LaTeXStudio({
                       setActiveDesktopMenu(null);
                       toggleTheme();
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    {isDark ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-slate-300" />}
-                    <span>{isDark ? 'Giao diện Sáng' : 'Giao diện Tối'}</span>
+                    <span>Dark theme</span>
+                    {isDark && <span className="text-emerald-400 text-xs">✓</span>}
                   </button>
                 </div>
               )}
@@ -1493,20 +1341,17 @@ export default function LaTeXStudio({
               </button>
 
               {activeDesktopMenu === 'format' && (
-                <div className="absolute left-0 top-full mt-1 w-56 bg-[#1e2124] border border-[#3e444b] rounded-lg shadow-2xl py-1 z-50 text-xs animate-in fade-in duration-100 select-none">
+                <div className="absolute left-0 top-full mt-1 w-56 bg-[#1e2226] border border-white/10 rounded shadow-xl py-1 text-[13px] text-neutral-300 z-50 select-none animate-in fade-in duration-100">
                   <button
                     type="button"
                     onClick={() => {
                       setActiveDesktopMenu(null);
                       triggerEditorAction('bold');
                     }}
-                    className="w-full flex items-center justify-between px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold font-serif w-3.5 text-center text-xs">B</span>
-                      <span>In đậm (\\textbf)</span>
-                    </div>
-                    <kbd className="text-[10px] text-slate-400 font-mono">Ctrl+B</kbd>
+                    <span>Bold</span>
+                    <span className="text-neutral-500 font-mono text-[11px]">Ctrl+B</span>
                   </button>
 
                   <button
@@ -1515,137 +1360,109 @@ export default function LaTeXStudio({
                       setActiveDesktopMenu(null);
                       triggerEditorAction('italic');
                     }}
-                    className="w-full flex items-center justify-between px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <div className="flex items-center gap-2">
-                      <span className="italic font-serif w-3.5 text-center text-xs">I</span>
-                      <span>In nghiêng (\\textit)</span>
-                    </div>
-                    <kbd className="text-[10px] text-slate-400 font-mono">Ctrl+I</kbd>
+                    <span>Italics</span>
+                    <span className="text-neutral-500 font-mono text-[11px]">Ctrl+I</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => {
                       setActiveDesktopMenu(null);
-                      handleInsert('\\underline{văn bản}');
+                      handleInsert('\\underline{text}');
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span className="underline font-serif w-3.5 text-center text-xs">U</span>
-                    <span>Gạch chân (\\underline)</span>
+                    <span>Underline</span>
+                    <span className="text-neutral-500 font-mono text-[11px]">\\underline</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => {
                       setActiveDesktopMenu(null);
-                      handleInsert('\\texttt{mã}');
+                      handleInsert('\\texttt{code}');
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer font-mono"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span className="text-cyan-400 font-bold text-xs">TT</span>
-                    <span>Kiểu máy chữ (\\texttt)</span>
+                    <span>Typewriter</span>
+                    <span className="text-neutral-500 font-mono text-[11px]">\\texttt</span>
                   </button>
 
-                  <div className="h-px bg-[#2d3136] my-1" />
+                  <div className="border-b border-white/10 my-1 mx-1" />
 
                   <button
                     type="button"
                     onClick={() => {
                       setActiveDesktopMenu(null);
-                      handleInsert('\n\\begin{itemize}\n  \\item Mục 1\n  \\item Mục 2\n\\end{itemize}\n');
+                      handleInsert('\n\\begin{itemize}\n  \\item \n\\end{itemize}\n');
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span className="text-amber-400 font-bold">•</span>
-                    <span>Danh sách chấm (itemize)</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveDesktopMenu(null);
-                      handleInsert('\n\\begin{enumerate}\n  \\item Bước 1\n  \\item Bước 2\n\\end{enumerate}\n');
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
-                  >
-                    <span className="text-amber-400 font-bold font-mono">1.</span>
-                    <span>Danh sách đánh số (enumerate)</span>
-                  </button>
-
-                  <div className="h-px bg-[#2d3136] my-1" />
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveDesktopMenu(null);
-                      handleInsert('\n\\section{Tiêu đề chương}\n');
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
-                  >
-                    <span className="text-indigo-400 font-bold text-xs">§1</span>
-                    <span>Phần chính (\\section)</span>
+                    <span>Bullet list</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => {
                       setActiveDesktopMenu(null);
-                      handleInsert('\n\\subsection{Tiểu mục con}\n');
+                      handleInsert('\n\\begin{enumerate}\n  \\item \n\\end{enumerate}\n');
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span className="text-indigo-400 text-xs">§1.1</span>
-                    <span>Tiểu mục (\\subsection)</span>
+                    <span>Numbered list</span>
+                  </button>
+
+                  <div className="border-b border-white/10 my-1 mx-1" />
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveDesktopMenu(null);
+                      handleInsert('\n\\section{Section Title}\n');
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
+                  >
+                    <span>Section</span>
+                    <span className="text-neutral-500 font-mono text-[11px]">\\section</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => {
                       setActiveDesktopMenu(null);
-                      handleInsert('\n\\subsubsection{Tiểu mục cấp 3}\n');
+                      handleInsert('\n\\subsection{Subsection Title}\n');
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span className="text-indigo-400 text-[10px]">§1.1.1</span>
-                    <span>Tiểu mục cấp 3 (\\subsubsection)</span>
+                    <span>Subsection</span>
+                    <span className="text-neutral-500 font-mono text-[11px]">\\subsection</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => {
                       setActiveDesktopMenu(null);
-                      handleInsert('\n\\paragraph{Đoạn văn:}\n');
+                      handleInsert('\n\\subsubsection{Subsubsection Title}\n');
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span className="text-slate-400 font-serif text-xs">¶</span>
-                    <span>Đoạn văn (\\paragraph)</span>
+                    <span>Subsubsection</span>
+                    <span className="text-neutral-500 font-mono text-[11px]">\\subsubsection</span>
                   </button>
 
-                  <div className="h-px bg-[#2d3136] my-1" />
-
-                  <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    Cỡ chữ soạn thảo
-                  </div>
-                  <div className="grid grid-cols-4 gap-1 px-3 py-1">
-                    {[12, 13, 14, 15, 16, 18, 20].map((s) => (
-                      <button
-                        key={s}
-                        type="button"
-                        onClick={() => {
-                          setFontSize(s);
-                          setActiveDesktopMenu(null);
-                        }}
-                        className={`py-1 rounded text-center text-[11px] font-mono transition cursor-pointer ${
-                          fontSize === s ? 'bg-emerald-600 text-white font-bold' : 'bg-[#2a2e33] text-slate-300 hover:bg-[#383e45]'
-                        }`}
-                      >
-                        {s}px
-                      </button>
-                    ))}
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveDesktopMenu(null);
+                      handleInsert('\n\\paragraph{Paragraph:}\n');
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
+                  >
+                    <span>Paragraph</span>
+                    <span className="text-neutral-500 font-mono text-[11px]">\\paragraph</span>
+                  </button>
                 </div>
               )}
             </div>
@@ -1668,17 +1485,16 @@ export default function LaTeXStudio({
               </button>
 
               {activeDesktopMenu === 'help' && (
-                <div className="absolute left-0 top-full mt-1 w-56 bg-[#1e2124] border border-[#3e444b] rounded-lg shadow-2xl py-1 z-50 text-xs animate-in fade-in duration-100 select-none">
+                <div className="absolute left-0 top-full mt-1 w-56 bg-[#1e2226] border border-white/10 rounded shadow-xl py-1 text-[13px] text-neutral-300 z-50 select-none animate-in fade-in duration-100">
                   <button
                     type="button"
                     onClick={() => {
                       setActiveDesktopMenu(null);
                       setIsShortcutsOpen(true);
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <HelpCircle className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>Phím tắt thao tác</span>
+                    <span>Keyboard shortcuts</span>
                   </button>
 
                   <button
@@ -1687,10 +1503,9 @@ export default function LaTeXStudio({
                       setActiveDesktopMenu(null);
                       window.open('https://www.overleaf.com/learn', '_blank');
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <FileCode className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Tài liệu hướng dẫn LaTeX</span>
+                    <span>Documentation</span>
                   </button>
 
                   <button
@@ -1699,13 +1514,12 @@ export default function LaTeXStudio({
                       setActiveDesktopMenu(null);
                       setIsSettingsOpen(true);
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <Settings className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Cài đặt biên dịch</span>
+                    <span>Settings</span>
                   </button>
 
-                  <div className="h-px bg-[#2d3136] my-1" />
+                  <div className="border-b border-white/10 my-1 mx-1" />
 
                   <button
                     type="button"
@@ -1713,10 +1527,9 @@ export default function LaTeXStudio({
                       setActiveDesktopMenu(null);
                       window.open('/', '_blank');
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-slate-200 hover:bg-[#2a2e33] hover:text-white text-left transition cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <ExternalLink className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Về MathAIO Studio</span>
+                    <span>About MathAIO Studio</span>
                   </button>
                 </div>
               )}
@@ -2108,9 +1921,13 @@ export default function LaTeXStudio({
         {!isSidebarOpen && (
           <button
             type="button"
-            onClick={() => setIsSidebarOpen(true)}
-            className="absolute left-11 top-12 z-40 w-4.5 h-7 rounded-r bg-[#1e2124] hover:bg-[#2a2e33] text-neutral-400 hover:text-white flex items-center justify-center border border-l-0 border-white/10 shadow-md transition cursor-pointer"
-            title="Mở rộng bảng quản lý tệp (Click to show the panel)"
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsSidebarOpen(true);
+            }}
+            className="absolute left-11 top-[35%] z-30 w-3.5 h-8 rounded-r bg-[#20262b] hover:bg-[#2e353b] text-neutral-400 hover:text-white flex items-center justify-center border border-l-0 border-white/10 shadow-xs transition cursor-pointer pointer-events-auto"
+            title="Click to show the panel"
           >
             <ChevronRight className="w-3 h-3" />
           </button>
@@ -2127,17 +1944,17 @@ export default function LaTeXStudio({
             }`}
             title="Kéo chỉnh độ rộng Sidebar (180px - 360px)"
           >
-            <div className="w-0.5 h-8 rounded-full bg-slate-400/40 group-hover:bg-cyan-500 transition-colors mb-1" />
             <button
               type="button"
+              onMouseDown={(e) => e.stopPropagation()}
               onClick={(e) => {
                 e.stopPropagation();
                 setIsSidebarOpen(false);
               }}
-              className="w-4 h-4 rounded-full bg-[#2a2e33] hover:bg-[#383e45] text-neutral-300 hover:text-white flex items-center justify-center transition shadow-xs border border-white/10 cursor-pointer"
-              title="Thu gọn thanh tệp (Click to hide the panel)"
+              className="absolute top-[35%] w-3.5 h-8 bg-[#20262b] hover:bg-[#2e353b] border border-white/10 text-neutral-400 hover:text-white flex items-center justify-center rounded cursor-pointer pointer-events-auto z-30 shadow-xs transition"
+              title="Click to hide the panel"
             >
-              <ChevronLeft className="w-2.5 h-2.5 text-neutral-300 group-hover:text-white" />
+              <ChevronLeft className="w-3 h-3" />
             </button>
           </div>
         )}
@@ -2426,14 +2243,15 @@ export default function LaTeXStudio({
             }`}
             title="Kéo giãn tỷ lệ giữa Code và PDF (Overleaf Split Gutter)"
           >
-            <div className="flex flex-col items-center gap-1.5 py-1 z-10">
+            <div className="flex flex-col items-center justify-center h-full gap-0.5 z-10">
               <button
                 type="button"
+                onMouseDown={(e) => e.stopPropagation()}
                 onClick={(e) => {
                   e.stopPropagation();
                   handleSyncCodeToPDF(cursorLine || targetLine || 1);
                 }}
-                className="w-4.5 h-4.5 rounded-full bg-[#2a2e33] hover:bg-[#383e45] text-neutral-300 hover:text-white flex items-center justify-center transition shadow-xs border border-white/10 cursor-pointer"
+                className="w-5 h-5 bg-[#252a2e] hover:bg-neutral-700 border border-white/10 text-neutral-300 hover:text-white flex items-center justify-center my-0.5 rounded cursor-pointer pointer-events-auto z-30 shadow-xs transition"
                 title="Chuyển từ con trỏ Code sang vị trí PDF (SyncTeX ->)"
               >
                 <ArrowRight className="w-3 h-3 text-neutral-300 group-hover:text-white" />
@@ -2441,11 +2259,12 @@ export default function LaTeXStudio({
 
               <button
                 type="button"
+                onMouseDown={(e) => e.stopPropagation()}
                 onClick={(e) => {
                   e.stopPropagation();
                   handleSyncPDFToCode(pdfCurrentPage || 1, 0.2);
                 }}
-                className="w-4.5 h-4.5 rounded-full bg-[#2a2e33] hover:bg-[#383e45] text-neutral-300 hover:text-white flex items-center justify-center transition shadow-xs border border-white/10 cursor-pointer"
+                className="w-5 h-5 bg-[#252a2e] hover:bg-neutral-700 border border-white/10 text-neutral-300 hover:text-white flex items-center justify-center my-0.5 rounded cursor-pointer pointer-events-auto z-30 shadow-xs transition"
                 title="Chuyển từ trang PDF sang dòng Code tương ứng (SyncTeX <-)"
               >
                 <ArrowLeft className="w-3 h-3 text-neutral-300 group-hover:text-white" />

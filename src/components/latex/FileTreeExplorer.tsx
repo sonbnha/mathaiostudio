@@ -24,6 +24,7 @@ import {
   CheckSquare,
   Dot,
   FileSpreadsheet,
+  X,
 } from 'lucide-react';
 import type { StudioFile } from '@/components/latex/StudioTools';
 
@@ -371,23 +372,33 @@ export default function FileTreeExplorer({
         className="flex flex-col overflow-hidden flex-shrink-0"
       >
         {/* File Tree Header */}
-        <div className="flex items-center justify-between px-2 py-1.5 w-full overflow-hidden flex-nowrap bg-slate-50/90 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800 shrink-0 select-none">
-          <button
-            type="button"
-            onClick={() => setIsTreeExpanded(!isTreeExpanded)}
-            className="flex items-center gap-1 font-semibold text-[11px] uppercase tracking-wider text-neutral-400 hover:text-white transition flex-shrink-0 mr-1 cursor-pointer"
-            title="Đóng/Mở File Tree"
-          >
-            {isTreeExpanded ? (
-              <ChevronDown className="w-3 h-3 text-neutral-400" />
-            ) : (
-              <ChevronRight className="w-3 h-3 text-neutral-400" />
-            )}
-            <Layers className="w-3.5 h-3.5 text-cyan-500" />
-            <span>CÂY THƯ MỤC</span>
-          </button>
+        <div className="flex items-center justify-between px-2 py-1.5 border-b border-white/5 bg-[#181a1d] overflow-hidden select-none">
+          {/* Left Title Group (Truncates on shrink) */}
+          <div className="flex items-center gap-1.5 min-w-0 flex-1 mr-1">
+            <button
+              type="button"
+              onClick={() => setIsTreeExpanded(!isTreeExpanded)}
+              className="flex items-center gap-1 text-neutral-400 hover:text-white transition flex-shrink-0 cursor-pointer"
+              title="Đóng/Mở File Tree"
+            >
+              {isTreeExpanded ? (
+                <ChevronDown className="w-3 h-3 flex-shrink-0 text-neutral-400" />
+              ) : (
+                <ChevronRight className="w-3 h-3 flex-shrink-0 text-neutral-400" />
+              )}
+              <Layers className="w-3.5 h-3.5 flex-shrink-0 text-cyan-500" />
+            </button>
+            <span
+              onClick={() => setIsTreeExpanded(!isTreeExpanded)}
+              className="truncate overflow-hidden whitespace-nowrap text-xs font-semibold text-neutral-300 cursor-pointer"
+              title="CÂY THƯ MỤC"
+            >
+              CÂY THƯ MỤC
+            </span>
+          </div>
 
-          <div className="flex-shrink-0 flex items-center gap-1">
+          {/* Right Action Icons Group (Always preserved at the end) */}
+          <div className="flex items-center gap-1 flex-shrink-0 ml-auto">
             <button
               type="button"
               onClick={() => {
@@ -396,7 +407,7 @@ export default function FileTreeExplorer({
                 setIsAddingFolder(false);
                 setNewFileName('');
               }}
-              className="p-0.5 rounded text-neutral-400 hover:text-cyan-500 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition cursor-pointer"
+              className="p-0.5 rounded text-neutral-400 hover:text-cyan-500 hover:bg-white/10 transition cursor-pointer"
               title="Tạo tệp mới (+ File)"
             >
               <FilePlus className="w-3.5 h-3.5" />
@@ -409,7 +420,7 @@ export default function FileTreeExplorer({
                 setIsAddingFile(false);
                 setNewFolderName('');
               }}
-              className="p-0.5 rounded text-neutral-400 hover:text-cyan-500 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition cursor-pointer"
+              className="p-0.5 rounded text-neutral-400 hover:text-cyan-500 hover:bg-white/10 transition cursor-pointer"
               title="Tạo thư mục mới (+ Folder)"
             >
               <FolderPlus className="w-3.5 h-3.5" />
@@ -417,7 +428,7 @@ export default function FileTreeExplorer({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="p-0.5 rounded text-neutral-400 hover:text-emerald-500 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition cursor-pointer"
+              className="p-0.5 rounded text-neutral-400 hover:text-emerald-500 hover:bg-white/10 transition cursor-pointer"
               title="Tải tệp / ảnh lên"
             >
               <Upload className="w-3.5 h-3.5" />
@@ -429,6 +440,15 @@ export default function FileTreeExplorer({
               onChange={handleFileInputChange}
               className="hidden"
             />
+            {/* Close 'X' Button */}
+            <button
+              type="button"
+              onClick={onToggleCollapse}
+              className="p-0.5 rounded text-neutral-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+              title="Đóng bảng điều khiển"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
 

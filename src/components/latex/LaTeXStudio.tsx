@@ -761,7 +761,7 @@ export default function LaTeXStudio({
     setJumpToPage(page);
   };
 
-  // Resizer 1: Left Sidebar Divider (180px - 360px, offset by Activity Bar 44px, Snap below 35px)
+  // Resizer 1: Left Sidebar Divider (60px - 450px, offset by Activity Bar 44px, Snap below 20px)
   const handleMouseDownSidebarDivider = (e: React.MouseEvent) => {
     e.preventDefault();
     resizingTargetRef.current = 'sidebar';
@@ -771,10 +771,10 @@ export default function LaTeXStudio({
     const onMouseMove = (moveEvent: MouseEvent) => {
       if (resizingTargetRef.current !== 'sidebar') return;
       const rawWidth = moveEvent.clientX - activityBarWidth;
-      if (rawWidth < 35) {
+      if (rawWidth < 20) {
         setSidebarWidth(0);
       } else {
-        const clampedWidth = Math.min(360, Math.max(180, rawWidth));
+        const clampedWidth = Math.min(450, Math.max(60, rawWidth));
         setSidebarWidth(clampedWidth);
         setLastSidebarWidth(clampedWidth);
       }
@@ -787,7 +787,7 @@ export default function LaTeXStudio({
       window.removeEventListener('mouseup', onMouseUp);
 
       const rawWidth = upEvent.clientX - activityBarWidth;
-      if (rawWidth < 35) {
+      if (rawWidth < 20) {
         setSidebarWidth(0);
       }
 
@@ -800,7 +800,7 @@ export default function LaTeXStudio({
     window.addEventListener('mouseup', onMouseUp);
   };
 
-  // Resizer 2: Editor & PDF Preview Split Divider (25% - 75% relative to Main Workspace, Snap PDF if < 35px from right)
+  // Resizer 2: Editor & PDF Preview Split Divider (allows down to 60px, Snap PDF if < 20px from right)
   const handleMouseDownEditorPdfDivider = (e: React.MouseEvent) => {
     e.preventDefault();
     resizingTargetRef.current = 'editor-pdf';
@@ -812,9 +812,9 @@ export default function LaTeXStudio({
       if (resizingTargetRef.current !== 'editor-pdf') return;
       if (!wsEl) return;
       const wsRect = wsEl.getBoundingClientRect();
-      const distanceFromRight = wsRect.right - moveEvent.clientX;
+      const distFromRight = wsRect.right - moveEvent.clientX;
 
-      if (distanceFromRight < 35) {
+      if (distFromRight < 20) {
         // Snap PDF to 0 and expand Editor 100%
         setLayoutMode('code');
       } else {
@@ -825,12 +825,9 @@ export default function LaTeXStudio({
         const relativeX = moveEvent.clientX - wsRect.left;
         let newRatio = relativeX / wsWidth;
 
-        // Bound between 0.15 and 0.85
-        newRatio = Math.min(0.85, Math.max(0.15, newRatio));
-
-        // Ensure safe min-w-[250px] for both Editor and PDF
-        const minRatio = 250 / wsWidth;
-        const maxRatio = 1 - 250 / wsWidth;
+        // Allow natural shrink down to 60px for both Editor and PDF before snap
+        const minRatio = 60 / wsWidth;
+        const maxRatio = 1 - 60 / wsWidth;
         if (minRatio < maxRatio) {
           newRatio = Math.min(maxRatio, Math.max(minRatio, newRatio));
         }
@@ -848,8 +845,8 @@ export default function LaTeXStudio({
 
       if (wsEl) {
         const wsRect = wsEl.getBoundingClientRect();
-        const distanceFromRight = wsRect.right - upEvent.clientX;
-        if (distanceFromRight < 35) {
+        const distFromRight = wsRect.right - upEvent.clientX;
+        if (distFromRight < 20) {
           setLayoutMode('code');
         }
       }
@@ -2304,7 +2301,7 @@ export default function LaTeXStudio({
           </div>
         )}
 
-        {/* RESIZER 1: SIDEBAR RESIZER (180px - 360px, snap 35px) */}
+        {/* RESIZER 1: SIDEBAR RESIZER (60px - 450px, snap 20px) */}
         <div
           onMouseDown={handleMouseDownSidebarDivider}
           className={`relative w-2 flex-shrink-0 shrink-0 flex flex-col items-center justify-center cursor-col-resize select-none transition-colors z-30 group ${
@@ -2312,7 +2309,7 @@ export default function LaTeXStudio({
               ? 'bg-neutral-600/50'
               : 'bg-[#1e2124] hover:bg-neutral-600/50 border-r border-white/5'
           }`}
-          title={sidebarWidth <= 0 ? "Kéo sang phải để mở rộng Sidebar" : "Kéo chỉnh độ rộng Sidebar (180px - 360px)"}
+          title={sidebarWidth <= 0 ? "Kéo sang phải để mở rộng Sidebar" : "Kéo chỉnh độ rộng Sidebar (60px - 450px)"}
         >
           {/* Flush Handle: Separated hitbox, pointer-events-auto, z-40 */}
           <div className="absolute top-1/2 -translate-y-1/2 z-40 pointer-events-auto group/sbc">
@@ -2359,7 +2356,7 @@ export default function LaTeXStudio({
               display: layoutMode === 'pdf' ? 'none' : 'flex',
               width: layoutMode === 'split' ? `${editorRatio * 100}%` : undefined,
             }}
-            className={`min-w-[250px] flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xs overflow-hidden h-full flex flex-shrink-0 shrink-0 relative ${
+            className={`min-w-[60px] flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xs overflow-hidden h-full flex flex-shrink-0 shrink-0 relative ${
               layoutMode === 'code' ? 'flex-1 min-w-0' : ''
             }`}
           >
@@ -2719,7 +2716,7 @@ export default function LaTeXStudio({
             display: layoutMode === 'code' ? 'none' : 'flex',
             width: layoutMode === 'split' ? `${(1 - editorRatio) * 100}%` : '100%',
           }}
-          className={`min-w-[250px] flex-1 overflow-hidden relative flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xs h-full ${
+          className={`min-w-[60px] flex-1 overflow-hidden relative flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xs h-full ${
             isResizing ? 'select-none pointer-events-none' : ''
           }`}
         >

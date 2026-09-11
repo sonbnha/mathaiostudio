@@ -40,7 +40,7 @@ export async function compileLatex(source: string, signal?: AbortSignal): Promis
         compiler: 'xelatex',
         options: {
           compiler: {
-            halt_on_error: true,
+            halt_on_error: false,
             force: false,
           },
           response: {

@@ -2174,7 +2174,7 @@ export default function LaTeXStudio({
         {isSidebarOpen && (
           <div
             style={{ width: `${sidebarWidth}px`, flexShrink: 0 }}
-            className="file-tree-sidebar h-full overflow-hidden border-r border-slate-200 dark:border-slate-800 shadow-2xs flex flex-col flex-shrink-0 shrink-0 bg-white dark:bg-[#1e2124]"
+            className="file-tree-sidebar h-full overflow-hidden border-r border-slate-200 dark:border-slate-800 shadow-2xs flex flex-col flex-shrink-0 shrink-0 bg-white dark:bg-slate-950"
           >
             {activeActivityTab === 'files' && (
               <FileTreeExplorer

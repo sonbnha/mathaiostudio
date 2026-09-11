@@ -389,7 +389,7 @@ export default function FileTreeExplorer({
     <aside
       ref={containerRef}
       aria-label="Cột quản lý file và mục lục Overleaf"
-      className="w-full h-full flex flex-col overflow-hidden relative select-none bg-white dark:bg-[#1e2124]"
+      className="w-full h-full flex flex-col overflow-hidden relative select-none bg-white dark:bg-slate-950"
     >
       {/* SECTION 1 (TOP TIER): FILE TREE */}
       <div
@@ -403,24 +403,24 @@ export default function FileTreeExplorer({
         className="flex flex-col flex-shrink-0 overflow-hidden"
       >
         {/* File Tree Header */}
-        <div className="flex items-center justify-between px-2 h-8 border-b border-white/5 bg-[#181a1d] overflow-hidden select-none shrink-0">
+        <div className="flex items-center justify-between px-2 h-8 border-b border-slate-200 dark:border-slate-800 bg-slate-100/90 dark:bg-slate-900 overflow-hidden select-none shrink-0">
           {/* Left Title Group (Truncates on shrink) */}
           <div className="flex items-center gap-1.5 min-w-0 flex-1 mr-1">
             <button
               type="button"
               onClick={() => setIsTreeExpanded(!isTreeExpanded)}
-              className="flex items-center text-neutral-400 hover:text-white transition flex-shrink-0 cursor-pointer p-0.5 rounded hover:bg-white/5"
+              className="flex items-center text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 transition flex-shrink-0 cursor-pointer p-0.5 rounded hover:bg-slate-200/70 dark:hover:bg-slate-800"
               title="Đóng/Mở File Tree"
             >
               <ChevronRight
-                className={`w-3.5 h-3.5 text-neutral-400 transition-transform ${
+                className={`w-3.5 h-3.5 transition-transform ${
                   isTreeExpanded ? 'rotate-90' : ''
                 }`}
               />
             </button>
             <span
               onClick={() => setIsTreeExpanded(!isTreeExpanded)}
-              className="truncate overflow-hidden whitespace-nowrap text-xs font-semibold text-neutral-300 cursor-pointer uppercase tracking-wider"
+              className="truncate overflow-hidden whitespace-nowrap text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer uppercase tracking-wider"
               title="CÂY THƯ MỤC"
             >
               CÂY THƯ MỤC
@@ -437,7 +437,7 @@ export default function FileTreeExplorer({
                 setIsAddingFolder(false);
                 setNewFileName('');
               }}
-              className="p-0.5 rounded text-neutral-400 hover:text-cyan-500 hover:bg-white/10 transition cursor-pointer"
+              className="p-0.5 rounded text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-200/70 dark:hover:bg-slate-800 transition cursor-pointer"
               title="Tạo tệp mới (+ File)"
             >
               <FilePlus className="w-3.5 h-3.5" />
@@ -450,7 +450,7 @@ export default function FileTreeExplorer({
                 setIsAddingFile(false);
                 setNewFolderName('');
               }}
-              className="p-0.5 rounded text-neutral-400 hover:text-cyan-500 hover:bg-white/10 transition cursor-pointer"
+              className="p-0.5 rounded text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-200/70 dark:hover:bg-slate-800 transition cursor-pointer"
               title="Tạo thư mục mới (+ Folder)"
             >
               <FolderPlus className="w-3.5 h-3.5" />
@@ -458,7 +458,7 @@ export default function FileTreeExplorer({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="p-0.5 rounded text-neutral-400 hover:text-emerald-500 hover:bg-white/10 transition cursor-pointer"
+              className="p-0.5 rounded text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-200/70 dark:hover:bg-slate-800 transition cursor-pointer"
               title="Tải tệp / ảnh lên"
             >
               <Upload className="w-3.5 h-3.5" />
@@ -474,7 +474,7 @@ export default function FileTreeExplorer({
             <button
               type="button"
               onClick={onToggleCollapse}
-              className="p-0.5 rounded text-neutral-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+              className="p-0.5 rounded text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               title="Đóng bảng điều khiển"
             >
               <X className="w-3.5 h-3.5" />
@@ -642,7 +642,7 @@ export default function FileTreeExplorer({
       {/* HORIZONTAL RESIZER BETWEEN TREE AND OUTLINE (ALWAYS MOUNTED) */}
       <div
         onMouseDown={handleMouseDownHorizontalSplitter}
-        className="h-1 w-full bg-[#181a1d] hover:bg-emerald-500/40 cursor-row-resize flex-shrink-0 border-y border-white/5 transition-colors z-20"
+        className="h-1 w-full bg-slate-200 dark:bg-slate-900 hover:bg-emerald-500/40 cursor-row-resize flex-shrink-0 border-y border-slate-200 dark:border-slate-800 transition-colors z-20"
         title="Kéo phân chia tỷ lệ chiều cao hoặc kéo để mở rộng"
       />
 
@@ -655,31 +655,33 @@ export default function FileTreeExplorer({
               : 'calc(100% - 32px)'
             : '32px',
         }}
-        className="flex flex-col flex-shrink-0 overflow-hidden border-t border-white/5 bg-[#181a1d] select-none"
+        className="flex flex-col flex-shrink-0 overflow-hidden border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 select-none"
       >
         {/* Header luôn luôn render, không nằm trong điều kiện */}
         <div
           onClick={() => setIsOutlineExpanded(!isOutlineExpanded)}
-          className="h-8 px-2 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors select-none shrink-0"
+          className="h-8 px-2 flex items-center justify-between cursor-pointer bg-slate-100/90 dark:bg-slate-900 hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors select-none shrink-0 border-b border-slate-200 dark:border-slate-800"
         >
           <div className="flex items-center gap-1.5 min-w-0">
             <ChevronRight
-              className={`w-3.5 h-3.5 text-neutral-400 transition-transform ${
+              className={`w-3.5 h-3.5 text-slate-700 dark:text-slate-300 transition-transform ${
                 isOutlineExpanded ? 'rotate-90' : ''
               }`}
             />
-            <span className="text-[11px] font-semibold tracking-wider text-neutral-300 uppercase truncate">
+            <span className="text-[11px] font-semibold tracking-wider text-slate-700 dark:text-slate-300 uppercase truncate">
               Dàn ý tài liệu
             </span>
           </div>
           {outlineItems.length > 0 && (
-            <span className="text-[10px] text-neutral-500 pr-1 shrink-0">{outlineItems.length} mục</span>
+            <span className="text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-1.5 py-0.5 rounded shrink-0 font-medium">
+              {outlineItems.length} mục
+            </span>
           )}
         </div>
 
         {/* Outline Items List */}
         {isOutlineExpanded && (
-          <div className="flex-1 min-h-0 overflow-y-auto px-1 py-1 scrollbar-thin">
+          <div className="flex-1 min-h-0 overflow-y-auto px-1 py-1 scrollbar-thin bg-white dark:bg-slate-950">
             {outlineItems.length > 0 ? (
               outlineItems.map((item) => {
                 const paddingLeft =
@@ -690,7 +692,7 @@ export default function FileTreeExplorer({
                     key={item.id}
                     type="button"
                     onClick={() => onJumpToLine?.(item.line)}
-                    className={`w-full text-left flex items-center justify-between py-1 px-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition group cursor-pointer text-xs ${paddingLeft}`}
+                    className={`w-full text-left flex items-center justify-between py-1 px-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-900 text-slate-700 dark:text-slate-300 transition group cursor-pointer text-xs ${paddingLeft}`}
                     title={`Dòng ${item.line}: ${item.title}`}
                   >
                     <div className="flex items-center gap-1.5 min-w-0 flex-1">
@@ -699,7 +701,7 @@ export default function FileTreeExplorer({
                         {item.title}
                       </span>
                     </div>
-                    <span className="text-[9px] font-mono text-slate-400 ml-1 shrink-0 px-1 py-0.2 rounded bg-slate-100 dark:bg-slate-800 group-hover:bg-cyan-500/10 group-hover:text-cyan-600">
+                    <span className="text-[9px] font-mono text-slate-500 dark:text-slate-400 ml-1 shrink-0 px-1 py-0.2 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 group-hover:bg-cyan-500/10 group-hover:text-cyan-600 dark:group-hover:text-cyan-400">
                       L{item.line}
                     </span>
                   </button>

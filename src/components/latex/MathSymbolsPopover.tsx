@@ -9,6 +9,7 @@ export interface MathSymbolsPopoverProps {
   isOpen: boolean;
   onClose: () => void;
   onInsert: (code: string) => void;
+  position?: 'top-full' | 'sidebar';
 }
 
 interface MathItem {
@@ -207,6 +208,7 @@ export default function MathSymbolsPopover({
   isOpen,
   onClose,
   onInsert,
+  position = 'top-full',
 }: MathSymbolsPopoverProps) {
   const [activeTab, setActiveTab] = useState<string>('fraction_root');
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -237,7 +239,9 @@ export default function MathSymbolsPopover({
   return (
     <div
       ref={popoverRef}
-      className="absolute top-full left-0 mt-1.5 w-[480px] sm:w-[520px] max-h-[500px] overflow-hidden bg-slate-900 border border-slate-700/80 rounded-xl shadow-2xl p-3 z-50 text-xs text-slate-100 animate-in fade-in zoom-in-95 duration-100 select-none flex flex-col"
+      className={`absolute ${
+        position === 'sidebar' ? 'left-full top-0 ml-2' : 'top-full left-0 mt-1.5'
+      } w-[480px] sm:w-[520px] max-h-[500px] overflow-hidden bg-slate-900 border border-slate-700/80 rounded-xl shadow-2xl p-3 z-50 text-xs text-slate-100 animate-in fade-in zoom-in-95 duration-100 select-none flex flex-col`}
     >
       {/* Top Category Tabs */}
       <div className="flex items-center justify-between border-b border-slate-800 pb-2 mb-2 shrink-0">

@@ -47,6 +47,9 @@ import {
   Moon,
   ChevronDown,
   Edit2,
+  Files,
+  Settings,
+  HelpCircle,
 } from 'lucide-react';
 import { APP_VERSION } from '@/config/version';
 import { useTheme } from '@/context/ThemeContext';
@@ -138,7 +141,8 @@ export default function LaTeXStudio({
   const [editorMode, setEditorMode] = useState<'code' | 'visual'>('code');
   const [reviewMode, setReviewMode] = useState<'editing' | 'reviewing'>('editing');
   const [layoutMode, setLayoutMode] = useState<'split' | 'code' | 'pdf'>('split');
-  const [splitRatio, setSplitRatio] = useState<number>(50);
+  const [editorRatio, setEditorRatio] = useState<number>(0.5); // 0.25 to 0.75
+  const splitRatio = editorRatio * 100;
   const [engine, setEngine] = useState<'xelatex' | 'pdflatex' | 'lualatex'>('xelatex');
 
   // AI & Async busy flags
@@ -150,8 +154,11 @@ export default function LaTeXStudio({
   const ocrInputRef = useRef<HTMLInputElement>(null);
   const wordInputRef = useRef<HTMLInputElement>(null);
 
-  // Dual resizers & panel dragging state
-  const [sidebarWidth, setSidebarWidth] = useState<number>(256);
+  // Sidebar & Dual resizers state
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
+  const [sidebarWidth, setSidebarWidth] = useState<number>(260); // 180px - 360px
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState<boolean>(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [resizingTarget, setResizingTarget] = useState<'sidebar' | 'editor-pdf' | null>(null);
   const isResizing = Boolean(resizingTarget);
   const resizingTargetRef = useRef<'sidebar' | 'editor-pdf' | null>(null);
@@ -642,20 +649,18 @@ export default function LaTeXStudio({
     setJumpToPage(page);
   };
 
-  // Resizer 1: Left Sidebar Divider (180px - 360px)
+  // Resizer 1: Left Sidebar Divider (180px - 360px, offset by Activity Bar 44px)
   const handleMouseDownSidebarDivider = (e: React.MouseEvent) => {
     e.preventDefault();
     resizingTargetRef.current = 'sidebar';
     setResizingTarget('sidebar');
-    const startX = e.clientX;
-    const initialWidth = sidebarWidth;
+    const activityBarWidth = 44; // w-11 = 44px
 
     const onMouseMove = (moveEvent: MouseEvent) => {
       if (resizingTargetRef.current !== 'sidebar') return;
-      const deltaX = moveEvent.clientX - startX;
-      let newWidth = initialWidth + deltaX;
-      newWidth = Math.min(360, Math.max(180, newWidth));
-      setSidebarWidth(newWidth);
+      const rawWidth = moveEvent.clientX - activityBarWidth;
+      const clampedWidth = Math.min(360, Math.max(180, rawWidth));
+      setSidebarWidth(clampedWidth);
     };
 
     const onMouseUp = () => {
@@ -673,36 +678,35 @@ export default function LaTeXStudio({
     window.addEventListener('mouseup', onMouseUp);
   };
 
-  // Resizer 2: Editor & PDF Preview Split Divider (25% - 75%)
+  // Resizer 2: Editor & PDF Preview Split Divider (25% - 75% relative to Main Workspace)
   const handleMouseDownEditorPdfDivider = (e: React.MouseEvent) => {
     e.preventDefault();
     resizingTargetRef.current = 'editor-pdf';
     setResizingTarget('editor-pdf');
-    const startX = e.clientX;
-    const initialRatio = splitRatio;
 
     const wsEl = workspaceRef.current;
-    const wsWidth = wsEl ? wsEl.clientWidth : (window.innerWidth - (isFileTreeCollapsed ? 48 : sidebarWidth) - 16);
 
     const onMouseMove = (moveEvent: MouseEvent) => {
       if (resizingTargetRef.current !== 'editor-pdf') return;
-      const deltaX = moveEvent.clientX - startX;
-      const deltaPercent = wsWidth > 0 ? (deltaX / wsWidth) * 100 : 0;
-      let targetRatio = initialRatio + deltaPercent;
+      if (!wsEl) return;
+      const wsRect = wsEl.getBoundingClientRect();
+      const relativeX = moveEvent.clientX - wsRect.left;
+      const wsWidth = wsRect.width;
+      if (wsWidth <= 0) return;
 
-      // Bound between 25% and 75%
-      targetRatio = Math.min(75, Math.max(25, targetRatio));
+      let newRatio = relativeX / wsWidth;
 
-      // Ensure neither column collapses
-      if (wsWidth > 0) {
-        const minPercent = (200 / wsWidth) * 100;
-        const maxPercent = 100 - (200 / wsWidth) * 100;
-        if (minPercent < maxPercent) {
-          targetRatio = Math.min(maxPercent, Math.max(minPercent, targetRatio));
-        }
+      // Bound between 0.25 and 0.75
+      newRatio = Math.min(0.75, Math.max(0.25, newRatio));
+
+      // Ensure safe min-w-[250px] for both Editor and PDF
+      const minRatio = 250 / wsWidth;
+      const maxRatio = 1 - 250 / wsWidth;
+      if (minRatio < maxRatio) {
+        newRatio = Math.min(maxRatio, Math.max(minRatio, newRatio));
       }
 
-      setSplitRatio(targetRatio);
+      setEditorRatio(newRatio);
     };
 
     const onMouseUp = () => {
@@ -1039,52 +1043,224 @@ export default function LaTeXStudio({
               <Maximize2 className="w-3.5 h-3.5 text-slate-300" />
             )}
           </button>
-
-          <span className="h-3.5 w-px bg-[#2d3136] mx-0.5" />
-
-          {/* AI Assistant Button */}
-          <AIAssistantDropdown
-            onAI={handleAI}
-            aiBusy={aiBusy}
-            align="right"
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-gradient-to-r from-indigo-600/30 to-purple-600/30 hover:from-indigo-600/50 hover:to-purple-600/50 text-indigo-300 border border-indigo-500/40 transition cursor-pointer disabled:opacity-50"
-          />
         </div>
       </header>
 
       {/* 3. Main Overleaf Authentic Workspace */}
       <main
         ref={mainContainerRef}
-        className="relative z-10 flex flex-row w-full h-[calc(100vh-40px)] overflow-hidden p-1.5 gap-1.5"
+        className="relative z-10 flex flex-row w-full h-[calc(100vh-40px)] overflow-hidden"
       >
-        {/* COLUMN 1: LEFT SIDEBAR (File tree + File outline) */}
-        <div
-          style={{ width: isFileTreeCollapsed ? 48 : sidebarWidth }}
-          className="file-tree-sidebar h-full rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-2xs flex flex-shrink-0 shrink-0"
+        {/* VERTICAL ACTIVITY BAR (Outer Left, w-11 / 44px) */}
+        <aside
+          aria-label="Thanh điều hướng Activity Bar"
+          className="w-11 h-full bg-[#181a1d] border-r border-white/10 flex-shrink-0 flex flex-col justify-between items-center py-2.5 z-30 select-none"
         >
-          <FileTreeExplorer
-            files={files}
-            activeFileName={activeFileName}
-            source={source}
-            onSelectFile={handleSelectFile}
-            onCreateFile={handleCreateFile}
-            onDeleteFile={handleDeleteFile}
-            onRenameFile={handleRenameFile}
-            onUploadAsset={handleUploadAsset}
-            onJumpToLine={(line) => setTargetLine(line)}
-            isCollapsed={isFileTreeCollapsed}
-            onToggleCollapse={() => setIsFileTreeCollapsed(!isFileTreeCollapsed)}
-          />
-        </div>
+          {/* Top Group: Files, Search, AI Assistant, Math Symbols */}
+          <div className="flex flex-col items-center gap-2 w-full">
+            {/* File button */}
+            <button
+              type="button"
+              onClick={() => setIsSidebarOpen((prev) => !prev)}
+              className={`relative p-2 rounded-lg transition-colors cursor-pointer group flex items-center justify-center ${
+                isSidebarOpen
+                  ? 'text-white bg-white/10 shadow-xs'
+                  : 'text-neutral-400 hover:text-white hover:bg-white/5'
+              }`}
+              title="Tệp & Dàn ý tài liệu (Files & Outline)"
+            >
+              {isSidebarOpen && (
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-emerald-500 rounded-r" />
+              )}
+              <Files className="w-4.5 h-4.5" />
+            </button>
+
+            {/* Search button */}
+            <button
+              type="button"
+              onClick={() => triggerEditorAction('find')}
+              className="p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center"
+              title="Tìm kiếm & Thay thế trong mã (Ctrl+F)"
+            >
+              <Search className="w-4.5 h-4.5" />
+            </button>
+
+            {/* AI Assistant button */}
+            <AIAssistantDropdown
+              onAI={handleAI}
+              aiBusy={aiBusy}
+              iconOnly={true}
+              align="sidebar"
+              className="p-2 rounded-lg text-indigo-400 hover:text-indigo-200 hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-center"
+            />
+
+            {/* Math Symbols button */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsSymbolsOpen((prev) => !prev)}
+                className={`p-2 rounded-lg transition-colors cursor-pointer flex items-center justify-center ${
+                  isSymbolsOpen
+                    ? 'text-cyan-400 bg-white/10'
+                    : 'text-neutral-400 hover:text-white hover:bg-white/5'
+                }`}
+                title="Bảng ký hiệu toán học MathType (Sigma/Omega)"
+              >
+                <Sigma className="w-4.5 h-4.5" />
+              </button>
+              <MathSymbolsPopover
+                isOpen={isSymbolsOpen}
+                onClose={() => setIsSymbolsOpen(false)}
+                onInsert={handleInsert}
+                position="sidebar"
+              />
+            </div>
+          </div>
+
+          {/* Bottom Group: Settings, Shortcuts/Help */}
+          <div className="flex flex-col items-center gap-2 w-full">
+            {/* Settings button */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsSettingsOpen((prev) => !prev)}
+                className={`p-2 rounded-lg transition-colors cursor-pointer flex items-center justify-center ${
+                  isSettingsOpen
+                    ? 'text-white bg-white/10'
+                    : 'text-neutral-400 hover:text-white hover:bg-white/5'
+                }`}
+                title="Cài đặt biên dịch & cỡ chữ"
+              >
+                <Settings className="w-4.5 h-4.5" />
+              </button>
+
+              {isSettingsOpen && (
+                <div className="absolute left-full bottom-0 ml-2 w-64 bg-[#1e2124] border border-[#3e444b] rounded-xl shadow-2xl p-3 z-50 text-xs text-slate-200 animate-in fade-in duration-100">
+                  <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/10 font-bold">
+                    <span>Cài đặt trình soạn thảo</span>
+                    <button
+                      type="button"
+                      onClick={() => setIsSettingsOpen(false)}
+                      className="p-1 text-slate-400 hover:text-white cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <div className="space-y-2.5 text-[11px]">
+                    <div>
+                      <label className="text-slate-400 block mb-1">Trình biên dịch:</label>
+                      <select
+                        value={engine}
+                        onChange={(e) => setEngine(e.target.value as any)}
+                        className="w-full bg-[#2a2e33] border border-white/10 rounded px-2 py-1 outline-none text-white cursor-pointer"
+                      >
+                        <option value="xelatex">XeLaTeX (Khuyên dùng - Chuẩn tiếng Việt)</option>
+                        <option value="pdflatex">pdfLaTeX (Biên dịch nhanh)</option>
+                        <option value="lualatex">LuaLaTeX</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-slate-400 block mb-1">Cỡ chữ soạn thảo:</label>
+                      <select
+                        value={fontSize}
+                        onChange={(e) => setFontSize(Number(e.target.value))}
+                        className="w-full bg-[#2a2e33] border border-white/10 rounded px-2 py-1 outline-none text-white cursor-pointer"
+                      >
+                        {[12, 13, 14, 15, 16, 18, 20].map((s) => (
+                          <option key={s} value={s}>{s}px</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Help / Shortcuts button */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsShortcutsOpen((prev) => !prev)}
+                className={`p-2 rounded-lg transition-colors cursor-pointer flex items-center justify-center ${
+                  isShortcutsOpen
+                    ? 'text-white bg-white/10'
+                    : 'text-neutral-400 hover:text-white hover:bg-white/5'
+                }`}
+                title="Phím tắt thao tác & Trợ giúp"
+              >
+                <HelpCircle className="w-4.5 h-4.5" />
+              </button>
+
+              {isShortcutsOpen && (
+                <div className="absolute left-full bottom-0 ml-2 w-72 bg-[#1e2124] border border-[#3e444b] rounded-xl shadow-2xl p-3.5 z-50 text-xs text-slate-200 animate-in fade-in duration-100">
+                  <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/10 font-bold">
+                    <span>Phím tắt thao tác nhanh</span>
+                    <button
+                      type="button"
+                      onClick={() => setIsShortcutsOpen(false)}
+                      className="p-1 text-slate-400 hover:text-white cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <div className="space-y-1.5 text-[11px]">
+                    <div className="flex justify-between items-center py-0.5">
+                      <span className="text-slate-400">Biên dịch mã (Recompile)</span>
+                      <kbd className="px-1.5 py-0.5 bg-[#2a2e33] rounded text-emerald-400 font-mono text-[10px]">Ctrl + Enter</kbd>
+                    </div>
+                    <div className="flex justify-between items-center py-0.5">
+                      <span className="text-slate-400">Tìm kiếm & Thay thế</span>
+                      <kbd className="px-1.5 py-0.5 bg-[#2a2e33] rounded text-slate-300 font-mono text-[10px]">Ctrl + F</kbd>
+                    </div>
+                    <div className="flex justify-between items-center py-0.5">
+                      <span className="text-slate-400">Hoàn tác / Làm lại</span>
+                      <kbd className="px-1.5 py-0.5 bg-[#2a2e33] rounded text-slate-300 font-mono text-[10px]">Ctrl + Z / Y</kbd>
+                    </div>
+                    <div className="flex justify-between items-center py-0.5">
+                      <span className="text-slate-400">In đậm / In nghiêng</span>
+                      <kbd className="px-1.5 py-0.5 bg-[#2a2e33] rounded text-slate-300 font-mono text-[10px]">Ctrl + B / I</kbd>
+                    </div>
+                    <div className="flex justify-between items-center py-0.5">
+                      <span className="text-slate-400">Đồng bộ SyncTeX</span>
+                      <span className="text-cyan-400 font-mono text-[10px]">Cụm nút giữa 2 cột</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </aside>
+
+        {/* COLUMN 1: LEFT SIDEBAR (File tree + File outline) */}
+        {isSidebarOpen && (
+          <div
+            style={{ width: `${sidebarWidth}px`, flexShrink: 0 }}
+            className="file-tree-sidebar h-full overflow-hidden border-r border-slate-200 dark:border-slate-800 shadow-2xs flex flex-shrink-0 shrink-0"
+          >
+            <FileTreeExplorer
+              files={files}
+              activeFileName={activeFileName}
+              source={source}
+              onSelectFile={handleSelectFile}
+              onCreateFile={handleCreateFile}
+              onDeleteFile={handleDeleteFile}
+              onRenameFile={handleRenameFile}
+              onUploadAsset={handleUploadAsset}
+              onJumpToLine={(line) => setTargetLine(line)}
+              isCollapsed={false}
+              onToggleCollapse={() => setIsSidebarOpen(false)}
+            />
+          </div>
+        )}
 
         {/* RESIZER 1: SIDEBAR RESIZER (180px - 360px) */}
-        {!isFileTreeCollapsed && (
+        {isSidebarOpen && (
           <div
             onMouseDown={handleMouseDownSidebarDivider}
-            className={`relative w-2 flex-shrink-0 shrink-0 flex items-center justify-center cursor-col-resize select-none transition-colors z-20 group ${
+            className={`relative w-1.5 flex-shrink-0 shrink-0 flex items-center justify-center cursor-col-resize select-none transition-colors z-20 group ${
               resizingTarget === 'sidebar'
                 ? 'bg-neutral-600/50'
-                : 'bg-[#1e2124] hover:bg-neutral-600/50 border-x border-white/5'
+                : 'bg-[#1e2124] hover:bg-neutral-600/50 border-r border-white/5'
             }`}
             title="Kéo chỉnh độ rộng Sidebar (180px - 360px)"
           >
@@ -1095,16 +1271,16 @@ export default function LaTeXStudio({
         {/* WORKSPACE CONTAINER: EDITOR + RESIZER 2 + PDF */}
         <div
           ref={workspaceRef}
-          className="flex-1 min-w-0 h-full flex flex-row overflow-hidden gap-1.5"
+          className="flex-1 min-w-0 h-full flex flex-row overflow-hidden p-1.5 gap-1.5"
         >
           {/* COLUMN 2: CODE EDITOR PANEL (Center) */}
           <section
             aria-label="Trình soạn thảo mã LaTeX"
             style={{
               display: layoutMode === 'pdf' ? 'none' : 'flex',
-              width: layoutMode === 'code' ? '100%' : `${splitRatio}%`,
+              width: layoutMode === 'code' ? '100%' : `${editorRatio * 100}%`,
             }}
-            className={`min-w-[200px] flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xs overflow-hidden h-full flex flex-shrink-0 shrink-0 relative ${
+            className={`min-w-[250px] flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xs overflow-hidden h-full flex flex-shrink-0 shrink-0 relative ${
               isResizing ? 'select-none pointer-events-none' : ''
             }`}
           >
@@ -1405,8 +1581,9 @@ export default function LaTeXStudio({
           aria-label="Khung xem trước PDF và Nhật ký Overleaf"
           style={{
             display: layoutMode === 'code' ? 'none' : 'flex',
+            width: layoutMode === 'split' ? `${(1 - editorRatio) * 100}%` : '100%',
           }}
-          className={`flex-1 min-w-[200px] overflow-hidden relative flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xs h-full ${
+          className={`min-w-[250px] flex-1 overflow-hidden relative flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xs h-full ${
             isResizing ? 'select-none pointer-events-none' : ''
           }`}
         >

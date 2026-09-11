@@ -16,8 +16,9 @@ import {
 export interface AIAssistantDropdownProps {
   onAI: (action: string, customPrompt?: string) => void;
   aiBusy: boolean;
-  align?: 'left' | 'right';
+  align?: 'left' | 'right' | 'sidebar';
   className?: string;
+  iconOnly?: boolean;
 }
 
 const AI_PRESETS = [
@@ -32,6 +33,7 @@ export default function AIAssistantDropdown({
   aiBusy,
   align = 'left',
   className = '',
+  iconOnly = false,
 }: AIAssistantDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [customPrompt, setCustomPrompt] = useState('');
@@ -74,19 +76,27 @@ export default function AIAssistantDropdown({
         title="Trợ lý AI soạn thảo & tạo đề toán"
       >
         {aiBusy ? (
-          <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400" />
+          <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />
         ) : (
-          <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+          <Sparkles className="w-4 h-4 text-indigo-400" />
         )}
-        <span className="hidden sm:inline">Trợ lý AI</span>
-        <ChevronDown className="w-3 h-3 opacity-70" />
+        {!iconOnly && (
+          <>
+            <span className="hidden sm:inline">Trợ lý AI</span>
+            <ChevronDown className="w-3 h-3 opacity-70" />
+          </>
+        )}
       </button>
 
       {isOpen && (
         <div
-          className={`absolute top-full ${
-            align === 'right' ? 'right-0' : 'left-0'
-          } mt-1.5 w-72 sm:w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-3 z-50 text-xs animate-in fade-in duration-100`}
+          className={`absolute ${
+            align === 'sidebar'
+              ? 'left-full top-0 ml-2'
+              : align === 'right'
+              ? 'top-full right-0 mt-1.5'
+              : 'top-full left-0 mt-1.5'
+          } w-72 sm:w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-3 z-50 text-xs animate-in fade-in duration-100`}
         >
           <div className="flex items-center gap-1.5 font-bold text-slate-800 dark:text-slate-100 mb-2">
             <WandSparkles className="w-4 h-4 text-indigo-500" />

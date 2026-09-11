@@ -385,7 +385,7 @@ export default function FileTreeExplorer({
               <ChevronRight className="w-3 h-3 text-neutral-400" />
             )}
             <Layers className="w-3.5 h-3.5 text-cyan-500" />
-            <span>File tree</span>
+            <span>CÂY THƯ MỤC</span>
           </button>
 
           <div className="flex-shrink-0 flex items-center gap-1">
@@ -621,7 +621,7 @@ export default function FileTreeExplorer({
               <ChevronRight className="w-3 h-3 text-neutral-400" />
             )}
             <ListTree className="w-3.5 h-3.5 text-indigo-500" />
-            <span>File outline</span>
+            <span>DÀN Ý TÀI LIỆU</span>
           </button>
           <span className="text-[10px] font-mono text-neutral-400 flex-shrink-0">
             {outlineItems.length} mục

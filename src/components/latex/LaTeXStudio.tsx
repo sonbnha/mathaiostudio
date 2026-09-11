@@ -655,7 +655,7 @@ export default function LaTeXStudio({
     setJumpToPage(page);
   };
 
-  // Resizer 1: Left Sidebar Divider (180px - 360px, offset by Activity Bar 44px)
+  // Resizer 1: Left Sidebar Divider (180px - 360px, offset by Activity Bar 44px, Snap below 80px)
   const handleMouseDownSidebarDivider = (e: React.MouseEvent) => {
     e.preventDefault();
     resizingTargetRef.current = 'sidebar';
@@ -665,8 +665,13 @@ export default function LaTeXStudio({
     const onMouseMove = (moveEvent: MouseEvent) => {
       if (resizingTargetRef.current !== 'sidebar') return;
       const rawWidth = moveEvent.clientX - activityBarWidth;
-      const clampedWidth = Math.min(360, Math.max(180, rawWidth));
-      setSidebarWidth(clampedWidth);
+      if (rawWidth < 80) {
+        setIsSidebarOpen(false);
+      } else {
+        setIsSidebarOpen(true);
+        const clampedWidth = Math.min(360, Math.max(180, rawWidth));
+        setSidebarWidth(clampedWidth);
+      }
     };
 
     const onMouseUp = () => {
@@ -684,7 +689,7 @@ export default function LaTeXStudio({
     window.addEventListener('mouseup', onMouseUp);
   };
 
-  // Resizer 2: Editor & PDF Preview Split Divider (25% - 75% relative to Main Workspace)
+  // Resizer 2: Editor & PDF Preview Split Divider (25% - 75% relative to Main Workspace, Snap PDF if < 100px from right)
   const handleMouseDownEditorPdfDivider = (e: React.MouseEvent) => {
     e.preventDefault();
     resizingTargetRef.current = 'editor-pdf';
@@ -696,23 +701,31 @@ export default function LaTeXStudio({
       if (resizingTargetRef.current !== 'editor-pdf') return;
       if (!wsEl) return;
       const wsRect = wsEl.getBoundingClientRect();
-      const relativeX = moveEvent.clientX - wsRect.left;
-      const wsWidth = wsRect.width;
-      if (wsWidth <= 0) return;
+      const distanceFromRight = wsRect.right - moveEvent.clientX;
 
-      let newRatio = relativeX / wsWidth;
+      if (distanceFromRight < 100) {
+        // Snap PDF to 0 and expand Editor 100%
+        setLayoutMode('code');
+      } else {
+        if (layoutMode === 'code') setLayoutMode('split');
+        const relativeX = moveEvent.clientX - wsRect.left;
+        const wsWidth = wsRect.width;
+        if (wsWidth <= 0) return;
 
-      // Bound between 0.25 and 0.75
-      newRatio = Math.min(0.75, Math.max(0.25, newRatio));
+        let newRatio = relativeX / wsWidth;
 
-      // Ensure safe min-w-[250px] for both Editor and PDF
-      const minRatio = 250 / wsWidth;
-      const maxRatio = 1 - 250 / wsWidth;
-      if (minRatio < maxRatio) {
-        newRatio = Math.min(maxRatio, Math.max(minRatio, newRatio));
+        // Bound between 0.15 and 0.85
+        newRatio = Math.min(0.85, Math.max(0.15, newRatio));
+
+        // Ensure safe min-w-[250px] for both Editor and PDF
+        const minRatio = 250 / wsWidth;
+        const maxRatio = 1 - 250 / wsWidth;
+        if (minRatio < maxRatio) {
+          newRatio = Math.min(maxRatio, Math.max(minRatio, newRatio));
+        }
+
+        setEditorRatio(newRatio);
       }
-
-      setEditorRatio(newRatio);
     };
 
     const onMouseUp = () => {
@@ -765,7 +778,7 @@ export default function LaTeXStudio({
                     : 'hover:bg-[#2a2e33] hover:text-white'
                 }`}
               >
-                File
+                Tệp
               </button>
 
               {activeDesktopMenu === 'file' && (
@@ -779,7 +792,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>New file</span>
+                    <span>Tệp mới</span>
                   </button>
 
                   <button
@@ -791,7 +804,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>New folder</span>
+                    <span>Thư mục mới</span>
                   </button>
 
                   <button
@@ -826,7 +839,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Upload file</span>
+                    <span>Tải lên tệp</span>
                   </button>
 
                   <button
@@ -838,7 +851,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer disabled:opacity-40"
                   >
-                    <span>{ocrBusy ? 'OCR in progress…' : 'OCR formula image'}</span>
+                    <span>{ocrBusy ? 'Đang nhận diện OCR…' : 'Nhận diện công thức từ ảnh (OCR)'}</span>
                   </button>
 
                   <button
@@ -849,7 +862,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Import Word (.docx)</span>
+                    <span>Nhập từ Word (.docx)</span>
                   </button>
 
                   <div className="border-b border-white/10 my-1 mx-1" />
@@ -864,7 +877,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Make a copy</span>
+                    <span>Tạo bản sao</span>
                   </button>
 
                   <button
@@ -875,7 +888,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Show version history</span>
+                    <span>Lịch sử phiên bản</span>
                   </button>
 
                   <button
@@ -889,7 +902,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Word count</span>
+                    <span>Thống kê từ</span>
                   </button>
 
                   <div className="border-b border-white/10 my-1 mx-1" />
@@ -902,7 +915,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Submit</span>
+                    <span>Nộp bài / Xuất bản</span>
                   </button>
 
                   {pdf && (
@@ -912,7 +925,7 @@ export default function LaTeXStudio({
                       onClick={() => setActiveDesktopMenu(null)}
                       className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                     >
-                      <span>Download PDF</span>
+                      <span>Tải xuống PDF</span>
                     </a>
                   )}
 
@@ -924,7 +937,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Download Source (.tex)</span>
+                    <span>Tải xuống mã nguồn (.tex)</span>
                   </button>
 
                   <button
@@ -935,7 +948,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Download Word (.docx)</span>
+                    <span>Tải xuống Word (.docx)</span>
                   </button>
 
                   <div className="border-b border-white/10 my-1 mx-1" />
@@ -948,7 +961,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Settings</span>
+                    <span>Cài đặt</span>
                   </button>
                 </div>
               )}
@@ -968,7 +981,7 @@ export default function LaTeXStudio({
                     : 'hover:bg-[#2a2e33] hover:text-white'
                 }`}
               >
-                Edit
+                Chỉnh sửa
               </button>
 
               {activeDesktopMenu === 'edit' && (
@@ -981,7 +994,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Undo</span>
+                    <span>Hoàn tác</span>
                     <span className="text-neutral-500 font-mono text-[11px]">Ctrl+Z</span>
                   </button>
 
@@ -993,7 +1006,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Redo</span>
+                    <span>Làm lại</span>
                     <span className="text-neutral-500 font-mono text-[11px]">Ctrl+Y</span>
                   </button>
 
@@ -1007,7 +1020,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Find and replace</span>
+                    <span>Tìm kiếm & Thay thế</span>
                     <span className="text-neutral-500 font-mono text-[11px]">Ctrl+F</span>
                   </button>
 
@@ -1019,7 +1032,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Select all</span>
+                    <span>Chọn tất cả</span>
                     <span className="text-neutral-500 font-mono text-[11px]">Ctrl+A</span>
                   </button>
                 </div>
@@ -1040,7 +1053,7 @@ export default function LaTeXStudio({
                     : 'hover:bg-[#2a2e33] hover:text-white'
                 }`}
               >
-                Insert
+                Chèn
               </button>
 
               {activeDesktopMenu === 'insert' && (
@@ -1053,7 +1066,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Symbol</span>
+                    <span>Ký hiệu toán học</span>
                     <span className="text-neutral-500 font-mono text-[11px]">Ω</span>
                   </button>
 
@@ -1065,7 +1078,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Math</span>
+                    <span>Công thức toán</span>
                     <span className="text-neutral-500 font-mono text-[11px]">Ctrl+M</span>
                   </button>
 
@@ -1077,7 +1090,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Figure</span>
+                    <span>Hình ảnh</span>
                   </button>
 
                   <button
@@ -1088,7 +1101,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Table</span>
+                    <span>Bảng biểu</span>
                   </button>
 
                   <button
@@ -1099,7 +1112,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Citation</span>
+                    <span>Trích dẫn</span>
                     <span className="text-neutral-500 font-mono text-[11px]">\\cite</span>
                   </button>
 
@@ -1111,7 +1124,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Link</span>
+                    <span>Liên kết</span>
                     <span className="text-neutral-500 font-mono text-[11px]">\\href</span>
                   </button>
 
@@ -1123,7 +1136,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Cross reference</span>
+                    <span>Tham chiếu chéo</span>
                     <span className="text-neutral-500 font-mono text-[11px]">\\ref</span>
                   </button>
 
@@ -1135,7 +1148,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Comment</span>
+                    <span>Ghi chú</span>
                     <span className="text-neutral-500 font-mono text-[11px]">%</span>
                   </button>
 
@@ -1149,7 +1162,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Abstract</span>
+                    <span>Tóm tắt (Abstract)</span>
                   </button>
 
                   <button
@@ -1160,18 +1173,18 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Keywords</span>
+                    <span>Từ khóa (Keywords)</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => {
                       setActiveDesktopMenu(null);
-                      handleInsert('\n\\title{Document Title}\n\\author{Author}\n\\date{\\today}\n\\maketitle\n');
+                      handleInsert('\n\\title{Tiêu đề tài liệu}\n\\author{Tác giả}\n\\date{\\today}\n\\maketitle\n');
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Title</span>
+                    <span>Tiêu đề (Title)</span>
                   </button>
                 </div>
               )}
@@ -1191,7 +1204,7 @@ export default function LaTeXStudio({
                     : 'hover:bg-[#2a2e33] hover:text-white'
                 }`}
               >
-                View
+                Hiển thị
               </button>
 
               {activeDesktopMenu === 'view' && (
@@ -1204,7 +1217,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span className={layoutMode === 'split' ? 'text-white font-medium' : ''}>Split view</span>
+                    <span className={layoutMode === 'split' ? 'text-white font-medium' : ''}>Chế độ chia đôi</span>
                     {layoutMode === 'split' && <span className="text-emerald-400 text-xs">✓</span>}
                   </button>
 
@@ -1216,7 +1229,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span className={layoutMode === 'code' ? 'text-white font-medium' : ''}>Editor only</span>
+                    <span className={layoutMode === 'code' ? 'text-white font-medium' : ''}>Chỉ trình soạn thảo</span>
                     {layoutMode === 'code' && <span className="text-emerald-400 text-xs">✓</span>}
                   </button>
 
@@ -1228,7 +1241,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span className={layoutMode === 'pdf' ? 'text-white font-medium' : ''}>PDF only</span>
+                    <span className={layoutMode === 'pdf' ? 'text-white font-medium' : ''}>Chỉ xem PDF</span>
                     {layoutMode === 'pdf' && <span className="text-emerald-400 text-xs">✓</span>}
                   </button>
 
@@ -1241,7 +1254,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer disabled:opacity-40"
                   >
-                    <span>Open PDF in separate tab</span>
+                    <span>Mở PDF trong tab mới</span>
                   </button>
 
                   <button
@@ -1252,7 +1265,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Focus mode</span>
+                    <span>Chế độ tập trung</span>
                     {isFullscreen && <span className="text-emerald-400 text-xs">✓</span>}
                   </button>
 
@@ -1266,7 +1279,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span className={editorMode === 'code' ? 'text-white font-medium' : ''}>Normal mode</span>
+                    <span className={editorMode === 'code' ? 'text-white font-medium' : ''}>Chế độ mã nguồn</span>
                     {editorMode === 'code' && <span className="text-emerald-400 text-xs">✓</span>}
                   </button>
 
@@ -1278,7 +1291,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span className={editorMode === 'visual' ? 'text-white font-medium' : ''}>Visual Editor mode</span>
+                    <span className={editorMode === 'visual' ? 'text-white font-medium' : ''}>Chế độ trực quan (Visual)</span>
                     {editorMode === 'visual' && <span className="text-emerald-400 text-xs">✓</span>}
                   </button>
 
@@ -1292,7 +1305,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span className={isSidebarOpen ? 'text-white font-medium' : ''}>Show file tree</span>
+                    <span className={isSidebarOpen ? 'text-white font-medium' : ''}>Hiện cây thư mục</span>
                     {isSidebarOpen && <span className="text-emerald-400 text-xs">✓</span>}
                   </button>
 
@@ -1305,7 +1318,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer disabled:opacity-40"
                   >
-                    <span>Presentation mode</span>
+                    <span>Chế độ trình chiếu</span>
                   </button>
 
                   <button
@@ -1316,7 +1329,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Dark theme</span>
+                    <span>Giao diện tối</span>
                     {isDark && <span className="text-emerald-400 text-xs">✓</span>}
                   </button>
                 </div>
@@ -1337,7 +1350,7 @@ export default function LaTeXStudio({
                     : 'hover:bg-[#2a2e33] hover:text-white'
                 }`}
               >
-                Format
+                Định dạng
               </button>
 
               {activeDesktopMenu === 'format' && (
@@ -1350,7 +1363,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Bold</span>
+                    <span>In đậm</span>
                     <span className="text-neutral-500 font-mono text-[11px]">Ctrl+B</span>
                   </button>
 
@@ -1362,7 +1375,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Italics</span>
+                    <span>In nghiêng</span>
                     <span className="text-neutral-500 font-mono text-[11px]">Ctrl+I</span>
                   </button>
 
@@ -1374,7 +1387,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Underline</span>
+                    <span>Gạch chân</span>
                     <span className="text-neutral-500 font-mono text-[11px]">\\underline</span>
                   </button>
 
@@ -1386,7 +1399,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Typewriter</span>
+                    <span>Font máy đánh chữ</span>
                     <span className="text-neutral-500 font-mono text-[11px]">\\texttt</span>
                   </button>
 
@@ -1400,7 +1413,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Bullet list</span>
+                    <span>Danh sách dấu chấm</span>
                   </button>
 
                   <button
@@ -1411,7 +1424,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Numbered list</span>
+                    <span>Danh sách đánh số</span>
                   </button>
 
                   <div className="border-b border-white/10 my-1 mx-1" />
@@ -1420,11 +1433,11 @@ export default function LaTeXStudio({
                     type="button"
                     onClick={() => {
                       setActiveDesktopMenu(null);
-                      handleInsert('\n\\section{Section Title}\n');
+                      handleInsert('\n\\section{Tiêu đề Section}\n');
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Section</span>
+                    <span>Mục chính (Section)</span>
                     <span className="text-neutral-500 font-mono text-[11px]">\\section</span>
                   </button>
 
@@ -1432,11 +1445,11 @@ export default function LaTeXStudio({
                     type="button"
                     onClick={() => {
                       setActiveDesktopMenu(null);
-                      handleInsert('\n\\subsection{Subsection Title}\n');
+                      handleInsert('\n\\subsection{Tiêu đề Subsection}\n');
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Subsection</span>
+                    <span>Mục con (Subsection)</span>
                     <span className="text-neutral-500 font-mono text-[11px]">\\subsection</span>
                   </button>
 
@@ -1444,11 +1457,11 @@ export default function LaTeXStudio({
                     type="button"
                     onClick={() => {
                       setActiveDesktopMenu(null);
-                      handleInsert('\n\\subsubsection{Subsubsection Title}\n');
+                      handleInsert('\n\\subsubsection{Tiêu đề Subsubsection}\n');
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Subsubsection</span>
+                    <span>Mục con cấp 2 (Subsubsection)</span>
                     <span className="text-neutral-500 font-mono text-[11px]">\\subsubsection</span>
                   </button>
 
@@ -1456,11 +1469,11 @@ export default function LaTeXStudio({
                     type="button"
                     onClick={() => {
                       setActiveDesktopMenu(null);
-                      handleInsert('\n\\paragraph{Paragraph:}\n');
+                      handleInsert('\n\\paragraph{Đoạn văn:}\n');
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Paragraph</span>
+                    <span>Đoạn văn (Paragraph)</span>
                     <span className="text-neutral-500 font-mono text-[11px]">\\paragraph</span>
                   </button>
                 </div>
@@ -1481,7 +1494,7 @@ export default function LaTeXStudio({
                     : 'hover:bg-[#2a2e33] hover:text-white'
                 }`}
               >
-                Help
+                Trợ giúp
               </button>
 
               {activeDesktopMenu === 'help' && (
@@ -1494,7 +1507,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Keyboard shortcuts</span>
+                    <span>Phím tắt bàn phím</span>
                   </button>
 
                   <button
@@ -1505,7 +1518,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Documentation</span>
+                    <span>Tài liệu hướng dẫn</span>
                   </button>
 
                   <button
@@ -1516,7 +1529,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Settings</span>
+                    <span>Cài đặt</span>
                   </button>
 
                   <div className="border-b border-white/10 my-1 mx-1" />
@@ -1529,7 +1542,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-neutral-300 hover:bg-[#2c3238] hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>About MathAIO Studio</span>
+                    <span>Giới thiệu MathAIO Studio</span>
                   </button>
                 </div>
               )}
@@ -1919,18 +1932,23 @@ export default function LaTeXStudio({
 
         {/* Quick Expand Button when Sidebar is Collapsed */}
         {!isSidebarOpen && (
-          <button
-            type="button"
-            onMouseDown={(e) => e.stopPropagation()}
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsSidebarOpen(true);
-            }}
-            className="absolute left-11 top-[35%] z-30 w-3.5 h-8 rounded-r bg-[#20262b] hover:bg-[#2e353b] text-neutral-400 hover:text-white flex items-center justify-center border border-l-0 border-white/10 shadow-xs transition cursor-pointer pointer-events-auto"
-            title="Click to show the panel"
-          >
-            <ChevronRight className="w-3 h-3" />
-          </button>
+          <div className="absolute left-11 top-1/2 -translate-y-1/2 z-30 group/sbexp">
+            <button
+              type="button"
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsSidebarOpen(true);
+              }}
+              className="w-3 h-10 rounded-r-[2px] bg-[#20262b] hover:bg-[#2c333a] text-neutral-400 hover:text-white flex items-center justify-center border border-l-0 border-white/10 shadow-xs transition-colors cursor-pointer pointer-events-auto"
+              title="Mở rộng bảng điều khiển"
+            >
+              <ChevronRight className="w-2.5 h-2.5" />
+            </button>
+            <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-[#111315] border border-white/10 rounded text-[11px] text-white whitespace-nowrap shadow-lg pointer-events-none opacity-0 group-hover/sbexp:opacity-100 transition-opacity duration-150 z-50">
+              Mở rộng bảng điều khiển
+            </div>
+          </div>
         )}
 
         {/* RESIZER 1: SIDEBAR RESIZER (180px - 360px) */}
@@ -1944,26 +1962,52 @@ export default function LaTeXStudio({
             }`}
             title="Kéo chỉnh độ rộng Sidebar (180px - 360px)"
           >
-            <button
-              type="button"
-              onMouseDown={(e) => e.stopPropagation()}
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsSidebarOpen(false);
-              }}
-              className="absolute top-[35%] w-3.5 h-8 bg-[#20262b] hover:bg-[#2e353b] border border-white/10 text-neutral-400 hover:text-white flex items-center justify-center rounded cursor-pointer pointer-events-auto z-30 shadow-xs transition"
-              title="Click to hide the panel"
-            >
-              <ChevronLeft className="w-3 h-3" />
-            </button>
+            <div className="absolute top-1/2 -translate-y-1/2 group/sbc">
+              <button
+                type="button"
+                onMouseDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsSidebarOpen(false);
+                }}
+                className="w-3 h-10 bg-[#20262b] hover:bg-[#2c333a] border border-white/10 rounded-[2px] text-neutral-400 hover:text-white flex items-center justify-center cursor-pointer pointer-events-auto z-30 shadow-xs transition-colors"
+                title="Thu gọn bảng điều khiển"
+              >
+                <ChevronLeft className="w-2.5 h-2.5" />
+              </button>
+              <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-[#111315] border border-white/10 rounded text-[11px] text-white whitespace-nowrap shadow-lg pointer-events-none opacity-0 group-hover/sbc:opacity-100 transition-opacity duration-150 z-50">
+                Thu gọn bảng điều khiển
+              </div>
+            </div>
           </div>
         )}
 
         {/* WORKSPACE CONTAINER: EDITOR + RESIZER 2 + PDF */}
         <div
           ref={workspaceRef}
-          className="flex-1 min-w-0 h-full flex flex-row overflow-hidden p-1.5 gap-1.5"
+          className="relative flex-1 min-w-0 h-full flex flex-row overflow-hidden p-1.5 gap-1.5"
         >
+          {/* Quick Expand Button when PDF is Collapsed (layoutMode === 'code') */}
+          {layoutMode === 'code' && (
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 z-30 group/pdfexp">
+              <button
+                type="button"
+                onMouseDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLayoutMode('split');
+                  setEditorRatio(0.5);
+                }}
+                className="w-3 h-10 rounded-l-[2px] bg-[#20262b] hover:bg-[#2c333a] text-neutral-400 hover:text-white flex items-center justify-center border border-r-0 border-white/10 shadow-xs transition-colors cursor-pointer pointer-events-auto"
+                title="Mở rộng khung PDF"
+              >
+                <ChevronLeft className="w-2.5 h-2.5" />
+              </button>
+              <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-[#111315] border border-white/10 rounded text-[11px] text-white whitespace-nowrap shadow-lg pointer-events-none opacity-0 group-hover/pdfexp:opacity-100 transition-opacity duration-150 z-50">
+                Mở rộng khung PDF
+              </div>
+            </div>
+          )}
           {/* COLUMN 2: CODE EDITOR PANEL (Center) */}
           <section
             aria-label="Trình soạn thảo mã LaTeX"
@@ -2243,32 +2287,64 @@ export default function LaTeXStudio({
             }`}
             title="Kéo giãn tỷ lệ giữa Code và PDF (Overleaf Split Gutter)"
           >
-            <div className="flex flex-col items-center justify-center h-full gap-0.5 z-10">
-              <button
-                type="button"
-                onMouseDown={(e) => e.stopPropagation()}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleSyncCodeToPDF(cursorLine || targetLine || 1);
-                }}
-                className="w-5 h-5 bg-[#252a2e] hover:bg-neutral-700 border border-white/10 text-neutral-300 hover:text-white flex items-center justify-center my-0.5 rounded cursor-pointer pointer-events-auto z-30 shadow-xs transition"
-                title="Chuyển từ con trỏ Code sang vị trí PDF (SyncTeX ->)"
-              >
-                <ArrowRight className="w-3 h-3 text-neutral-300 group-hover:text-white" />
-              </button>
+            {/* SyncTeX Arrows - Anchored at top-[72px] (aligning with code editor lines) */}
+            <div className="absolute top-[72px] flex flex-col items-center gap-1 z-30">
+              {/* SyncTeX Code -> PDF */}
+              <div className="relative group/synctop flex items-center justify-center">
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSyncCodeToPDF(cursorLine || targetLine || 1);
+                  }}
+                  className="w-5 h-5 bg-[#252a2e] hover:bg-neutral-700 border border-white/10 rounded-[3px] text-neutral-300 hover:text-white flex items-center justify-center cursor-pointer pointer-events-auto shadow-xs transition-colors"
+                  title="Nhảy đến vị trí trong PDF"
+                >
+                  <ArrowRight className="w-3 h-3 text-neutral-300 group-hover:text-white" />
+                </button>
+                <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-[#111315] border border-white/10 rounded text-[11px] text-white whitespace-nowrap shadow-lg pointer-events-none opacity-0 group-hover/synctop:opacity-100 transition-opacity duration-150 z-50">
+                  Nhảy đến vị trí trong PDF
+                </div>
+              </div>
 
+              {/* SyncTeX PDF -> Code */}
+              <div className="relative group/syncbot flex items-center justify-center">
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSyncPDFToCode(pdfCurrentPage || 1, 0.2);
+                  }}
+                  className="w-5 h-5 bg-[#252a2e] hover:bg-neutral-700 border border-white/10 rounded-[3px] text-neutral-300 hover:text-white flex items-center justify-center cursor-pointer pointer-events-auto shadow-xs transition-colors"
+                  title="Nhảy đến dòng mã nguồn"
+                >
+                  <ArrowLeft className="w-3 h-3 text-neutral-300 group-hover:text-white" />
+                </button>
+                <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-[#111315] border border-white/10 rounded text-[11px] text-white whitespace-nowrap shadow-lg pointer-events-none opacity-0 group-hover/syncbot:opacity-100 transition-opacity duration-150 z-50">
+                  Nhảy đến dòng mã nguồn
+                </div>
+              </div>
+            </div>
+
+            {/* PDF Flush Collapse Handle - Centered at top-1/2 */}
+            <div className="absolute top-1/2 -translate-y-1/2 group/pdfcol z-30">
               <button
                 type="button"
                 onMouseDown={(e) => e.stopPropagation()}
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleSyncPDFToCode(pdfCurrentPage || 1, 0.2);
+                  setLayoutMode('code');
                 }}
-                className="w-5 h-5 bg-[#252a2e] hover:bg-neutral-700 border border-white/10 text-neutral-300 hover:text-white flex items-center justify-center my-0.5 rounded cursor-pointer pointer-events-auto z-30 shadow-xs transition"
-                title="Chuyển từ trang PDF sang dòng Code tương ứng (SyncTeX <-)"
+                className="w-3 h-10 bg-[#20262b] hover:bg-[#2c333a] border border-white/10 rounded-[2px] text-neutral-400 hover:text-white flex items-center justify-center cursor-pointer pointer-events-auto shadow-xs transition-colors"
+                title="Thu gọn khung PDF"
               >
-                <ArrowLeft className="w-3 h-3 text-neutral-300 group-hover:text-white" />
+                <ChevronRight className="w-2.5 h-2.5" />
               </button>
+              <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-[#111315] border border-white/10 rounded text-[11px] text-white whitespace-nowrap shadow-lg pointer-events-none opacity-0 group-hover/pdfcol:opacity-100 transition-opacity duration-150 z-50">
+                Thu gọn khung PDF
+              </div>
             </div>
           </div>
         )}

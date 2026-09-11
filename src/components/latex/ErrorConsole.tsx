@@ -36,13 +36,27 @@ export function parseTeXLog(
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
-    // Detect LaTeX errors
-    if (line.startsWith('!') || line.includes('Error:')) {
+    // Detect LaTeX errors: lines starting with '!' or file:line: error
+    const fileLineMatch = line.match(/(?:(?:\.\/)?([a-zA-Z0-9_\-.]+\.tex)):(\d+):\s*(.*)$/);
+
+    if (fileLineMatch) {
+      const fileName = fileLineMatch[1] || currentFile;
+      const lineNum = parseInt(fileLineMatch[2], 10);
+      const msg = fileLineMatch[3] || line;
+      errors.push({
+        id: `err-${i}-${Date.now()}`,
+        type: 'error',
+        line: lineNum,
+        file: fileName,
+        message: msg.trim(),
+        rawSnippet: line,
+      });
+    } else if (line.startsWith('!') || line.includes('Error:') || line.includes('Fatal error')) {
       let message = line.replace(/^!\s*/, '');
       let lineNum: number | undefined;
 
       // Look ahead for "l.<line_number>"
-      for (let j = i + 1; j < Math.min(lines.length, i + 6); j++) {
+      for (let j = i + 1; j < Math.min(lines.length, i + 8); j++) {
         const match = lines[j].match(/^l\.(\d+)\s*(.*)$/);
         if (match) {
           lineNum = parseInt(match[1], 10);
@@ -85,11 +99,11 @@ export function parseTeXLog(
     }
   }
 
-  if (errors.length === 0 && (logText.toLowerCase().includes('lỗi') || logText.toLowerCase().includes('fail'))) {
+  if (errors.length === 0 && (logText.toLowerCase().includes('lỗi') || logText.toLowerCase().includes('fail') || logText.toLowerCase().includes('emergency stop'))) {
     errors.push({
       id: `err-general-${Date.now()}`,
       type: 'error',
-      message: logText.slice(0, 300),
+      message: logText.slice(0, 400),
       file: currentFile,
     });
   }
@@ -177,7 +191,7 @@ export default function ErrorConsole({
               className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-bold text-xs shadow-xs transition cursor-pointer disabled:opacity-50"
             >
               <WandSparkles className="w-3.5 h-3.5" />
-              <span>{fixBusy ? 'AI đang sửa…' : '1-Click AI Fix'}</span>
+              <span>{fixBusy ? 'AI đang sửa…' : 'Tự sửa lỗi với AI'}</span>
             </button>
           )}
 

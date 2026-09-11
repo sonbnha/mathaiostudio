@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import Editor, { type OnMount } from '@monaco-editor/react';
 import { useTheme } from '@/context/ThemeContext';
+import type { ParsedTeXIssue } from '@/components/latex/ErrorConsole';
 
 export default function TeXEditor({
   source,
@@ -11,6 +12,7 @@ export default function TeXEditor({
   insertRequest,
   onCursorLine,
   targetLine,
+  errors,
 }: {
   source: string;
   onChange: (s: string) => void;
@@ -19,11 +21,13 @@ export default function TeXEditor({
   insertRequest?: { id: number; text: string };
   onCursorLine?: (line: number) => void;
   targetLine?: number;
+  errors?: ParsedTeXIssue[];
 }) {
   const [ready, setReady] = useState(false);
   const [fallback, setFallback] = useState(false);
   const { resolvedTheme } = useTheme();
   const [editorRef, setEditorRef] = useState<Parameters<OnMount>[0] | null>(null);
+  const [monacoRef, setMonacoRef] = useState<any>(null);
 
   // Fallback timer if Monaco CDN is blocked
   useEffect(() => {
@@ -31,6 +35,37 @@ export default function TeXEditor({
     const timer = setTimeout(() => setFallback(true), 10000);
     return () => clearTimeout(timer);
   }, [ready]);
+
+  // Update Monaco Error Squiggles / Markers
+  useEffect(() => {
+    if (!editorRef || !monacoRef) return;
+    const model = editorRef.getModel();
+    if (!model) return;
+
+    if (!errors || errors.length === 0) {
+      monacoRef.editor.setModelMarkers(model, 'tex-errors', []);
+      return;
+    }
+
+    const markers = errors
+      .filter((err) => err.line && err.line > 0)
+      .map((err) => {
+        const lineContent = model.getLineContent(err.line!) || '';
+        return {
+          startLineNumber: err.line!,
+          startColumn: 1,
+          endLineNumber: err.line!,
+          endColumn: Math.max(1, lineContent.length + 1),
+          message: err.message,
+          severity:
+            err.type === 'error'
+              ? monacoRef.MarkerSeverity.Error
+              : monacoRef.MarkerSeverity.Warning,
+        };
+      });
+
+    monacoRef.editor.setModelMarkers(model, 'tex-errors', markers);
+  }, [editorRef, monacoRef, errors]);
 
   // Insert text at cursor position (from ribbon or tools) with smart cursor placement
   useEffect(() => {
@@ -80,6 +115,7 @@ export default function TeXEditor({
   const mount: OnMount = (editor, monaco) => {
     setReady(true);
     setEditorRef(editor);
+    setMonacoRef(monaco);
 
     editor.onDidChangeCursorPosition((event) => {
       onCursorLine?.(event.position.lineNumber);

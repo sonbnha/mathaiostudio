@@ -840,6 +840,7 @@ export default function LaTeXStudio({
               insertRequest={insertRequest}
               onCursorLine={handleSyncCodeToPDF}
               targetLine={targetLine}
+              errors={errors}
             />
           </div>
         </section>

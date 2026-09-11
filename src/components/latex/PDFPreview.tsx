@@ -24,11 +24,13 @@ const PDFSinglePage = memo(function PDFSinglePage({
   width,
   onPageClick,
   isHighlighted,
+  invertColors = false,
 }: {
   number: number;
   width: number;
   onPageClick?: (page: number, ratio: number) => void;
   isHighlighted?: boolean;
+  invertColors?: boolean;
 }) {
   const element = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
@@ -58,7 +60,7 @@ const PDFSinglePage = memo(function PDFSinglePage({
         const yRatio = (e.clientY - rect.top) / Math.max(1, rect.height);
         onPageClick?.(number, yRatio);
       }}
-      className={`mb-6 shadow-[0_4px_16px_rgba(0,0,0,0.35)] bg-white rounded-xs overflow-hidden cursor-crosshair relative shrink-0 transition-shadow ${
+      className={`mb-6 shadow-[0_4px_16px_rgba(0,0,0,0.35)] bg-white rounded-xs overflow-hidden cursor-crosshair relative shrink-0 transition-all duration-150 ${
         isHighlighted ? 'ring-4 ring-cyan-500/80' : ''
       }`}
       style={{
@@ -66,6 +68,7 @@ const PDFSinglePage = memo(function PDFSinglePage({
         maxWidth: `${width}px`,
         minHeight: `${pageHeight}px`,
         aspectRatio: '1 / 1.414',
+        filter: invertColors ? 'invert(0.9) hue-rotate(180deg)' : undefined,
       }}
       aria-label={`Trang ${number}`}
     >
@@ -116,6 +119,7 @@ export default function PDFPreview({
   isPresentation,
   onClosePresentation,
   showSubToolbar = false,
+  invertColors = false,
 }: {
   url: string;
   zoom: number | 'page-width';
@@ -128,6 +132,7 @@ export default function PDFPreview({
   isPresentation?: boolean;
   onClosePresentation?: () => void;
   showSubToolbar?: boolean;
+  invertColors?: boolean;
 }) {
   const host = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(500);
@@ -317,6 +322,7 @@ export default function PDFPreview({
                 number={activePage}
                 width={Math.min(containerWidth * 1.1, 900)}
                 onPageClick={onSync}
+                invertColors={invertColors}
               />
             )}
           </Document>
@@ -390,7 +396,9 @@ export default function PDFPreview({
       {/* Main PDF Scroll Container with Fixed Vertical Scrollbar & Scroll Anchoring Disabled */}
       <div
         ref={host}
-        className="flex-1 min-h-0 w-full h-full p-4 flex flex-col items-center bg-slate-200 dark:bg-[#525659]"
+        className={`flex-1 min-h-0 w-full h-full p-4 flex flex-col items-center transition-colors ${
+          invertColors ? 'bg-slate-900 dark:bg-[#181a1d]' : 'bg-slate-200 dark:bg-[#525659]'
+        }`}
         style={{
           overflowY: 'scroll',
           overflowX: 'auto',
@@ -422,6 +430,7 @@ export default function PDFPreview({
               width={computedWidth}
               onPageClick={onSync}
               isHighlighted={highlightPage === i + 1}
+              invertColors={invertColors}
             />
           ))}
         </Document>

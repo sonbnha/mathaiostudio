@@ -322,37 +322,98 @@ export default function ProjectSettingsModal({
                     Giao diện & Phông chữ
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Tùy chỉnh chủ đề sáng/tối, kích thước và font chữ hiển thị trong dự án.
+                    Tùy chỉnh chủ đề ứng dụng, phối màu CodeMirror 6, chế độ xem trước PDF ban đêm và bố cục phông chữ.
                   </p>
                 </div>
 
                 <div className="space-y-5 divide-y divide-slate-100 dark:divide-slate-800/60">
-                  {/* Theme */}
+                  {/* Overall Theme */}
                   <div className="pt-4 first:pt-0 flex items-center justify-between gap-4">
                     <div>
                       <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                        Chủ đề giao diện (Theme)
+                        Giao diện tổng thể (Overall theme)
                       </div>
                       <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                        Chuyển đổi giữa chế độ nền sáng và nền tối toàn diện.
+                        Chuyển đổi giao diện thanh công cụ, cây thư mục và khung làm việc giữa nền sáng và nền tối.
                       </div>
                     </div>
                     <select
-                      aria-label="Chọn chủ đề giao diện"
-                      value={settings.theme}
-                      onChange={(e) => onUpdateSettings({ theme: e.target.value as 'light' | 'dark' })}
-                      className="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-slate-200 outline-none cursor-pointer hover:border-slate-300 dark:hover:border-slate-600 min-w-[140px]"
+                      aria-label="Chọn giao diện tổng thể"
+                      value={settings.theme || settings.overallTheme || 'dark'}
+                      onChange={(e) => {
+                        const val = e.target.value as 'light' | 'dark';
+                        onUpdateSettings({ theme: val, overallTheme: val });
+                      }}
+                      className="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-slate-200 outline-none cursor-pointer hover:border-slate-300 dark:hover:border-slate-600 min-w-[160px]"
                     >
                       <option value="light">Sáng (Light Mode)</option>
                       <option value="dark">Tối (Dark Mode)</option>
                     </select>
                   </div>
 
-                  {/* Font Size */}
+                  {/* Editor Theme */}
                   <div className="pt-4 flex items-center justify-between gap-4">
                     <div>
                       <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                        Cỡ chữ soạn thảo (Font size)
+                        Phối màu soạn thảo (Editor theme)
+                      </div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        Bộ màu cú pháp CodeMirror 6 độc lập (hỗ trợ nền ngoài Sáng nhưng editor Tối).
+                      </div>
+                    </div>
+                    <select
+                      aria-label="Chọn phối màu soạn thảo"
+                      value={settings.editorTheme || (settings.theme === 'dark' ? 'one-dark' : 'overleaf-light')}
+                      onChange={(e) => onUpdateSettings({ editorTheme: e.target.value })}
+                      className="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-slate-200 outline-none cursor-pointer hover:border-slate-300 dark:hover:border-slate-600 min-w-[160px]"
+                    >
+                      <optgroup label="Giao diện sáng">
+                        <option value="overleaf-light">Theme sáng chuẩn (Overleaf Light)</option>
+                        <option value="github-light">GitHub Light</option>
+                        <option value="eclipse">Eclipse</option>
+                      </optgroup>
+                      <optgroup label="Giao diện tối">
+                        <option value="one-dark">One Dark (Mặc định)</option>
+                        <option value="dracula">Dracula</option>
+                        <option value="monokai">Monokai</option>
+                        <option value="nord">Nord</option>
+                        <option value="sublime">Sublime / Cobalt</option>
+                      </optgroup>
+                    </select>
+                  </div>
+
+                  {/* Dark Mode PDF Preview */}
+                  <div className="pt-4 flex items-center justify-between gap-4">
+                    <div>
+                      <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                        Chế độ xem trước PDF ban đêm (Dark mode PDF preview)
+                      </div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        Đảo màu thông minh cho khung xem PDF giúp dịu mắt khi làm việc buổi tối.
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={settings.pdfInvertColors}
+                      onClick={() => onUpdateSettings({ pdfInvertColors: !settings.pdfInvertColors })}
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        settings.pdfInvertColors ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-700'
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                          settings.pdfInvertColors ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Editor Font Size */}
+                  <div className="pt-4 flex items-center justify-between gap-4">
+                    <div>
+                      <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                        Cỡ chữ soạn thảo (Editor font size)
                       </div>
                       <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                         Kích thước phông chữ trong vùng biên tập mã nguồn.
@@ -360,16 +421,42 @@ export default function ProjectSettingsModal({
                     </div>
                     <select
                       aria-label="Chọn cỡ chữ soạn thảo"
-                      value={settings.fontSize}
-                      onChange={(e) => onUpdateSettings({ fontSize: Number(e.target.value) })}
-                      className="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-slate-200 outline-none cursor-pointer hover:border-slate-300 dark:hover:border-slate-600 min-w-[140px]"
+                      value={settings.fontSize || settings.editorFontSize || 14}
+                      onChange={(e) => {
+                        const sz = Number(e.target.value);
+                        onUpdateSettings({ fontSize: sz, editorFontSize: sz });
+                      }}
+                      className="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-slate-200 outline-none cursor-pointer hover:border-slate-300 dark:hover:border-slate-600 min-w-[160px]"
                     >
                       <option value={12}>12 px</option>
-                      <option value={13}>13 px</option>
                       <option value={14}>14 px (Mặc định)</option>
-                      <option value={15}>15 px</option>
                       <option value={16}>16 px</option>
                       <option value={18}>18 px</option>
+                    </select>
+                  </div>
+
+                  {/* Editor Line Height */}
+                  <div className="pt-4 flex items-center justify-between gap-4">
+                    <div>
+                      <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                        Giãn cách dòng soạn thảo (Editor line height)
+                      </div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        Khoảng cách giữa các dòng mã nguồn trong CodeMirror.
+                      </div>
+                    </div>
+                    <select
+                      aria-label="Chọn giãn cách dòng soạn thảo"
+                      value={settings.lineHeight || settings.editorLineHeight || '1.5'}
+                      onChange={(e) => {
+                        const lh = e.target.value;
+                        onUpdateSettings({ lineHeight: lh, editorLineHeight: lh });
+                      }}
+                      className="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-slate-200 outline-none cursor-pointer hover:border-slate-300 dark:hover:border-slate-600 min-w-[160px]"
+                    >
+                      <option value="1.2">Gọn gàng (Compact 1.2)</option>
+                      <option value="1.5">Tiêu chuẩn (Normal 1.5)</option>
+                      <option value="1.8">Thoáng đãng (Relaxed 1.8)</option>
                     </select>
                   </div>
 
@@ -387,7 +474,7 @@ export default function ProjectSettingsModal({
                       aria-label="Chọn phông chữ soạn thảo"
                       value={settings.fontFamily}
                       onChange={(e) => onUpdateSettings({ fontFamily: e.target.value })}
-                      className="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-mono outline-none cursor-pointer hover:border-slate-300 dark:hover:border-slate-600 min-w-[140px]"
+                      className="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-mono outline-none cursor-pointer hover:border-slate-300 dark:hover:border-slate-600 min-w-[160px]"
                     >
                       <option value="JetBrains Mono">JetBrains Mono</option>
                       <option value="Fira Code">Fira Code</option>

@@ -50,6 +50,7 @@ import { vim } from '@replit/codemirror-vim';
 import { useTheme } from '@/context/ThemeContext';
 import type { ParsedTeXIssue } from '@/components/latex/ErrorConsole';
 import type { ProjectSettings } from '@/components/latex/projectSettings';
+import { getEditorThemeExtension } from '@/components/latex/editorThemes';
 
 export interface TeXEditorProps {
   source: string;
@@ -192,57 +193,7 @@ const errorField = StateField.define<DecorationSet>({
   provide: (f) => EditorView.decorations.from(f),
 });
 
-const getThemeExtensions = (
-  isDark: boolean,
-  fontFamily: string = 'JetBrains Mono',
-  nonBlinkingCursor: boolean = false
-) => {
-  const fontStack =
-    fontFamily === 'monospace'
-      ? 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'
-      : `"${fontFamily}", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace`;
 
-  const baseTheme = EditorView.theme({
-    '&': {
-      height: '100%',
-      backgroundColor: isDark ? '#020617' : '#ffffff',
-      color: isDark ? '#cbd5e1' : '#1e293b',
-    },
-    '.cm-content': {
-      fontFamily: fontStack,
-      padding: '12px 0',
-      caretColor: isDark ? '#22d3ee' : '#0284c7',
-      lineHeight: '1.6',
-    },
-    '.cm-cursor': nonBlinkingCursor
-      ? {
-          animation: 'none !important',
-        }
-      : {},
-    '.cm-gutters': {
-      backgroundColor: isDark ? '#0f172a' : '#f8fafc',
-      borderRight: isDark ? '1px solid #1e293b' : '1px solid #e2e8f0',
-      color: isDark ? '#64748b' : '#94a3b8',
-      minWidth: '40px',
-      fontFamily: fontStack,
-    },
-    '.cm-activeLineGutter': {
-      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#e2e8f0 !important',
-      color: isDark ? '#22d3ee' : '#0284c7',
-    },
-    '.cm-activeLine': {
-      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#f1f5f9 !important',
-    },
-    '.cm-selectionBackground, ::selection': {
-      backgroundColor: isDark ? 'rgba(22, 78, 99, 0.6) !important' : '#bae6fd !important',
-    },
-    '.cm-latex-error-line': {
-      backgroundColor: 'rgba(239, 68, 68, 0.12) !important',
-    },
-  });
-
-  return isDark ? [baseTheme, oneDark] : [baseTheme];
-};
 
 export default function TeXEditor({
   source,
@@ -379,10 +330,12 @@ export default function TeXEditor({
         customKeymap,
         errorField,
         themeCompartment.current.of(
-          getThemeExtensions(
+          getEditorThemeExtension(
+            settings?.editorTheme,
             isDark,
             settings?.fontFamily || 'JetBrains Mono',
-            settings?.nonBlinkingCursor || false
+            settings?.nonBlinkingCursor || false,
+            settings?.lineHeight || settings?.editorLineHeight || '1.5'
           )
         ),
         fontSizeCompartment.current.of(
@@ -468,21 +421,30 @@ export default function TeXEditor({
     });
   }, [fontSize]);
 
-  // Sync theme changes, fontFamily, nonBlinkingCursor
+  // Sync theme changes, editorTheme, fontFamily, nonBlinkingCursor, lineHeight
   useEffect(() => {
     const view = viewRef.current;
     if (!view) return;
     const isDark = resolvedTheme === 'dark';
     view.dispatch({
       effects: themeCompartment.current.reconfigure(
-        getThemeExtensions(
+        getEditorThemeExtension(
+          settings?.editorTheme,
           isDark,
           settings?.fontFamily || 'JetBrains Mono',
-          settings?.nonBlinkingCursor || false
+          settings?.nonBlinkingCursor || false,
+          settings?.lineHeight || settings?.editorLineHeight || '1.5'
         )
       ),
     });
-  }, [resolvedTheme, settings?.fontFamily, settings?.nonBlinkingCursor]);
+  }, [
+    resolvedTheme,
+    settings?.editorTheme,
+    settings?.fontFamily,
+    settings?.nonBlinkingCursor,
+    settings?.lineHeight,
+    settings?.editorLineHeight,
+  ]);
 
   // Sync LaTeX errors squiggles / lines
   useEffect(() => {

@@ -11,6 +11,7 @@
     "version:minor": "node scripts/bump-version.js minor"
   },
   "dependencies": {
+    "@babel/runtime": "^8.0.5",
     "@codemirror/autocomplete": "^6.20.3",
     "@codemirror/commands": "^6.11.0",
     "@codemirror/language": "^6.12.4",
@@ -24,6 +25,13 @@
     "@neondatabase/serverless": "^1.1.0",
     "@prisma/client": "^6.19.3",
     "@replit/codemirror-vim": "^6.4.0",
+    "@uiw/codemirror-theme-dracula": "^4.25.11",
+    "@uiw/codemirror-theme-eclipse": "^4.25.11",
+    "@uiw/codemirror-theme-github": "^4.25.11",
+    "@uiw/codemirror-theme-monokai": "^4.25.11",
+    "@uiw/codemirror-theme-nord": "^4.25.11",
+    "@uiw/codemirror-theme-sublime": "^4.25.11",
+    "@uiw/codemirror-themes": "^4.25.11",
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
     "docx": "^9.7.1",

@@ -11,8 +11,14 @@ export interface ProjectSettings {
   compiler: 'xelatex' | 'pdflatex' | 'lualatex';
   autoCompile: boolean;
   // Appearance
-  theme: 'light' | 'dark';
-  fontSize: number; // 12, 13, 14, 15, 16, 18
+  theme: 'light' | 'dark'; // Overall Theme
+  overallTheme?: 'light' | 'dark';
+  editorTheme: string; // 'dracula' | 'monokai' | 'one-dark' | 'github-light' | 'eclipse' | 'overleaf-light' | 'nord' | 'sublime'
+  pdfInvertColors: boolean; // Dark mode PDF preview (invert canvas colors)
+  fontSize: number; // 12, 14, 16, 18
+  editorFontSize?: number;
+  lineHeight: string; // '1.2' | '1.5' | '1.8'
+  editorLineHeight?: string;
   fontFamily: string; // 'JetBrains Mono', 'Fira Code', 'monospace'
 }
 
@@ -25,7 +31,13 @@ export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
   compiler: 'xelatex',
   autoCompile: false,
   theme: 'dark',
+  overallTheme: 'dark',
+  editorTheme: 'one-dark',
+  pdfInvertColors: false,
   fontSize: 14,
+  editorFontSize: 14,
+  lineHeight: '1.5',
+  editorLineHeight: '1.5',
   fontFamily: 'JetBrains Mono',
 };
 

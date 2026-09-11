@@ -325,11 +325,12 @@ export default function LaTeXStudio({
         if (newPartial.fontSize && newPartial.fontSize !== fontSize) {
           setFontSize(newPartial.fontSize);
         }
+        const targetTheme = newPartial.overallTheme || newPartial.theme;
         if (
-          newPartial.theme &&
-          newPartial.theme !== (resolvedTheme === 'dark' ? 'dark' : 'light')
+          targetTheme &&
+          targetTheme !== (resolvedTheme === 'dark' ? 'dark' : 'light')
         ) {
-          setTheme?.(newPartial.theme);
+          setTheme?.(targetTheme);
         }
         return next;
       });
@@ -3340,6 +3341,7 @@ export default function LaTeXStudio({
                     onActivePageChange={(page) => setPdfCurrentPage(page)}
                     isPresentation={isPresentation}
                     onClosePresentation={() => setIsPresentation(false)}
+                    invertColors={projectSettings.pdfInvertColors}
                   />
                 </div>
               ) : (

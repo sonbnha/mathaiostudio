@@ -1,18 +1,432 @@
 // Mẫu tài liệu LaTeX chuẩn cho MathAIO LaTeX Studio
-// 5 mẫu: Tài liệu trắng, Đề kiểm tra, Chuyên đề, Bài tập lời giải, Hình học TikZ
+// Cập nhật đầy đủ các mẫu chuẩn GDPT 2018: Đề TN THPT mới, ĐGNL, Trắc nghiệm Đúng/Sai, Hình học TikZ
 
 export interface LaTeXTemplate {
   id: string;
   name: string;
+  category: 'gdpt2018' | 'exam' | 'topic' | 'tikz' | 'basic';
+  badge?: string;
   description: string;
   source: string;
 }
 
 export const LATEX_TEMPLATES: LaTeXTemplate[] = [
   {
+    id: 'thpt_2025',
+    name: 'Đề TN THPT Cấu trúc mới (GDPT 2018)',
+    category: 'gdpt2018',
+    badge: 'Chuẩn 2025',
+    description: 'Đề thi 3 phần chuẩn BGD: Nhiều lựa chọn, Đúng/Sai, Trả lời ngắn',
+    source: `\\documentclass[12pt,a4paper]{article}
+\\usepackage{fontspec}
+\\setmainfont{Noto Serif}
+\\usepackage{babel}
+\\babelprovide[main,import]{vietnamese}
+\\babelfont{rm}{Noto Serif}
+\\usepackage{amsmath,amssymb,amsthm}
+\\usepackage{geometry}
+\\usepackage{enumitem}
+\\usepackage{multicol}
+\\usepackage{tcolorbox}
+\\geometry{top=2cm,bottom=2cm,left=2cm,right=2cm}
+
+\\begin{document}
+
+\\begin{center}
+\\textbf{BỘ GIÁO DỤC VÀ ĐÀO TẠO} \\hfill \\textbf{KỲ THI TỐT NGHIỆP TRUNG HỌC PHỔ THÔNG} \\\\[2pt]
+\\textbf{ĐỀ THI THAM KHẢO} \\hfill \\textbf{Bài thi: TOÁN HỌC (Chuẩn GDPT 2018)} \\\\[4pt]
+\\textit{(Đề thi có 04 trang)} \\hfill \\textit{Thời gian làm bài: 90 phút, không kể thời gian phát đề}
+\\end{center}
+
+\\noindent\\rule{\\textwidth}{1pt}
+\\vspace{0.2cm}
+\\noindent \\textbf{Họ và tên thí sinh:} \\dotfill \\quad \\textbf{Số báo danh:} \\dotfill
+
+\\vspace{0.4cm}
+
+\\begin{tcolorbox}[colback=slate!5!white,colframe=slate!75!black,title=\\textbf{PHẦN I. Câu trắc nghiệm nhiều phương án lựa chọn (3,0 điểm)}]
+\\textit{Thí sinh trả lời từ câu 1 đến câu 12. Mỗi câu hỏi thí sinh chỉ chọn một phương án.}
+\\end{tcolorbox}
+
+\\begin{enumerate}[label=\\bfseries Câu \\arabic*., leftmargin=*]
+\\item Cho hàm số $y = f(x)$ có bảng biến thiên trên đoạn $[-2; 3]$ như sau. Giá trị cực đại của hàm số đã cho bằng
+\\begin{multicols}{4}
+\\begin{enumerate}[label=\\Alph*.]
+\\item $3$
+\\item $1$
+\\item $-2$
+\\item $5$
+\\end{enumerate}
+\\end{multicols}
+
+\\item Trong không gian $Oxyz$, cho mặt cầu $(S): (x-1)^2 + (y+2)^2 + (z-3)^2 = 16$. Tọa độ tâm $I$ và bán kính $R$ của mặt cầu là
+\\begin{multicols}{2}
+\\begin{enumerate}[label=\\Alph*.]
+\\item $I(1; -2; 3), R = 4$
+\\item $I(-1; 2; -3), R = 4$
+\\item $I(1; -2; 3), R = 16$
+\\item $I(-1; 2; -3), R = 16$
+\\end{enumerate}
+\\end{multicols}
+
+\\item Cho hình lăng trụ đứng $ABC.A'B'C'$ có đáy $ABC$ là tam giác vuông cân tại $A$, $AB = a$, $AA' = 2a$. Thể tích khối lăng trụ $ABC.A'B'C'$ bằng
+\\begin{multicols}{4}
+\\begin{enumerate}[label=\\Alph*.]
+\\item $a^3$
+\\item $\\dfrac{a^3}{3}$
+\\item $2a^3$
+\\item $\\dfrac{2a^3}{3}$
+\\end{enumerate}
+\\end{multicols}
+\\end{enumerate}
+
+\\vspace{0.3cm}
+
+\\begin{tcolorbox}[colback=slate!5!white,colframe=slate!75!black,title=\\textbf{PHẦN II. Câu trắc nghiệm đúng sai (4,0 điểm)}]
+\\textit{Thí sinh trả lời từ câu 1 đến câu 4. Trong mỗi ý a), b), c), d) ở mỗi câu, thí sinh chọn đúng hoặc sai.}
+\\end{tcolorbox}
+
+\\begin{enumerate}[label=\\bfseries Câu \\arabic*., leftmargin=*]
+\\item Cho hàm số bậc ba $y = f(x) = ax^3 + bx^2 + cx + d$ $(a \\neq 0)$ có đồ thị $(C)$.
+\\begin{enumerate}[label=\\alph*)]
+\\item Nếu đồ thị hàm số có hai điểm cực trị thì $b^2 - 3ac > 0$.
+\\item Hàm số $f(x)$ luôn đồng biến trên $\\mathbb{R}$ khi $a > 0$ và $b^2 - 3ac \\leq 0$.
+\\item Điểm uốn của đồ thị $(C)$ có hoành độ $x_0 = -\\dfrac{b}{3a}$.
+\\item Tiếp tuyến tại điểm uốn có hệ số góc lớn nhất khi $a < 0$.
+\\end{enumerate}
+
+\\item Một bể nuôi cá có dạng hình hộp chữ nhật không nắp với thể tích là $V = 4\\text{ m}^3$. Chiều cao của bể là $h = 1\\text{ m}$. Chi phí làm đáy kính là $800.000$ đ/$\\text{m}^2$ và thành kính bên là $500.000$ đ/$\\text{m}^2$.
+\\begin{enumerate}[label=\\alph*)]
+\\item Diện tích đáy bể là $S_{\\text{đáy}} = 4\\text{ m}^2$.
+\\item Nếu đáy là hình vuông cạnh $2\\text{ m}$ thì diện tích xung quanh là $8\\text{ m}^2$.
+\\item Chi phí làm kính thấp nhất khi đáy bể là hình vuông.
+\\item Tổng chi phí thấp nhất để làm bể cá là $7.200.000$ đồng.
+\\end{enumerate}
+\\end{enumerate}
+
+\\vspace{0.3cm}
+
+\\begin{tcolorbox}[colback=slate!5!white,colframe=slate!75!black,title=\\textbf{PHẦN III. Câu trắc nghiệm trả lời ngắn (3,0 điểm)}]
+\\textit{Thí sinh trả lời từ câu 1 đến câu 6. Ghi kết quả vào ô tương ứng trên phiếu.}
+\\end{tcolorbox}
+
+\\begin{enumerate}[label=\\bfseries Câu \\arabic*., leftmargin=*]
+\\item Cho hình chóp tứ giác đều $S.ABCD$ có cạnh đáy bằng $a$, góc giữa cạnh bên và mặt đáy bằng $60^\\circ$. Tính thể tích khối chóp $S.ABCD$ theo $a$ (kết quả làm tròn đến hàng phần mười của hệ số đi với $a^3$).
+\\\\[4pt]
+\\textit{Đáp số:} \\dotfill
+
+\\item Một doanh nghiệp sản xuất một loại sản phẩm. Biết rằng tổng chi phí sản xuất $x$ sản phẩm được cho bởi hàm số $C(x) = 2x^2 + 50x + 1800$ (nghìn đồng). Chi phí trung bình cho mỗi sản phẩm là $\\overline{C}(x) = \\dfrac{C(x)}{x}$. Số sản phẩm cần sản xuất để chi phí trung bình nhỏ nhất là bao nhiêu?
+\\\\[4pt]
+\\textit{Đáp số:} \\dotfill
+\\end{enumerate}
+
+\\begin{center}
+\\textbf{--- HẾT ---}
+\\end{center}
+
+\\end{document}
+`,
+  },
+  {
+    id: 'dgnl_exam',
+    name: 'Đề Đánh Giá Năng Lực (ĐGNL)',
+    category: 'gdpt2018',
+    badge: 'ĐGNL 2025',
+    description: 'Cấu trúc đề thi Đánh giá năng lực phần Tư duy Toán học',
+    source: `\\documentclass[12pt,a4paper]{article}
+\\usepackage{fontspec}
+\\setmainfont{Noto Serif}
+\\usepackage{babel}
+\\babelprovide[main,import]{vietnamese}
+\\babelfont{rm}{Noto Serif}
+\\usepackage{amsmath,amssymb}
+\\usepackage{geometry}
+\\usepackage{enumitem}
+\\usepackage{multicol}
+\\geometry{margin=2cm}
+
+\\begin{document}
+
+\\begin{center}
+\\textbf{KỲ THI ĐÁNH GIÁ NĂNG LỰC ĐẠI HỌC QUỐC GIA} \\\\[4pt]
+\\textbf{\\Large PHẦN THI: TƯ DUY ĐỊNH LƯỢNG (TOÁN HỌC)} \\\\[4pt]
+\\textit{Thời gian làm bài: 75 phút -- 50 câu hỏi trắc nghiệm}
+\\end{center}
+
+\\noindent\\rule{\\textwidth}{1pt}
+\\vspace{0.4cm}
+
+\\begin{enumerate}[label=\\bfseries Câu \\arabic*., leftmargin=*]
+\\item Có bao nhiêu số nguyên dương $m$ để bất phương trình $\\log_2(x^2 + 2mx + m + 2) \\geq 1$ nghiệm đúng với mọi $x \\in \\mathbb{R}$?
+\\begin{multicols}{4}
+\\begin{enumerate}[label=\\Alph*.]
+\\item $0$
+\\item $1$
+\\item $2$
+\\item Vô số
+\\end{enumerate}
+\\end{multicols}
+
+\\item Cho dãy số $(u_n)$ xác định bởi $u_1 = 2$ và $u_{n+1} = \\dfrac{u_n}{2u_n + 1}$ với mọi $n \\geq 1$. Số hạng tổng quát $u_n$ là
+\\begin{multicols}{2}
+\\begin{enumerate}[label=\\Alph*.]
+\\item $u_n = \\dfrac{2}{2n - 1}$
+\\item $u_n = \\dfrac{2}{2n + 1}$
+\\item $u_n = \\dfrac{1}{n + 1}$
+\\item $u_n = \\dfrac{2}{4n - 3}$
+\\end{enumerate}
+\\end{multicols}
+
+\\item \\textbf{[Tư duy xử lý số liệu]} Một mẫu số liệu ghép nhóm về thời gian học bài tại nhà (đơn vị: phút) của 40 học sinh lớp 12 được cho như sau:
+\\begin{center}
+\\begin{tabular}{|c|c|c|c|c|c|}
+\\hline
+\\textbf{Thời gian} & $[0; 30)$ & $[30; 60)$ & $[60; 90)$ & $[90; 120)$ & $[120; 150)$ \\\\
+\\hline
+\\textbf{Số học sinh} & $4$ & $10$ & $14$ & $8$ & $4$ \\\\
+\\hline
+\\end{tabular}
+\\end{center}
+Trung vị $M_e$ của mẫu số liệu ghép nhóm trên bằng bao nhiêu?
+\\begin{multicols}{4}
+\\begin{enumerate}[label=\\Alph*.]
+\\item $68,57$
+\\item $72,85$
+\\item $65,00$
+\\item $70,00$
+\\end{enumerate}
+\\end{multicols}
+\\end{enumerate}
+
+\\end{document}
+`,
+  },
+  {
+    id: 'true_false_quiz',
+    name: 'Phiếu Trắc Nghiệm Đúng/Sai',
+    category: 'gdpt2018',
+    badge: 'Đúng / Sai',
+    description: 'Chuyên đề câu hỏi đúng sai 4 ý chuẩn Thông tư mới',
+    source: `\\documentclass[12pt,a4paper]{article}
+\\usepackage{fontspec}
+\\setmainfont{Noto Serif}
+\\usepackage{babel}
+\\babelprovide[main,import]{vietnamese}
+\\babelfont{rm}{Noto Serif}
+\\usepackage{amsmath,amssymb}
+\\usepackage{geometry}
+\\usepackage{enumitem}
+\\geometry{margin=2cm}
+
+\\begin{document}
+
+\\begin{center}
+\\textbf{PHIẾU HỌC TẬP -- TRẮC NGHIỆM ĐÚNG/SAI CHUYÊN ĐỀ} \\\\[4pt]
+\\textbf{Chủ đề: Nguyên Hàm, Tích Phân & Ứng Dụng}
+\\end{center}
+
+\\noindent\\rule{\\textwidth}{0.5pt}
+\\vspace{0.3cm}
+
+\\begin{enumerate}[label=\\bfseries Câu \\arabic*., leftmargin=*]
+\\item Cho hàm số $f(x)$ liên tục trên $\\mathbb{R}$ và $F(x)$ là một nguyên hàm của $f(x)$.
+\\begin{enumerate}[label=\\alph*)]
+\\item $\\displaystyle\\int f(x)\\,dx = F(x) + C$, với $C$ là hằng số tùy ý. \\hfill (Đúng/Sai)
+\\item $\\displaystyle\\int_a^b f(x)\\,dx = F(b) - F(a) = -\\int_b^a f(x)\\,dx$. \\hfill (Đúng/Sai)
+\\item Nếu $f(x)$ là hàm số lẻ trên $[-a; a]$ thì $\\displaystyle\\int_{-a}^a f(x)\\,dx = 0$. \\hfill (Đúng/Sai)
+\\item Nếu $f(x) \\leq g(x)$ trên $[a; b]$ thì $\\displaystyle\\int_a^b f(x)\\,dx \\leq \\int_a^b g(x)\\,dx$. \\hfill (Đúng/Sai)
+\\end{enumerate}
+
+\\item Cho hình phẳng $(H)$ giới hạn bởi đồ thị $y = x^2 - 4x + 3$ và trục hoành $Ox$.
+\\begin{enumerate}[label=\\alph*)]
+\\item Hoành độ giao điểm của đồ thị với trục $Ox$ là $x = 1$ và $x = 3$. \\hfill (Đúng/Sai)
+\\item Trên đoạn $[1; 3]$, hàm số luôn nhận giá trị âm $y \\leq 0$. \\hfill (Đúng/Sai)
+\\item Diện tích hình phẳng $(H)$ là $S = \\displaystyle\\int_1^3 (x^2 - 4x + 3)\\,dx = \\dfrac{4}{3}$. \\hfill (Đúng/Sai)
+\\item Thể tích khối tròn xoay khi quay $(H)$ quanh trục $Ox$ là $V = \\dfrac{16\\pi}{15}$. \\hfill (Đúng/Sai)
+\\end{enumerate}
+\\end{enumerate}
+
+\\end{document}
+`,
+  },
+  {
+    id: 'exam_period',
+    name: 'Đề kiểm tra định kỳ (Giữa kỳ / Cuối kỳ)',
+    category: 'exam',
+    description: 'Mẫu đề kiểm tra kết hợp tự luận và trắc nghiệm truyền thống',
+    source: `\\documentclass[12pt,a4paper]{article}
+\\usepackage{fontspec}
+\\setmainfont{Noto Serif}
+\\usepackage{babel}
+\\babelprovide[main,import]{vietnamese}
+\\babelfont{rm}{Noto Serif}
+\\usepackage{amsmath,amssymb}
+\\usepackage{geometry}
+\\usepackage{enumitem}
+\\usepackage{multicol}
+\\geometry{margin=2cm}
+
+\\begin{document}
+
+\\begin{center}
+\\textbf{TRƯỜNG THPT \\underline{\\hspace{4cm}}} \\\\[4pt]
+\\textbf{TỔ TOÁN HỌC} \\\\[8pt]
+\\textbf{\\Large ĐỀ KIỂM TRA ĐỊNH KỲ MÔN TOÁN} \\\\[4pt]
+\\textit{Thời gian làm bài: 90 phút (không kể phát đề)}
+\\end{center}
+
+\\vspace{0.3cm}
+\\noindent \\textbf{Họ và tên:} \\dotfill \\quad \\textbf{Lớp:} \\dotfill \\quad \\textbf{SBD:} \\dotfill
+
+\\vspace{0.3cm}
+
+\\section*{PHẦN I. TRẮC NGHIỆM (7,0 điểm)}
+
+\\begin{enumerate}[label=\\bfseries Câu \\arabic*.]
+\\item Tập hợp $A = \\{x \\in \\mathbb{R} \\mid x^2 - 5x + 6 = 0\\}$ có bao nhiêu phần tử?
+\\begin{multicols}{4}
+\\begin{enumerate}[label=\\Alph*.]
+\\item 0
+\\item 1
+\\item 2
+\\item 3
+\\end{enumerate}
+\\end{multicols}
+
+\\item Mệnh đề nào sau đây là mệnh đề đúng?
+\\begin{enumerate}[label=\\Alph*.]
+\\item $\\forall x \\in \\mathbb{R}: x^2 > 0$
+\\item $\\exists x \\in \\mathbb{R}: x^2 + 1 = 0$
+\\item $\\forall x \\in \\mathbb{R}: x^2 \\geq 0$
+\\item $\\exists x \\in \\mathbb{N}: x + 1 < 0$
+\\end{enumerate}
+\\end{enumerate}
+
+\\section*{PHẦN II. TỰ LUẬN (3,0 điểm)}
+
+\\textbf{Bài 1.} (1,5 điểm) Giải phương trình: $x^2 - 4x + 3 = 0$.
+\\vspace{2.5cm}
+
+\\textbf{Bài 2.} (1,5 điểm) Cho tam giác $ABC$ có $AB = 5, AC = 7, \\widehat{BAC} = 60^\\circ$. Tính diện tích tam giác $ABC$.
+
+\\begin{center}
+--- HẾT ---
+\\end{center}
+
+\\end{document}
+`,
+  },
+  {
+    id: 'topic_advanced',
+    name: 'Chuyên đề bồi dưỡng & Bài tập',
+    category: 'topic',
+    description: 'Mẫu chuyên đề định lý, bổ đề, ví dụ minh họa và bài tập',
+    source: `\\documentclass[12pt,a4paper]{article}
+\\usepackage{fontspec}
+\\setmainfont{Noto Serif}
+\\usepackage{babel}
+\\babelprovide[main,import]{vietnamese}
+\\babelfont{rm}{Noto Serif}
+\\usepackage{amsmath,amssymb,amsthm}
+\\usepackage{geometry}
+\\usepackage{enumitem}
+\\geometry{margin=2.5cm}
+
+\\newtheorem{theorem}{Định lý}[section]
+\\newtheorem{lemma}[theorem]{Bổ đề}
+\\newtheorem{example}{Ví dụ}[section]
+\\newtheorem{exercise}{Bài tập}[section]
+
+\\title{\\textbf{CHUYÊN ĐỀ BỒI DƯỠNG} \\\\[6pt] \\Large Bất Đẳng Thức Cổ Điển & Kỹ Thuật Chọn Điểm Rơi}
+\\author{MathAIO Studio}
+\\date{\\today}
+
+\\begin{document}
+\\maketitle
+
+\\section{Bất đẳng thức AM--GM (Cauchy)}
+
+\\begin{theorem}[Bất đẳng thức Cauchy cho 3 số]
+Với $a, b, c \\geq 0$, ta luôn có:
+$$\\frac{a + b + c}{3} \\geq \\sqrt[3]{abc}$$
+Đẳng thức xảy ra khi và chỉ khi $a = b = c$.
+\\end{theorem}
+
+\\begin{example}
+Cho $a, b, c > 0$ thỏa mãn $a + b + c = 3$. Tìm giá trị nhỏ nhất của $P = \\dfrac{1}{a} + \\dfrac{1}{b} + \\dfrac{1}{c}$.
+\\end{example}
+
+\\begin{proof}[Lời giải]
+Áp dụng bất đẳng thức Cauchy-Schwarz dạng Engel:
+$$P = \\frac{1}{a} + \\frac{1}{b} + \\frac{1}{c} \\geq \\frac{(1+1+1)^2}{a+b+c} = \\frac{9}{3} = 3$$
+Đẳng thức xảy ra khi $a = b = c = 1$. Vậy $\\min P = 3$.
+\\end{proof}
+
+\\end{document}
+`,
+  },
+  {
+    id: 'tikz_geometry',
+    name: 'Hình học TikZ (2D & 3D)',
+    category: 'tikz',
+    badge: 'TikZ Vector',
+    description: 'Mẫu tài liệu vẽ hình học phẳng và hình không gian TikZ sắc nét',
+    source: `\\documentclass[12pt,a4paper]{article}
+\\usepackage{fontspec}
+\\setmainfont{Noto Serif}
+\\usepackage{babel}
+\\babelprovide[main,import]{vietnamese}
+\\babelfont{rm}{Noto Serif}
+\\usepackage{amsmath,amssymb}
+\\usepackage{tikz}
+\\usepackage{geometry}
+\\geometry{margin=2.5cm}
+
+\\usetikzlibrary{calc,angles,quotes,intersections}
+
+\\title{\\textbf{HÌNH HỌC TIKZ CHUẨN XUẤT BẢN}}
+\\author{MathAIO Studio -- TikZ Engine}
+\\date{\\today}
+
+\\begin{document}
+\\maketitle
+
+\\section{Tam giác nội tiếp đường tròn}
+
+\\begin{center}
+\\begin{tikzpicture}[scale=0.9, thick]
+  % Tọa độ các điểm
+  \\coordinate (O) at (0,0);
+  \\coordinate (A) at (0,3);
+  \\coordinate (B) at (-2.8,-1);
+  \\coordinate (C) at (2.8,-1);
+  \\coordinate (H) at (0,-1);
+
+  % Vẽ đường tròn và tam giác
+  \\draw[cyan!80!black, thick] (O) circle (3cm);
+  \\draw[blue!80!black, very thick] (A) -- (B) -- (C) -- cycle;
+  \\draw[red, dashed] (A) -- (H);
+  \\draw[orange, dashed] (O) -- (A);
+
+  % Ký hiệu vuông góc
+  \\draw (0,-0.8) -- (0.2,-0.8) -- (0.2,-1);
+
+  % Điểm và nhãn
+  \\foreach \\p/\\pos in {A/above, B/below left, C/below right, H/below, O/above right} {
+    \\fill (\\p) circle (2pt);
+    \\node[\\pos] at (\\p) {$\\p$};
+  }
+\\end{tikzpicture}
+\\end{center}
+
+\\end{document}
+`,
+  },
+  {
     id: 'blank',
-    name: 'Tài liệu trắng',
-    description: 'Tài liệu LaTeX cơ bản với gói toán học',
+    name: 'Tài liệu trắng cơ bản',
+    category: 'basic',
+    description: 'Khung tài liệu LaTeX tinh gọn chuẩn tiếng Việt và gói toán',
     source: `\\documentclass[12pt,a4paper]{article}
 \\usepackage{fontspec}
 \\setmainfont{Noto Serif}
@@ -32,372 +446,17 @@ export const LATEX_TEMPLATES: LaTeXTemplate[] = [
 \\maketitle
 
 \\section{Giới thiệu}
+Nhập nội dung tại đây. Công thức toán inline: $E = mc^2$.
 
-Nhập nội dung tại đây. Công thức toán học inline: $E = mc^2$.
-
-Công thức toán học block:
+Công thức toán block:
 $$\\int_{0}^{\\infty} e^{-x^2} \\, dx = \\frac{\\sqrt{\\pi}}{2}$$
 
-\\section{Nội dung chính}
-
-Viết nội dung chính của tài liệu ở đây.
-
 \\end{document}
 `,
   },
-  {
-    id: 'exam',
-    name: 'Đề thi trắc nghiệm THPT',
-    description: 'Mẫu đề kiểm tra chuẩn với câu hỏi tự luận và trắc nghiệm',
-    source: `\\documentclass[12pt,a4paper]{exam}
-\\usepackage{fontspec}
-\\setmainfont{Noto Serif}
-\\usepackage{babel}
-\\babelprovide[main,import]{vietnamese}
-\\babelfont{rm}{Noto Serif}
-\\usepackage{amsmath,amssymb}
-\\usepackage{geometry}
-\\usepackage{enumitem}
-\\usepackage{multicol}
-\\geometry{margin=2cm}
-
-\\begin{document}
-
-\\begin{center}
-\\textbf{TRƯỜNG THPT \\underline{\\hspace{4cm}}} \\\\[4pt]
-\\textbf{TỔ TOÁN HỌC} \\\\[8pt]
-\\textbf{\\Large ĐỀ KIỂM TRA GIỮA HỌC KỲ I} \\\\[4pt]
-\\textbf{Môn: TOÁN -- Lớp 10} \\\\[4pt]
-\\textit{Thời gian làm bài: 90 phút (không kể phát đề)}
-\\end{center}
-
-\\vspace{0.5cm}
-\\noindent \\textbf{Họ và tên:} \\dotfill \\quad \\textbf{Lớp:} \\dotfill \\quad \\textbf{SBD:} \\dotfill
-
-\\vspace{0.5cm}
-
-\\section*{PHẦN I. TRẮC NGHIỆM (7,0 điểm)}
-\\textit{Chọn phương án đúng nhất trong các câu sau:}
-
-\\begin{enumerate}
-\\item Tập hợp $A = \\{x \\in \\mathbb{R} \\mid x^2 - 5x + 6 = 0\\}$ có bao nhiêu phần tử?
-\\begin{multicols}{4}
-\\begin{enumerate}[label=\\Alph*.]
-\\item 0
-\\item 1
-\\item 2
-\\item 3
-\\end{enumerate}
-\\end{multicols}
-
-\\item Mệnh đề nào sau đây là mệnh đề đúng?
-\\begin{enumerate}[label=\\Alph*.]
-\\item $\\forall x \\in \\mathbb{R}: x^2 > 0$
-\\item $\\exists x \\in \\mathbb{R}: x^2 + 1 = 0$
-\\item $\\forall x \\in \\mathbb{R}: x^2 \\geq 0$
-\\item $\\exists x \\in \\mathbb{N}: x + 1 < 0$
-\\end{enumerate}
-
-\\item Cho hàm số $f(x) = 2x^2 - 3x + 1$. Tính $f(2)$.
-\\begin{multicols}{4}
-\\begin{enumerate}[label=\\Alph*.]
-\\item 1
-\\item 3
-\\item 5
-\\item 7
-\\end{enumerate}
-\\end{multicols}
-\\end{enumerate}
-
-\\section*{PHẦN II. TỰ LUẬN (3,0 điểm)}
-
-\\textbf{Bài 1.} (1,5 điểm) Giải phương trình:
-$$x^2 - 4x + 3 = 0$$
-
-\\vspace{2cm}
-
-\\textbf{Bài 2.} (1,5 điểm) Cho tam giác $ABC$ có $AB = 5$, $AC = 7$, $\\widehat{BAC} = 60^\\circ$. Tính diện tích tam giác $ABC$.
-
-\\vspace{2cm}
-
-\\begin{center}
---- HẾT ---
-\\end{center}
-
-\\end{document}
-`,
-  },
-  {
-    id: 'topic',
-    name: 'Giáo án chuyên đề Toán',
-    description: 'Mẫu chuyên đề với định lý, ví dụ minh họa và bài tập',
-    source: `\\documentclass[12pt,a4paper]{article}
-\\usepackage{fontspec}
-\\setmainfont{Noto Serif}
-\\usepackage{babel}
-\\babelprovide[main,import]{vietnamese}
-\\babelfont{rm}{Noto Serif}
-\\usepackage{amsmath,amssymb,amsthm}
-\\usepackage{geometry}
-\\usepackage{enumitem}
-\\geometry{margin=2.5cm}
-
-\\newtheorem{theorem}{Định lý}[section]
-\\newtheorem{lemma}[theorem]{Bổ đề}
-\\newtheorem{corollary}[theorem]{Hệ quả}
-\\newtheorem{example}{Ví dụ}[section]
-\\newtheorem{exercise}{Bài tập}[section]
-\\newtheorem{remark}{Nhận xét}[section]
-
-\\title{\\textbf{CHUYÊN ĐỀ BỒI DƯỠNG} \\\\[8pt]
-\\Large Bất Đẳng Thức Cổ Điển và Ứng Dụng}
-\\author{Tổ Toán -- Trường THPT \\underline{\\hspace{3cm}}}
-\\date{Năm học 2024--2025}
-
-\\begin{document}
-
-\\maketitle
-\\tableofcontents
-\\newpage
-
-\\section{Bất đẳng thức AM--GM}
-
-\\begin{theorem}[Bất đẳng thức Cauchy]
-Cho $a_1, a_2, \\ldots, a_n$ là các số thực không âm. Khi đó:
-$$\\frac{a_1 + a_2 + \\cdots + a_n}{n} \\geq \\sqrt[n]{a_1 \\cdot a_2 \\cdots a_n}$$
-Đẳng thức xảy ra khi và chỉ khi $a_1 = a_2 = \\cdots = a_n$.
-\\end{theorem}
-
-\\begin{example}
-Cho $a, b > 0$ và $a + b = 1$. Chứng minh rằng $ab \\leq \\dfrac{1}{4}$.
-\\end{example}
-
-\\begin{proof}
-Áp dụng bất đẳng thức AM--GM:
-$$\\frac{a + b}{2} \\geq \\sqrt{ab} \\implies \\frac{1}{2} \\geq \\sqrt{ab} \\implies ab \\leq \\frac{1}{4}$$
-Đẳng thức xảy ra khi $a = b = \\dfrac{1}{2}$.
-\\end{proof}
-
-\\section{Bài tập tự luyện}
-
-\\begin{exercise}
-Cho $a, b, c > 0$ và $a + b + c = 3$. Chứng minh:
-$$a^2 + b^2 + c^2 \\geq 3$$
-\\end{exercise}
-
-\\begin{exercise}
-Tìm giá trị nhỏ nhất của biểu thức:
-$$P = \\frac{1}{a} + \\frac{1}{b} + \\frac{1}{c}$$
-với $a, b, c > 0$ và $a + b + c = 1$.
-\\end{exercise}
-
-\\end{document}
-`,
-  },
-  {
-    id: 'exercises',
-    name: 'Phiếu học tập',
-    description: 'Mẫu phiếu bài tập kèm hướng dẫn giải chi tiết',
-    source: `\\documentclass[12pt,a4paper]{article}
-\\usepackage{fontspec}
-\\setmainfont{Noto Serif}
-\\usepackage{babel}
-\\babelprovide[main,import]{vietnamese}
-\\babelfont{rm}{Noto Serif}
-\\usepackage{amsmath,amssymb,amsthm}
-\\usepackage{geometry}
-\\usepackage{enumitem}
-\\geometry{margin=2.5cm}
-
-\\newtheorem{exercise}{Bài}
-\\newenvironment{solution}{\\noindent\\textbf{Lời giải.}}{\\hfill $\\square$ \\medskip}
-
-\\title{\\textbf{PHIẾU BÀI TẬP} \\\\[8pt]
-\\Large Hệ Phương Trình Bậc Nhất Hai Ẩn}
-\\author{Lớp 10 -- Chương Trình Phổ Thông 2018}
-\\date{}
-
-\\begin{document}
-
-\\maketitle
-
-\\begin{exercise}
-Giải hệ phương trình:
-$$\\begin{cases} 2x + 3y = 7 \\\\ x - y = 1 \\end{cases}$$
-\\end{exercise}
-
-\\begin{solution}
-Từ phương trình thứ hai: $x = y + 1$.
-
-Thay vào phương trình thứ nhất:
-$$2(y + 1) + 3y = 7 \\implies 2y + 2 + 3y = 7 \\implies 5y = 5 \\implies y = 1$$
-
-Suy ra $x = 1 + 1 = 2$.
-
-Vậy hệ phương trình có nghiệm duy nhất $(x; y) = (2; 1)$.
-\\end{solution}
-
-\\begin{exercise}
-Giải hệ phương trình:
-$$\\begin{cases} \\dfrac{1}{x} + \\dfrac{1}{y} = \\dfrac{1}{2} \\\\[8pt] \\dfrac{2}{x} - \\dfrac{3}{y} = \\dfrac{1}{6} \\end{cases}$$
-với điều kiện $x \\neq 0$, $y \\neq 0$.
-\\end{exercise}
-
-\\begin{solution}
-Đặt $u = \\dfrac{1}{x}$, $v = \\dfrac{1}{y}$. Hệ trở thành:
-$$\\begin{cases} u + v = \\dfrac{1}{2} \\\\ 2u - 3v = \\dfrac{1}{6} \\end{cases}$$
-
-Từ phương trình đầu: $u = \\dfrac{1}{2} - v$. Thay vào phương trình sau:
-$$2\\left(\\frac{1}{2} - v\\right) - 3v = \\frac{1}{6} \\implies 1 - 2v - 3v = \\frac{1}{6} \\implies -5v = -\\frac{5}{6} \\implies v = \\frac{1}{6}$$
-
-Suy ra $u = \\dfrac{1}{2} - \\dfrac{1}{6} = \\dfrac{1}{3}$.
-
-Do đó $x = \\dfrac{1}{u} = 3$ và $y = \\dfrac{1}{v} = 6$.
-
-Vậy hệ phương trình có nghiệm $(x; y) = (3; 6)$.
-\\end{solution}
-
-\\begin{exercise}
-Cho hệ phương trình:
-$$\\begin{cases} mx + y = 2m + 1 \\\\ x + my = m + 2 \\end{cases}$$
-Tìm giá trị của $m$ để hệ có nghiệm duy nhất. Tìm nghiệm đó theo $m$.
-\\end{exercise}
-
-\\begin{solution}
-Hệ có nghiệm duy nhất khi:
-$$\\frac{m}{1} \\neq \\frac{1}{m} \\implies m^2 \\neq 1 \\implies m \\neq \\pm 1$$
-
-Khi $m \\neq \\pm 1$, giải hệ bằng phương pháp cộng đại số:
-\\begin{align*}
-x &= \\frac{2m^2 + m - m - 2}{m^2 - 1} = \\frac{2m^2 - 2}{m^2 - 1} = \\frac{2(m^2 - 1)}{m^2 - 1} = 2 \\\\
-y &= 2m + 1 - 2m = 1
-\\end{align*}
-
-Vậy với $m \\neq \\pm 1$, hệ có nghiệm duy nhất $(x; y) = (2; 1)$.
-\\end{solution}
-
-\\end{document}
-`,
-  },
-  {
-    id: 'tikz',
-    name: 'Hình học TikZ',
-    description: 'Mẫu tài liệu có hình vẽ TikZ (tam giác, đường tròn)',
-    source: `\\documentclass[12pt,a4paper]{article}
-\\usepackage{fontspec}
-\\setmainfont{Noto Serif}
-\\usepackage{babel}
-\\babelprovide[main,import]{vietnamese}
-\\babelfont{rm}{Noto Serif}
-\\usepackage{amsmath,amssymb}
-\\usepackage{tikz}
-\\usepackage{geometry}
-\\geometry{margin=2.5cm}
-
-\\usetikzlibrary{calc,angles,quotes}
-
-\\title{\\textbf{HÌNH HỌC PHẲNG} \\\\[8pt]
-\\Large Tam Giác và Đường Tròn Ngoại Tiếp}
-\\author{MathAIO Studio -- TikZ Engine}
-\\date{\\today}
-
-\\begin{document}
-
-\\maketitle
-
-\\section{Tam giác và các đường đặc biệt}
-
-Cho tam giác $ABC$ có $A(0, 4)$, $B(-3, 0)$, $C(5, 0)$.
-
-\\begin{center}
-\\begin{tikzpicture}[scale=0.8]
-  % Lưới nền
-  \\draw[gray!20, thin, step=1] (-4,-1) grid (6,5);
-  \\draw[->] (-4,0) -- (6.5,0) node[right] {$x$};
-  \\draw[->] (0,-1) -- (0,5.5) node[above] {$y$};
-  
-  % Tam giác ABC
-  \\coordinate (A) at (0,4);
-  \\coordinate (B) at (-3,0);
-  \\coordinate (C) at (5,0);
-  
-  \\draw[thick, blue] (A) -- (B) -- (C) -- cycle;
-  
-  % Đường cao AH
-  \\coordinate (H) at (0,0);
-  \\draw[dashed, red] (A) -- (H);
-  \\draw (0.3,0) -- (0.3,0.3) -- (0,0.3);
-  
-  % Trung điểm BC
-  \\coordinate (M) at (1,0);
-  \\draw[dashed, green!60!black] (A) -- (M);
-  
-  % Đường tròn ngoại tiếp
-  \\coordinate (O) at (1,1.875);
-  \\draw[orange, thin] (O) circle ({veclen(1-0,1.875-4)});
-  
-  % Nhãn đỉnh
-  \\node[above] at (A) {$A(0,4)$};
-  \\node[below left] at (B) {$B(-3,0)$};
-  \\node[below right] at (C) {$C(5,0)$};
-  \\node[below] at (H) {$H$};
-  \\node[below] at (M) {$M$};
-  \\node[right] at (O) {$O$};
-  
-  % Điểm
-  \\foreach \\point in {A, B, C, H, M, O}
-    \\fill (\\point) circle (2pt);
-\\end{tikzpicture}
-\\end{center}
-
-\\subsection{Tính toán}
-
-\\begin{enumerate}
-\\item Độ dài các cạnh:
-$$AB = \\sqrt{(-3-0)^2 + (0-4)^2} = \\sqrt{9 + 16} = 5$$
-$$AC = \\sqrt{(5-0)^2 + (0-4)^2} = \\sqrt{25 + 16} = \\sqrt{41}$$
-$$BC = \\sqrt{(5-(-3))^2 + 0^2} = 8$$
-
-\\item Diện tích tam giác:
-$$S_{ABC} = \\frac{1}{2} \\cdot BC \\cdot AH = \\frac{1}{2} \\cdot 8 \\cdot 4 = 16$$
-
-\\item Bán kính đường tròn ngoại tiếp:
-$$R = \\frac{AB \\cdot AC \\cdot BC}{4S} = \\frac{5 \\cdot \\sqrt{41} \\cdot 8}{4 \\cdot 16} = \\frac{40\\sqrt{41}}{64} = \\frac{5\\sqrt{41}}{8}$$
-\\end{enumerate}
-
-\\end{document}
-`,
-  },
-  { id: 'report', name: 'Báo cáo khoa học', description: 'Báo cáo toán học A4', source: `\\documentclass[12pt,a4paper]{article}
-\\usepackage{fontspec}
-\\setmainfont{Noto Serif}
-\\usepackage{babel}
-\\babelprovide[main,import]{vietnamese}
-\\babelfont{rm}{Noto Serif}
-\\usepackage{amsmath,amssymb}
-\\usepackage[margin=2.5cm]{geometry}
-\\title{Báo cáo khoa học: Tích phân và ứng dụng}
-\\author{MathAIO Studio}
-\\date{\\today}
-\\begin{document}
-\\maketitle
-\\begin{abstract}
-Khảo sát một phương pháp tính tích phân và ứng dụng trong toán học.
-\\end{abstract}
-\\section{Đặt vấn đề}
-Xét $I=\\int_0^1 x^2\\,dx$.
-\\section{Kết quả}
-Ta có $I=\\left[\\frac{x^3}{3}\\right]_0^1=\\frac13$.
-\\section{Kết luận}
-Kết quả minh họa định lý cơ bản của giải tích.
-\\begin{thebibliography}{9}
-\\bibitem{calculus} Tài liệu Giải tích, chương Tích phân.
-\\end{thebibliography}
-\\end{document}
-` },
 ];
 
-export const DEFAULT_TEMPLATE_ID = 'blank';
+export const DEFAULT_TEMPLATE_ID = 'thpt_2025';
 
 export function getTemplateById(id: string): LaTeXTemplate | undefined {
   return LATEX_TEMPLATES.find((t) => t.id === id);

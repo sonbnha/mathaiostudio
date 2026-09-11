@@ -1,38 +1,351 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/TextLayer.css';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
+import {
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Image as ImageIcon,
+  Minimize2,
+  Tv,
+} from 'lucide-react';
 
-pdfjs.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString();
-function PDFPage({number, width}: {number: number; width: number}) {
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url
+).toString();
+
+function PDFSinglePage({
+  number,
+  width,
+  onPageClick,
+  isHighlighted,
+}: {
+  number: number;
+  width: number;
+  onPageClick?: (page: number, ratio: number) => void;
+  isHighlighted?: boolean;
+}) {
   const element = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
   const [ratio, setRatio] = useState(841.89 / 595.28);
+
   useEffect(() => {
-    const observer = new IntersectionObserver(entries => setVisible(entries[0].isIntersecting), {rootMargin: '600px'});
+    const observer = new IntersectionObserver(
+      (entries) => setVisible(entries[0].isIntersecting),
+      { rootMargin: '600px' }
+    );
     if (element.current) observer.observe(element.current);
     return () => observer.disconnect();
   }, []);
-  return <div ref={element} className="mb-4 shadow-md bg-white" style={{width, minHeight: width * ratio}} aria-label={`Trang ${number}`}>
-    {visible && <Page pageNumber={number} width={width} devicePixelRatio={Math.min(window.devicePixelRatio || 1, 2)} onLoadSuccess={page => {const view = page.getViewport({scale:1}); setRatio(view.height/view.width);}} loading={<p className="p-4 text-slate-600">Đang tải trang {number}…</p>} />}
-  </div>;
+
+  return (
+    <div
+      ref={element}
+      id={`pdf-page-${number}`}
+      onClick={(e) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const yRatio = (e.clientY - rect.top) / Math.max(1, rect.height);
+        onPageClick?.(number, yRatio);
+      }}
+      className={`mb-6 shadow-lg bg-white rounded-md overflow-hidden cursor-crosshair transition-all relative ${
+        isHighlighted ? 'ring-4 ring-cyan-500/80' : ''
+      }`}
+      style={{ width, minHeight: width * ratio }}
+      aria-label={`Trang ${number}`}
+    >
+      {visible && (
+        <Page
+          pageNumber={number}
+          width={width}
+          devicePixelRatio={Math.min(window.devicePixelRatio || 1, 2)}
+          onLoadSuccess={(page) => {
+            const view = page.getViewport({ scale: 1 });
+            setRatio(view.height / view.width);
+          }}
+          loading={
+            <div className="p-8 text-center text-xs text-slate-500">
+              Đang kết xuất trang {number}…
+            </div>
+          }
+        />
+      )}
+      <span className="absolute bottom-1 right-2 text-[10px] text-slate-400 font-mono select-none">
+        Trang {number}
+      </span>
+    </div>
+  );
 }
-export default function PDFPreview({url, zoom}: {url: string; zoom: number|'page-width'}) {
+
+export default function PDFPreview({
+  url,
+  zoom,
+  setZoom,
+  onSync,
+  highlightPage,
+  isPresentation,
+  onClosePresentation,
+}: {
+  url: string;
+  zoom: number | 'page-width';
+  setZoom: (z: number | 'page-width' | ((prev: number | 'page-width') => number | 'page-width')) => void;
+  onSync?: (page: number, ratio: number) => void;
+  highlightPage?: number;
+  isPresentation?: boolean;
+  onClosePresentation?: () => void;
+}) {
   const host = useRef<HTMLDivElement>(null);
-  const [width, setWidth] = useState(500);
-  const [pages, setPages] = useState(0);
+  const [containerWidth, setContainerWidth] = useState(500);
+  const [numPages, setNumPages] = useState(0);
+  const [activePage, setActivePage] = useState(1);
+  const [exportingImage, setExportingImage] = useState(false);
+
   useEffect(() => {
-    const observer = new ResizeObserver(entries => setWidth(Math.max(200, entries[0].contentRect.width - 32)));
+    const observer = new ResizeObserver((entries) => {
+      if (entries[0]) {
+        setContainerWidth(Math.max(200, entries[0].contentRect.width - (isPresentation ? 64 : 32)));
+      }
+    });
     if (host.current) observer.observe(host.current);
     return () => observer.disconnect();
-  }, []);
-  const pageWidth = zoom === 'page-width' ? width : 595.28 * zoom / 100;
-  return <div ref={host} className="flex-1 min-h-0 overflow-auto p-4" aria-label="Tài liệu PDF đã biên dịch">
-    <Document file={url} onLoadSuccess={({numPages}) => setPages(numPages)} loading={<p role="status">Đang mở PDF…</p>}
-      error={<p role="alert">Không thể hiển thị PDF. Hãy dùng nút Tải PDF về máy để mở tài liệu.</p>}>
-      {Array.from({length: pages}, (_, i) => <PDFPage key={i} number={i+1} width={pageWidth} />)}
-    </Document>
-    {pages > 0 && <p className="text-xs text-slate-500">{pages} trang · PDF A4</p>}
-  </div>;
+  }, [isPresentation]);
+
+  // Scroll to highlighted page when sync from code editor occurs
+  useEffect(() => {
+    if (highlightPage && highlightPage <= numPages) {
+      const el = document.getElementById(`pdf-page-${highlightPage}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  }, [highlightPage, numPages]);
+
+  // Keyboard navigation for presentation mode
+  useEffect(() => {
+    if (!isPresentation) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
+        e.preventDefault();
+        setActivePage((p) => Math.min(numPages, p + 1));
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        setActivePage((p) => Math.max(1, p - 1));
+      } else if (e.key === 'Escape') {
+        onClosePresentation?.();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isPresentation, numPages, onClosePresentation]);
+
+  // Export High-Res PNG (300 DPI) using pdfjs canvas
+  const handleExportPNG = useCallback(async () => {
+    if (!url) return;
+    try {
+      setExportingImage(true);
+      const loadingTask = (pdfjs as any).getDocument(url);
+      const pdf = await loadingTask.promise;
+      const page = await pdf.getPage(activePage || 1);
+      
+      const scale = 3.0; // 300 DPI equivalent scale
+      const viewport = page.getViewport({ scale });
+      
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      if (!context) return;
+      
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+
+      const renderContext = {
+        canvasContext: context,
+        viewport,
+        canvas,
+      };
+
+      await (page.render as any)(renderContext).promise;
+
+      const pngUrl = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.href = pngUrl;
+      link.download = `document-page-${activePage || 1}-300dpi.png`;
+      link.click();
+    } catch (err) {
+      console.error('Lỗi khi xuất ảnh PNG 300 DPI:', err);
+      alert('Không thể xuất ảnh PNG. Vui lòng thử lại.');
+    } finally {
+      setExportingImage(false);
+    }
+  }, [url, activePage]);
+
+  const computedWidth =
+    zoom === 'page-width'
+      ? containerWidth
+      : (595.28 * (typeof zoom === 'number' ? zoom : 100)) / 100;
+
+  // Presentation Mode View
+  if (isPresentation) {
+    return (
+      <div className="fixed inset-0 z-50 bg-slate-950 text-white flex flex-col items-center justify-between p-4">
+        {/* Presentation Header Bar */}
+        <div className="w-full flex items-center justify-between px-6 py-3 bg-slate-900/90 rounded-2xl border border-slate-800 backdrop-blur-md">
+          <div className="flex items-center gap-3">
+            <Tv className="w-5 h-5 text-indigo-400" />
+            <span className="font-bold text-sm">Chế độ Trình chiếu Máy chiếu (Full-screen)</span>
+            <span className="text-xs text-slate-400 font-mono">
+              Trang {activePage} / {numPages || 1}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setActivePage((p) => Math.max(1, p - 1))}
+              disabled={activePage <= 1}
+              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-40 cursor-pointer"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setActivePage((p) => Math.min(numPages, p + 1))}
+              disabled={activePage >= numPages}
+              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-40 cursor-pointer"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+            <button
+              onClick={handleExportPNG}
+              disabled={exportingImage}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-medium cursor-pointer"
+            >
+              <ImageIcon className="w-4 h-4" />
+              <span>{exportingImage ? 'Đang xuất…' : 'Xuất PNG 300 DPI'}</span>
+            </button>
+            <button
+              onClick={onClosePresentation}
+              className="p-2 rounded-xl bg-rose-600/80 hover:bg-rose-500 text-white cursor-pointer ml-2"
+              title="Thoát trình chiếu (Esc)"
+            >
+              <Minimize2 className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Presentation Slide View */}
+        <div className="flex-1 min-h-0 w-full flex items-center justify-center overflow-auto p-4">
+          <Document
+            file={url}
+            onLoadSuccess={({ numPages }) => setNumPages(numPages)}
+            loading={<p className="text-slate-400">Đang chuẩn bị trình chiếu…</p>}
+          >
+            {numPages > 0 && (
+              <PDFSinglePage
+                number={activePage}
+                width={Math.min(containerWidth * 1.1, 900)}
+                onPageClick={onSync}
+              />
+            )}
+          </Document>
+        </div>
+
+        <div className="text-[11px] text-slate-500">
+          Dùng phím Mũi tên Trái / Phải hoặc Space để chuyển trang · Phím Esc để thoát.
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 min-h-0 flex flex-col">
+      {/* Sub-toolbar for preview options */}
+      <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2 border-b border-slate-200 dark:border-slate-800 text-xs bg-slate-50/80 dark:bg-slate-900/50 shrink-0">
+        <div className="flex items-center gap-1">
+          <button
+            disabled={!url}
+            onClick={() =>
+              setZoom((z) => Math.max(25, (typeof z === 'number' ? z : 100) - 25))
+            }
+            className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 cursor-pointer"
+            title="Thu nhỏ"
+          >
+            <ZoomOut className="w-3.5 h-3.5" />
+          </button>
+          <span className="font-mono text-[11px] px-1.5 text-slate-600 dark:text-slate-400">
+            {typeof zoom === 'number' ? `${zoom}%` : 'Vừa rộng'}
+          </span>
+          <button
+            disabled={!url}
+            onClick={() =>
+              setZoom((z) => Math.min(300, (typeof z === 'number' ? z : 100) + 25))
+            }
+            className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 cursor-pointer"
+            title="Phóng to"
+          >
+            <ZoomIn className="w-3.5 h-3.5" />
+          </button>
+          <button
+            disabled={!url}
+            onClick={() => setZoom('page-width')}
+            className="px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-[11px] disabled:opacity-40 cursor-pointer"
+          >
+            Vừa rộng
+          </button>
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          <button
+            disabled={!url || exportingImage}
+            onClick={handleExportPNG}
+            title="Xuất trang đầu ra ảnh PNG 300 DPI trong suốt để dán vào PowerPoint"
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-[11px] text-slate-700 dark:text-slate-300 disabled:opacity-40 cursor-pointer"
+          >
+            <ImageIcon className="w-3.5 h-3.5 text-indigo-500" />
+            <span>{exportingImage ? 'Đang xuất…' : 'PNG 300 DPI'}</span>
+          </button>
+
+          {numPages > 0 && (
+            <span className="text-[11px] font-mono text-slate-500">
+              {numPages} trang
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Main PDF Scroll Container */}
+      <div
+        ref={host}
+        className="flex-1 min-h-0 overflow-auto p-4 flex flex-col items-center bg-slate-100/60 dark:bg-slate-950/40"
+        aria-label="Tài liệu PDF đã biên dịch"
+      >
+        <Document
+          file={url}
+          onLoadSuccess={({ numPages }) => setNumPages(numPages)}
+          loading={
+            <div className="p-8 text-center text-xs text-slate-500">
+              Đang mở tài liệu PDF…
+            </div>
+          }
+          error={
+            <div className="p-8 text-center text-xs text-rose-500">
+              Không thể hiển thị PDF trực tiếp. Hãy dùng nút Tải PDF về máy.
+            </div>
+          }
+        >
+          {Array.from({ length: numPages }, (_, i) => (
+            <PDFSinglePage
+              key={i + 1}
+              number={i + 1}
+              width={computedWidth}
+              onPageClick={onSync}
+              isHighlighted={highlightPage === i + 1}
+            />
+          ))}
+        </Document>
+      </div>
+    </div>
+  );
 }

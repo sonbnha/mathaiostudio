@@ -1997,36 +1997,6 @@ export default function LaTeXStudio({
             <Share2 className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Xuất bản</span>
           </button>
-
-          <span className="h-3.5 w-px bg-slate-200 dark:bg-[#2d3136] mx-0.5" />
-
-          {/* Dark / Light Toggle */}
-          <button
-            type="button"
-            onClick={toggleTheme}
-            className="p-1.5 rounded-md text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#2a2e33] transition cursor-pointer"
-            title={isDark ? 'Chuyển sang giao diện Sáng' : 'Chuyển sang giao diện Tối'}
-          >
-            {isDark ? (
-              <Sun className="w-3.5 h-3.5 text-amber-400" />
-            ) : (
-              <Moon className="w-3.5 h-3.5 text-slate-600" />
-            )}
-          </button>
-
-          {/* Fullscreen Toggle */}
-          <button
-            type="button"
-            onClick={toggleFullscreen}
-            className="p-1.5 rounded-md text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#2a2e33] transition cursor-pointer"
-            title={isFullscreen ? 'Thoát toàn màn hình' : 'Toàn màn hình'}
-          >
-            {isFullscreen ? (
-              <Minimize2 className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300" />
-            ) : (
-              <Maximize2 className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300" />
-            )}
-          </button>
         </div>
       </header>
 

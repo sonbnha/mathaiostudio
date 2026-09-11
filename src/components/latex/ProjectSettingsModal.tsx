@@ -30,7 +30,7 @@ export default function ProjectSettingsModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="project-settings-title"
-      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 bg-black/10 flex items-start justify-center pt-16 sm:pt-20 p-4 animate-in fade-in duration-150"
       onClick={onClose}
     >
       <div

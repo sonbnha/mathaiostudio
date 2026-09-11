@@ -150,9 +150,11 @@ export default function LaTeXStudio({
   const ocrInputRef = useRef<HTMLInputElement>(null);
   const wordInputRef = useRef<HTMLInputElement>(null);
 
-  // Resizer dragging state
-  const isDraggingRef = useRef(false);
-  const [isDragging, setIsDragging] = useState(false);
+  // Dual resizers & panel dragging state
+  const [sidebarWidth, setSidebarWidth] = useState<number>(256);
+  const [resizingTarget, setResizingTarget] = useState<'sidebar' | 'editor-pdf' | null>(null);
+  const isResizing = Boolean(resizingTarget);
+  const resizingTargetRef = useRef<'sidebar' | 'editor-pdf' | null>(null);
   const monacoEditorRef = useRef<any>(null);
   const mainContainerRef = useRef<HTMLElement>(null);
   const workspaceRef = useRef<HTMLDivElement>(null);
@@ -640,27 +642,58 @@ export default function LaTeXStudio({
     setJumpToPage(page);
   };
 
-  // Divider dragging with Overleaf-standard split pane mechanism (20% - 80% leftWidthPercent, safe min-widths)
-  const handleMouseDownDivider = (e: React.MouseEvent) => {
+  // Resizer 1: Left Sidebar Divider (180px - 360px)
+  const handleMouseDownSidebarDivider = (e: React.MouseEvent) => {
     e.preventDefault();
-    isDraggingRef.current = true;
-    setIsDragging(true);
+    resizingTargetRef.current = 'sidebar';
+    setResizingTarget('sidebar');
+    const startX = e.clientX;
+    const initialWidth = sidebarWidth;
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      if (resizingTargetRef.current !== 'sidebar') return;
+      const deltaX = moveEvent.clientX - startX;
+      let newWidth = initialWidth + deltaX;
+      newWidth = Math.min(360, Math.max(180, newWidth));
+      setSidebarWidth(newWidth);
+    };
+
+    const onMouseUp = () => {
+      resizingTargetRef.current = null;
+      setResizingTarget(null);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+
+      // Trigger Monaco Editor layout update
+      monacoEditorRef.current?.layout();
+      window.dispatchEvent(new Event('resize'));
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  };
+
+  // Resizer 2: Editor & PDF Preview Split Divider (25% - 75%)
+  const handleMouseDownEditorPdfDivider = (e: React.MouseEvent) => {
+    e.preventDefault();
+    resizingTargetRef.current = 'editor-pdf';
+    setResizingTarget('editor-pdf');
     const startX = e.clientX;
     const initialRatio = splitRatio;
 
     const wsEl = workspaceRef.current;
-    const wsWidth = wsEl ? wsEl.clientWidth : (window.innerWidth - (isFileTreeCollapsed ? 48 : 256) - 16);
+    const wsWidth = wsEl ? wsEl.clientWidth : (window.innerWidth - (isFileTreeCollapsed ? 48 : sidebarWidth) - 16);
 
     const onMouseMove = (moveEvent: MouseEvent) => {
-      if (!isDraggingRef.current) return;
+      if (resizingTargetRef.current !== 'editor-pdf') return;
       const deltaX = moveEvent.clientX - startX;
       const deltaPercent = wsWidth > 0 ? (deltaX / wsWidth) * 100 : 0;
       let targetRatio = initialRatio + deltaPercent;
 
-      // Bound between 20% and 80%
-      targetRatio = Math.min(80, Math.max(20, targetRatio));
+      // Bound between 25% and 75%
+      targetRatio = Math.min(75, Math.max(25, targetRatio));
 
-      // Ensure neither column ever collapses to 0px
+      // Ensure neither column collapses
       if (wsWidth > 0) {
         const minPercent = (200 / wsWidth) * 100;
         const maxPercent = 100 - (200 / wsWidth) * 100;
@@ -673,8 +706,8 @@ export default function LaTeXStudio({
     };
 
     const onMouseUp = () => {
-      isDraggingRef.current = false;
-      setIsDragging(false);
+      resizingTargetRef.current = null;
+      setResizingTarget(null);
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
 
@@ -1026,9 +1059,8 @@ export default function LaTeXStudio({
       >
         {/* COLUMN 1: LEFT SIDEBAR (File tree + File outline) */}
         <div
-          className={`file-tree-sidebar h-full rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-2xs flex flex-shrink-0 shrink-0 ${
-            isFileTreeCollapsed ? 'w-12' : 'w-64'
-          }`}
+          style={{ width: isFileTreeCollapsed ? 48 : sidebarWidth }}
+          className="file-tree-sidebar h-full rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-2xs flex flex-shrink-0 shrink-0"
         >
           <FileTreeExplorer
             files={files}
@@ -1045,7 +1077,22 @@ export default function LaTeXStudio({
           />
         </div>
 
-        {/* WORKSPACE CONTAINER: EDITOR + DIVIDER + PDF */}
+        {/* RESIZER 1: SIDEBAR RESIZER (180px - 360px) */}
+        {!isFileTreeCollapsed && (
+          <div
+            onMouseDown={handleMouseDownSidebarDivider}
+            className={`relative w-2 flex-shrink-0 shrink-0 flex items-center justify-center cursor-col-resize select-none transition-colors z-20 group ${
+              resizingTarget === 'sidebar'
+                ? 'bg-neutral-600/50'
+                : 'bg-[#1e2124] hover:bg-neutral-600/50 border-x border-white/5'
+            }`}
+            title="Kéo chỉnh độ rộng Sidebar (180px - 360px)"
+          >
+            <div className="w-0.5 h-8 rounded-full bg-slate-400/40 group-hover:bg-cyan-500 transition-colors" />
+          </div>
+        )}
+
+        {/* WORKSPACE CONTAINER: EDITOR + RESIZER 2 + PDF */}
         <div
           ref={workspaceRef}
           className="flex-1 min-w-0 h-full flex flex-row overflow-hidden gap-1.5"
@@ -1057,11 +1104,17 @@ export default function LaTeXStudio({
               display: layoutMode === 'pdf' ? 'none' : 'flex',
               width: layoutMode === 'code' ? '100%' : `${splitRatio}%`,
             }}
-            className={`min-w-[200px] flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xs overflow-hidden h-full flex flex-shrink-0 shrink-0 transition-opacity duration-150 ${
-              isDragging ? 'pointer-events-none opacity-80 select-none' : ''
+            className={`min-w-[200px] flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xs overflow-hidden h-full flex flex-shrink-0 shrink-0 relative ${
+              isResizing ? 'select-none pointer-events-none' : ''
             }`}
           >
-            {/* File Tabs Bar */}
+            {/* Solid Blank Canvas during Dragging */}
+            {isResizing && (
+              <div className="absolute inset-0 z-30 bg-[#1e2327] select-none pointer-events-none" />
+            )}
+
+            <div className={`flex flex-col h-full w-full overflow-hidden ${isResizing ? 'invisible pointer-events-none' : ''}`}>
+              {/* File Tabs Bar */}
             <div className="flex items-center justify-between px-2 bg-slate-100/90 dark:bg-slate-950/90 border-b border-slate-200 dark:border-slate-800 text-xs shrink-0 h-8">
               <div className="flex items-center gap-1 overflow-x-auto min-w-0 py-0.5">
                 {openTabs.map((tab) => {
@@ -1304,14 +1357,15 @@ export default function LaTeXStudio({
               </div>
             )}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* COLUMN 3: SPLIT RESIZER & SYNCTEX ARROWS (Overleaf Split Gutter) */}
+        {/* RESIZER 2: SPLIT RESIZER & SYNCTEX ARROWS (Overleaf Split Gutter) */}
         {layoutMode === 'split' && (
           <div
-            onMouseDown={handleMouseDownDivider}
+            onMouseDown={handleMouseDownEditorPdfDivider}
             className={`relative w-2 flex-shrink-0 shrink-0 flex flex-col items-center justify-center cursor-col-resize select-none transition-colors z-20 group ${
-              isDragging
+              resizingTarget === 'editor-pdf'
                 ? 'bg-neutral-600/50'
                 : 'bg-[#1e2124] hover:bg-neutral-600/50 border-x border-white/5'
             }`}
@@ -1352,11 +1406,17 @@ export default function LaTeXStudio({
           style={{
             display: layoutMode === 'code' ? 'none' : 'flex',
           }}
-          className={`flex-1 min-w-[200px] overflow-hidden relative flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xs h-full transition-opacity duration-150 ${
-            isDragging ? 'pointer-events-none opacity-80 select-none' : ''
+          className={`flex-1 min-w-[200px] overflow-hidden relative flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xs h-full ${
+            isResizing ? 'select-none pointer-events-none' : ''
           }`}
         >
-          {/* Overleaf Authentic Viewer Toolbar */}
+          {/* Solid Blank Canvas during Dragging */}
+          {isResizing && (
+            <div className="absolute inset-0 z-30 bg-[#1e2327] select-none pointer-events-none" />
+          )}
+
+          <div className={`flex flex-col h-full w-full overflow-hidden ${isResizing ? 'invisible pointer-events-none' : ''}`}>
+            {/* Overleaf Authentic Viewer Toolbar */}
           <div className="flex justify-between items-center px-2.5 h-8 border-b border-white/10 bg-[#1e2124] shrink-0 text-xs overflow-hidden select-none">
             {/* Left Group: Green Recompile + Engine + Download + Logs */}
             <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -1594,7 +1654,8 @@ export default function LaTeXStudio({
               />
             )}
           </div>
-        </section>
+        </div>
+      </section>
       </div>
       </main>
 
@@ -1651,10 +1712,10 @@ export default function LaTeXStudio({
         </div>
       )}
 
-      {/* Fullscreen Pointer Shield during Dragging */}
-      {isDragging && (
+      {/* Fullscreen Transparent Pointer Shield during Dragging */}
+      {isResizing && (
         <div
-          className="fixed inset-0 z-50 cursor-col-resize select-none bg-black/10 dark:bg-black/20"
+          className="fixed inset-0 z-50 cursor-col-resize select-none bg-transparent"
           style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
         />
       )}

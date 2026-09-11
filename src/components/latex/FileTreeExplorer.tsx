@@ -289,18 +289,18 @@ export default function FileTreeExplorer({
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleMouseDownHorizontalSplitter = (e: React.MouseEvent) => {
+    e.stopPropagation();
     e.preventDefault();
     const container = containerRef.current;
     if (!container) return;
     const containerRect = container.getBoundingClientRect();
 
     const onMouseMove = (moveEvent: MouseEvent) => {
-      const relativeY = moveEvent.clientY - containerRect.top;
+      const currentY = moveEvent.clientY - containerRect.top;
       const totalH = containerRect.height;
       if (totalH <= 0) return;
-      let newPercent = (relativeY / totalH) * 100;
-      newPercent = Math.min(80, Math.max(20, newPercent));
-      setTreeHeightPercent(newPercent);
+      const percent = (currentY / totalH) * 100;
+      setTreeHeightPercent(Math.min(80, Math.max(20, percent)));
     };
 
     const onMouseUp = () => {
@@ -361,15 +361,14 @@ export default function FileTreeExplorer({
     <aside
       ref={containerRef}
       aria-label="Cột quản lý file và mục lục Overleaf"
-      className="w-full flex-1 flex flex-col text-xs select-none h-full overflow-hidden bg-white dark:bg-[#1e2124]"
+      className="w-full h-full flex flex-col overflow-hidden relative select-none bg-white dark:bg-[#1e2124]"
     >
       {/* SECTION 1 (TOP TIER): FILE TREE */}
       <div
         style={{
           height: bothExpanded ? `${treeHeightPercent}%` : isTreeExpanded ? '100%' : 'auto',
-          minHeight: isTreeExpanded ? (bothExpanded ? '120px' : '0px') : 'auto',
         }}
-        className={`flex flex-col overflow-hidden ${isTreeExpanded ? 'flex-1 min-h-0' : 'flex-shrink-0'}`}
+        className="flex flex-col overflow-hidden flex-shrink-0"
       >
         {/* File Tree Header */}
         <div className="flex items-center justify-between px-2 py-1.5 w-full overflow-hidden flex-nowrap bg-slate-50/90 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800 shrink-0 select-none">
@@ -594,7 +593,7 @@ export default function FileTreeExplorer({
       {bothExpanded && (
         <div
           onMouseDown={handleMouseDownHorizontalSplitter}
-          className="h-1.5 bg-[#181a1d] hover:bg-emerald-500/40 cursor-row-resize flex-shrink-0 border-y border-white/5 transition-colors select-none z-10"
+          className="h-1.5 w-full bg-[#181a1d] hover:bg-emerald-500/40 cursor-row-resize flex-shrink-0 border-y border-white/5 transition-colors z-20"
           title="Kéo phân chia tỷ lệ chiều cao Cây thư mục và Dàn ý"
         />
       )}
@@ -602,10 +601,9 @@ export default function FileTreeExplorer({
       {/* SECTION 2 (BOTTOM TIER): FILE OUTLINE */}
       <div
         style={{
-          height: bothExpanded ? `${100 - treeHeightPercent}%` : isOutlineExpanded ? '100%' : 'auto',
-          minHeight: isOutlineExpanded ? (bothExpanded ? '100px' : '0px') : 'auto',
+          height: bothExpanded ? `calc(${100 - treeHeightPercent}% - 6px)` : isOutlineExpanded ? '100%' : 'auto',
         }}
-        className={`flex flex-col overflow-hidden bg-slate-50/40 dark:bg-slate-950/20 ${isOutlineExpanded ? 'flex-1 min-h-0' : 'flex-shrink-0'}`}
+        className="flex flex-col overflow-hidden flex-shrink-0 bg-slate-50/40 dark:bg-slate-950/20"
       >
         {/* File Outline Header */}
         <div className="flex items-center justify-between px-2 py-1.5 w-full overflow-hidden flex-nowrap bg-slate-50/90 dark:bg-slate-950/60 border-y border-slate-200 dark:border-slate-800 shrink-0 select-none">

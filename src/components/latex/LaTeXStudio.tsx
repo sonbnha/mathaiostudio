@@ -151,6 +151,7 @@ export default function LaTeXStudio({
   const [reviewMode, setReviewMode] = useState<'editing' | 'reviewing'>('editing');
   const [layoutMode, setLayoutMode] = useState<'split' | 'code' | 'pdf'>('split');
   const [editorRatio, setEditorRatio] = useState<number>(0.5); // 0.25 to 0.75
+  const [lastEditorRatio, setLastEditorRatio] = useState<number>(0.5);
   const splitRatio = editorRatio * 100;
   const [engine, setEngine] = useState<'xelatex' | 'pdflatex' | 'lualatex'>('xelatex');
 
@@ -165,8 +166,21 @@ export default function LaTeXStudio({
 
   // Sidebar & Dual resizers state
   const [activeActivityTab, setActiveActivityTab] = useState<'files' | 'search' | 'ai'>('files');
-  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
-  const [sidebarWidth, setSidebarWidth] = useState<number>(260); // 180px - 360px
+  const [sidebarWidth, setSidebarWidth] = useState<number>(260); // 180px - 360px (0 when collapsed)
+  const [lastSidebarWidth, setLastSidebarWidth] = useState<number>(260);
+  const isSidebarOpen = sidebarWidth > 0;
+  const setIsSidebarOpen = useCallback((open: boolean | ((prev: boolean) => boolean)) => {
+    setSidebarWidth((cur) => {
+      const isCurrentlyOpen = cur > 0;
+      const nextOpen = typeof open === 'function' ? open(isCurrentlyOpen) : open;
+      if (nextOpen) {
+        return lastSidebarWidth > 0 ? lastSidebarWidth : 260;
+      } else {
+        if (cur > 0) setLastSidebarWidth(cur);
+        return 0;
+      }
+    });
+  }, [lastSidebarWidth]);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState<boolean>(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [resizingTarget, setResizingTarget] = useState<'sidebar' | 'editor-pdf' | null>(null);
@@ -253,13 +267,13 @@ export default function LaTeXStudio({
   };
 
   const handleActivityTabClick = (tab: 'files' | 'search' | 'ai') => {
-    if (isSidebarOpen && activeActivityTab === tab) {
-      setIsSidebarOpen(false);
+    if (sidebarWidth > 0 && activeActivityTab === tab) {
+      setLastSidebarWidth(sidebarWidth);
+      setSidebarWidth(0);
     } else {
       setActiveActivityTab(tab);
-      setIsSidebarOpen(true);
-      if (sidebarWidth < 180) {
-        setSidebarWidth(260);
+      if (sidebarWidth <= 0) {
+        setSidebarWidth(lastSidebarWidth > 0 ? lastSidebarWidth : 260);
       }
     }
   };
@@ -747,7 +761,7 @@ export default function LaTeXStudio({
     setJumpToPage(page);
   };
 
-  // Resizer 1: Left Sidebar Divider (180px - 360px, offset by Activity Bar 44px, Snap below 40px)
+  // Resizer 1: Left Sidebar Divider (180px - 360px, offset by Activity Bar 44px, Snap below 35px)
   const handleMouseDownSidebarDivider = (e: React.MouseEvent) => {
     e.preventDefault();
     resizingTargetRef.current = 'sidebar';
@@ -757,20 +771,25 @@ export default function LaTeXStudio({
     const onMouseMove = (moveEvent: MouseEvent) => {
       if (resizingTargetRef.current !== 'sidebar') return;
       const rawWidth = moveEvent.clientX - activityBarWidth;
-      if (rawWidth < 40) {
-        setIsSidebarOpen(false);
+      if (rawWidth < 35) {
+        setSidebarWidth(0);
       } else {
-        setIsSidebarOpen(true);
         const clampedWidth = Math.min(360, Math.max(180, rawWidth));
         setSidebarWidth(clampedWidth);
+        setLastSidebarWidth(clampedWidth);
       }
     };
 
-    const onMouseUp = () => {
+    const onMouseUp = (upEvent: MouseEvent) => {
       resizingTargetRef.current = null;
       setResizingTarget(null);
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
+
+      const rawWidth = upEvent.clientX - activityBarWidth;
+      if (rawWidth < 35) {
+        setSidebarWidth(0);
+      }
 
       // Trigger Monaco Editor layout update
       monacoEditorRef.current?.layout();
@@ -781,7 +800,7 @@ export default function LaTeXStudio({
     window.addEventListener('mouseup', onMouseUp);
   };
 
-  // Resizer 2: Editor & PDF Preview Split Divider (25% - 75% relative to Main Workspace, Snap PDF if < 40px from right)
+  // Resizer 2: Editor & PDF Preview Split Divider (25% - 75% relative to Main Workspace, Snap PDF if < 35px from right)
   const handleMouseDownEditorPdfDivider = (e: React.MouseEvent) => {
     e.preventDefault();
     resizingTargetRef.current = 'editor-pdf';
@@ -795,15 +814,15 @@ export default function LaTeXStudio({
       const wsRect = wsEl.getBoundingClientRect();
       const distanceFromRight = wsRect.right - moveEvent.clientX;
 
-      if (distanceFromRight < 40) {
+      if (distanceFromRight < 35) {
         // Snap PDF to 0 and expand Editor 100%
         setLayoutMode('code');
       } else {
-        if (layoutMode === 'code') setLayoutMode('split');
-        const relativeX = moveEvent.clientX - wsRect.left;
         const wsWidth = wsRect.width;
         if (wsWidth <= 0) return;
 
+        setLayoutMode('split');
+        const relativeX = moveEvent.clientX - wsRect.left;
         let newRatio = relativeX / wsWidth;
 
         // Bound between 0.15 and 0.85
@@ -817,14 +836,23 @@ export default function LaTeXStudio({
         }
 
         setEditorRatio(newRatio);
+        setLastEditorRatio(newRatio);
       }
     };
 
-    const onMouseUp = () => {
+    const onMouseUp = (upEvent: MouseEvent) => {
       resizingTargetRef.current = null;
       setResizingTarget(null);
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
+
+      if (wsEl) {
+        const wsRect = wsEl.getBoundingClientRect();
+        const distanceFromRight = wsRect.right - upEvent.clientX;
+        if (distanceFromRight < 35) {
+          setLayoutMode('code');
+        }
+      }
 
       // Trigger editor.layout() of Monaco Editor to adapt immediately to new size
       monacoEditorRef.current?.layout();
@@ -2276,99 +2304,64 @@ export default function LaTeXStudio({
           </div>
         )}
 
-        {/* Quick Expand Button when Sidebar is Collapsed */}
-        {!isSidebarOpen && (
-          <div className="absolute left-11 top-1/2 -translate-y-1/2 z-30 group/sbexp">
+        {/* RESIZER 1: SIDEBAR RESIZER (180px - 360px, snap 35px) */}
+        <div
+          onMouseDown={handleMouseDownSidebarDivider}
+          className={`relative w-2 flex-shrink-0 shrink-0 flex flex-col items-center justify-center cursor-col-resize select-none transition-colors z-30 group ${
+            resizingTarget === 'sidebar'
+              ? 'bg-neutral-600/50'
+              : 'bg-[#1e2124] hover:bg-neutral-600/50 border-r border-white/5'
+          }`}
+          title={sidebarWidth <= 0 ? "Kéo sang phải để mở rộng Sidebar" : "Kéo chỉnh độ rộng Sidebar (180px - 360px)"}
+        >
+          {/* Flush Handle: Separated hitbox, pointer-events-auto, z-40 */}
+          <div className="absolute top-1/2 -translate-y-1/2 z-40 pointer-events-auto group/sbc">
             <button
               type="button"
               onMouseDown={(e) => {
                 e.stopPropagation();
-                handleMouseDownSidebarDivider(e);
+                /* TUYỆT ĐỐI KHÔNG dùng e.preventDefault() ở đây */
               }}
               onClick={(e) => {
                 e.stopPropagation();
-                setIsSidebarOpen(true);
-                if (sidebarWidth < 180) setSidebarWidth(260);
+                // Toggle Sidebar
+                if (sidebarWidth <= 0) {
+                  setSidebarWidth(lastSidebarWidth > 0 ? lastSidebarWidth : 250);
+                } else {
+                  setLastSidebarWidth(sidebarWidth);
+                  setSidebarWidth(0);
+                }
               }}
-              className="w-3 h-10 rounded-r-[2px] bg-[#20262b] border border-l-0 border-white/10 text-neutral-400 flex items-center justify-center shadow-xs cursor-pointer pointer-events-auto z-30 transition-all duration-150 hover:bg-emerald-500/20 hover:border-emerald-500 hover:text-emerald-300 hover:shadow-[0_0_8px_rgba(34,197,94,0.45)]"
-              title="Mở rộng bảng điều khiển"
+              className="w-3 h-10 bg-[#20262b] border border-white/10 rounded-[2px] text-neutral-400 flex items-center justify-center cursor-pointer pointer-events-auto z-40 relative shadow-xs transition-all duration-150 hover:bg-emerald-500/20 hover:border-emerald-500 hover:text-emerald-300 hover:shadow-[0_0_8px_rgba(34,197,94,0.45)]"
+              title={sidebarWidth <= 0 ? "Mở rộng bảng điều khiển" : "Thu gọn bảng điều khiển"}
             >
-              <ChevronRight className="w-2.5 h-2.5" />
-            </button>
-            <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-[#111315] border border-white/10 rounded text-[11px] text-white whitespace-nowrap shadow-lg pointer-events-none opacity-0 group-hover/sbexp:opacity-100 transition-opacity duration-150 z-50">
-              Mở rộng bảng điều khiển
-            </div>
-          </div>
-        )}
-
-        {/* RESIZER 1: SIDEBAR RESIZER (180px - 360px) */}
-        {isSidebarOpen && (
-          <div
-            onMouseDown={handleMouseDownSidebarDivider}
-            className={`relative w-2 flex-shrink-0 shrink-0 flex flex-col items-center justify-center cursor-col-resize select-none transition-colors z-20 group ${
-              resizingTarget === 'sidebar'
-                ? 'bg-neutral-600/50'
-                : 'bg-[#1e2124] hover:bg-neutral-600/50 border-r border-white/5'
-            }`}
-            title="Kéo chỉnh độ rộng Sidebar (180px - 360px)"
-          >
-            <div className="absolute top-1/2 -translate-y-1/2 group/sbc">
-              <button
-                type="button"
-                onMouseDown={(e) => e.stopPropagation()}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsSidebarOpen(false);
-                }}
-                className="w-3 h-10 bg-[#20262b] border border-white/10 rounded-[2px] text-neutral-400 flex items-center justify-center cursor-pointer pointer-events-auto z-30 shadow-xs transition-all duration-150 hover:bg-emerald-500/20 hover:border-emerald-500 hover:text-emerald-300 hover:shadow-[0_0_8px_rgba(34,197,94,0.45)]"
-                title="Thu gọn bảng điều khiển"
-              >
+              {sidebarWidth <= 0 ? (
+                <ChevronRight className="w-2.5 h-2.5" />
+              ) : (
                 <ChevronLeft className="w-2.5 h-2.5" />
-              </button>
-              <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-[#111315] border border-white/10 rounded text-[11px] text-white whitespace-nowrap shadow-lg pointer-events-none opacity-0 group-hover/sbc:opacity-100 transition-opacity duration-150 z-50">
-                Thu gọn bảng điều khiển
-              </div>
+              )}
+            </button>
+            <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-[#111315] border border-white/10 rounded text-[11px] text-white whitespace-nowrap shadow-lg pointer-events-none opacity-0 group-hover/sbc:opacity-100 transition-opacity duration-150 z-50">
+              {sidebarWidth <= 0 ? 'Mở rộng bảng điều khiển' : 'Thu gọn bảng điều khiển'}
             </div>
           </div>
-        )}
+        </div>
 
         {/* WORKSPACE CONTAINER: EDITOR + RESIZER 2 + PDF */}
         <div
           ref={workspaceRef}
           className="relative flex-1 min-w-0 h-full flex flex-row overflow-hidden p-1.5 gap-1.5"
         >
-          {/* Quick Expand Button when PDF is Collapsed (layoutMode === 'code') */}
-          {layoutMode === 'code' && (
-            <div className="absolute right-0 top-1/2 -translate-y-1/2 z-30 group/pdfexp">
-              <button
-                type="button"
-                onMouseDown={(e) => {
-                  e.stopPropagation();
-                  handleMouseDownEditorPdfDivider(e);
-                }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setLayoutMode('split');
-                  setEditorRatio(0.5);
-                }}
-                className="w-3 h-10 rounded-l-[2px] bg-[#20262b] border border-r-0 border-white/10 text-neutral-400 flex items-center justify-center shadow-xs cursor-pointer pointer-events-auto z-30 transition-all duration-150 hover:bg-emerald-500/20 hover:border-emerald-500 hover:text-emerald-300 hover:shadow-[0_0_8px_rgba(34,197,94,0.45)]"
-                title="Mở rộng khung PDF"
-              >
-                <ChevronLeft className="w-2.5 h-2.5" />
-              </button>
-              <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-[#111315] border border-white/10 rounded text-[11px] text-white whitespace-nowrap shadow-lg pointer-events-none opacity-0 group-hover/pdfexp:opacity-100 transition-opacity duration-150 z-50">
-                Mở rộng khung PDF
-              </div>
-            </div>
-          )}
           {/* COLUMN 2: CODE EDITOR PANEL (Center) */}
           <section
             aria-label="Trình soạn thảo mã LaTeX"
             style={{
               display: layoutMode === 'pdf' ? 'none' : 'flex',
-              width: layoutMode === 'code' ? '100%' : `${editorRatio * 100}%`,
+              width: layoutMode === 'split' ? `${editorRatio * 100}%` : undefined,
             }}
-            className="min-w-[250px] flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xs overflow-hidden h-full flex flex-shrink-0 shrink-0 relative"
+            className={`min-w-[250px] flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xs overflow-hidden h-full flex flex-shrink-0 shrink-0 relative ${
+              layoutMode === 'code' ? 'flex-1 min-w-0' : ''
+            }`}
           >
             {/* File Tabs Bar - ALWAYS VISIBLE OUTSIDE MASK */}
             <div className="flex items-center justify-between px-2 bg-slate-100/90 dark:bg-slate-950/90 border-b border-slate-200 dark:border-slate-800 text-xs shrink-0 h-8 z-10">
@@ -2630,73 +2623,89 @@ export default function LaTeXStudio({
     </section>
 
         {/* RESIZER 2: SPLIT RESIZER & SYNCTEX ARROWS (Overleaf Split Gutter) */}
-        {layoutMode === 'split' && (
+        {layoutMode !== 'pdf' && (
           <div
             onMouseDown={handleMouseDownEditorPdfDivider}
-            className={`relative w-2 flex-shrink-0 shrink-0 flex flex-col items-center justify-center cursor-col-resize select-none transition-colors z-20 group ${
+            className={`relative w-2 flex-shrink-0 shrink-0 flex flex-col items-center justify-center cursor-col-resize select-none transition-colors z-30 group ${
               resizingTarget === 'editor-pdf'
                 ? 'bg-neutral-600/50'
                 : 'bg-[#1e2124] hover:bg-neutral-600/50 border-x border-white/5'
             }`}
-            title="Kéo giãn tỷ lệ giữa Code và PDF (Overleaf Split Gutter)"
+            title={layoutMode === 'code' ? "Kéo sang trái để mở rộng PDF" : "Kéo giãn tỷ lệ giữa Code và PDF (Overleaf Split Gutter)"}
           >
             {/* SyncTeX Arrows - Anchored at top-[72px] (aligning with code editor lines) */}
-            <div className="absolute top-[72px] flex flex-col items-center gap-1 z-30">
-              {/* SyncTeX Code -> PDF */}
-              <div className="relative group/synctop flex items-center justify-center">
-                <button
-                  type="button"
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleSyncCodeToPDF(cursorLine || targetLine || 1);
-                  }}
-                  className="w-5 h-5 bg-[#20262b] border border-white/10 rounded-[3px] text-neutral-400 flex items-center justify-center cursor-pointer pointer-events-auto shadow-xs transition-all duration-150 hover:bg-emerald-500/20 hover:border-emerald-500 hover:text-emerald-300 hover:shadow-[0_0_8px_rgba(34,197,94,0.45)]"
-                  title="Nhảy đến vị trí trong PDF"
-                >
-                  <ArrowRight className="w-3 h-3 text-neutral-400 group-hover/synctop:text-emerald-300 transition-colors" />
-                </button>
-                <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-[#111315] border border-white/10 rounded text-[11px] text-white whitespace-nowrap shadow-lg pointer-events-none opacity-0 group-hover/synctop:opacity-100 transition-opacity duration-150 z-50">
-                  Nhảy đến vị trí trong PDF
+            {layoutMode === 'split' && (
+              <div className="absolute top-[72px] flex flex-col items-center gap-1 z-30">
+                {/* SyncTeX Code -> PDF */}
+                <div className="relative group/synctop flex items-center justify-center">
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSyncCodeToPDF(cursorLine || targetLine || 1);
+                    }}
+                    className="w-5 h-5 bg-[#20262b] border border-white/10 rounded-[3px] text-neutral-400 flex items-center justify-center cursor-pointer pointer-events-auto shadow-xs transition-all duration-150 hover:bg-emerald-500/20 hover:border-emerald-500 hover:text-emerald-300 hover:shadow-[0_0_8px_rgba(34,197,94,0.45)]"
+                    title="Nhảy đến vị trí trong PDF"
+                  >
+                    <ArrowRight className="w-3 h-3 text-neutral-400 group-hover/synctop:text-emerald-300 transition-colors" />
+                  </button>
+                  <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-[#111315] border border-white/10 rounded text-[11px] text-white whitespace-nowrap shadow-lg pointer-events-none opacity-0 group-hover/synctop:opacity-100 transition-opacity duration-150 z-50">
+                    Nhảy đến vị trí trong PDF
+                  </div>
+                </div>
+
+                {/* SyncTeX PDF -> Code */}
+                <div className="relative group/syncbot flex items-center justify-center">
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSyncPDFToCode(pdfCurrentPage || 1, 0.2);
+                    }}
+                    className="w-5 h-5 bg-[#20262b] border border-white/10 rounded-[3px] text-neutral-400 flex items-center justify-center cursor-pointer pointer-events-auto shadow-xs transition-all duration-150 hover:bg-emerald-500/20 hover:border-emerald-500 hover:text-emerald-300 hover:shadow-[0_0_8px_rgba(34,197,94,0.45)]"
+                    title="Nhảy đến dòng mã nguồn"
+                  >
+                    <ArrowLeft className="w-3 h-3 text-neutral-400 group-hover/syncbot:text-emerald-300 transition-colors" />
+                  </button>
+                  <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-[#111315] border border-white/10 rounded text-[11px] text-white whitespace-nowrap shadow-lg pointer-events-none opacity-0 group-hover/syncbot:opacity-100 transition-opacity duration-150 z-50">
+                    Nhảy đến dòng mã nguồn
+                  </div>
                 </div>
               </div>
+            )}
 
-              {/* SyncTeX PDF -> Code */}
-              <div className="relative group/syncbot flex items-center justify-center">
-                <button
-                  type="button"
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleSyncPDFToCode(pdfCurrentPage || 1, 0.2);
-                  }}
-                  className="w-5 h-5 bg-[#20262b] border border-white/10 rounded-[3px] text-neutral-400 flex items-center justify-center cursor-pointer pointer-events-auto shadow-xs transition-all duration-150 hover:bg-emerald-500/20 hover:border-emerald-500 hover:text-emerald-300 hover:shadow-[0_0_8px_rgba(34,197,94,0.45)]"
-                  title="Nhảy đến dòng mã nguồn"
-                >
-                  <ArrowLeft className="w-3 h-3 text-neutral-400 group-hover/syncbot:text-emerald-300 transition-colors" />
-                </button>
-                <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-[#111315] border border-white/10 rounded text-[11px] text-white whitespace-nowrap shadow-lg pointer-events-none opacity-0 group-hover/syncbot:opacity-100 transition-opacity duration-150 z-50">
-                  Nhảy đến dòng mã nguồn
-                </div>
-              </div>
-            </div>
-
-            {/* PDF Flush Collapse Handle - Centered at top-1/2 */}
-            <div className="absolute top-1/2 -translate-y-1/2 group/pdfcol z-30">
+            {/* PDF Flush Collapse / Expand Handle - Centered at top-1/2 */}
+            <div className="absolute top-1/2 -translate-y-1/2 z-40 pointer-events-auto group/pdfcol">
               <button
                 type="button"
-                onMouseDown={(e) => e.stopPropagation()}
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                  /* TUYỆT ĐỐI KHÔNG dùng e.preventDefault() ở đây */
+                }}
                 onClick={(e) => {
                   e.stopPropagation();
-                  setLayoutMode('code');
+                  // Toggle PDF
+                  if (layoutMode === 'code') {
+                    setLayoutMode('split');
+                    setEditorRatio(lastEditorRatio > 0.15 && lastEditorRatio < 0.85 ? lastEditorRatio : 0.5);
+                  } else {
+                    setLastEditorRatio(editorRatio);
+                    setLayoutMode('code');
+                  }
                 }}
-                className="w-3 h-10 bg-[#20262b] border border-white/10 rounded-[2px] text-neutral-400 flex items-center justify-center cursor-pointer pointer-events-auto shadow-xs transition-all duration-150 hover:bg-emerald-500/20 hover:border-emerald-500 hover:text-emerald-300 hover:shadow-[0_0_8px_rgba(34,197,94,0.45)]"
-                title="Thu gọn khung PDF"
+                className="w-3 h-10 bg-[#20262b] border border-white/10 rounded-[2px] text-neutral-400 flex items-center justify-center cursor-pointer pointer-events-auto z-40 relative shadow-xs transition-all duration-150 hover:bg-emerald-500/20 hover:border-emerald-500 hover:text-emerald-300 hover:shadow-[0_0_8px_rgba(34,197,94,0.45)]"
+                title={layoutMode === 'code' ? 'Mở rộng khung PDF' : 'Thu gọn khung PDF'}
               >
-                <ChevronRight className="w-2.5 h-2.5" />
+                {layoutMode === 'code' ? (
+                  <ChevronLeft className="w-2.5 h-2.5" />
+                ) : (
+                  <ChevronRight className="w-2.5 h-2.5" />
+                )}
               </button>
               <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-[#111315] border border-white/10 rounded text-[11px] text-white whitespace-nowrap shadow-lg pointer-events-none opacity-0 group-hover/pdfcol:opacity-100 transition-opacity duration-150 z-50">
-                Thu gọn khung PDF
+                {layoutMode === 'code' ? 'Mở rộng khung PDF' : 'Thu gọn khung PDF'}
               </div>
             </div>
           </div>

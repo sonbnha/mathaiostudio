@@ -9,6 +9,7 @@ export interface ProjectItem {
   updatedAt: number;
   createdAt: number;
   isStarred?: boolean;
+  thumbnail?: string;
   metadata?: {
     description?: string;
     templateId?: string;
@@ -21,6 +22,7 @@ export interface ProjectItem {
     tikzCode?: string;
     lessonContent?: string;
     source?: string;
+    activities?: string[];
     previewType?: 'triangle' | 'pyramid' | 'circle' | 'exam' | 'lesson';
   };
   content?: any;
@@ -38,6 +40,7 @@ export function getInitialSeedProjects(): ProjectItem[] {
       createdAt: Date.now() - 86400000 * 1,
       updatedAt: Date.now() - 3600000 * 2,
       isStarred: true,
+      thumbnail: '<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg"><circle cx="200" cy="150" r="110" fill="none" stroke="#0284c7" stroke-width="2"/><polygon points="200,45 105,205 295,205" fill="rgba(14,165,233,0.08)" stroke="#0f172a" stroke-width="2.5"/><line x1="200" y1="45" x2="200" y2="205" stroke="#ef4444" stroke-width="2" stroke-dasharray="4,3"/><text x="195" y="35" font-family="sans-serif" font-weight="bold" font-size="16" fill="#0f172a">A</text><text x="85" y="220" font-family="sans-serif" font-weight="bold" font-size="16" fill="#0f172a">B</text><text x="305" y="220" font-family="sans-serif" font-weight="bold" font-size="16" fill="#0f172a">C</text><text x="205" y="222" font-family="sans-serif" font-weight="bold" font-size="14" fill="#ef4444">H</text><text x="205" y="155" font-family="sans-serif" font-weight="bold" font-size="14" fill="#0284c7">O</text><circle cx="200" cy="150" r="3" fill="#0284c7"/></svg>',
       metadata: {
         topic: 'Hình học phẳng THCS/THPT',
         badge: 'SVG Vector',
@@ -53,13 +56,21 @@ export function getInitialSeedProjects(): ProjectItem[] {
       createdAt: Date.now() - 86400000 * 3,
       updatedAt: Date.now() - 3600000 * 5,
       isStarred: true,
+      thumbnail: 'Khởi động (Trò chơi nhận biết hướng) -> Hình thành kiến thức (Định nghĩa Vectơ) -> Luyện tập (Cùng phương, cùng hướng) -> Vận dụng (Tổng hợp lực kéo)',
       metadata: {
         grade: 'Toán 10',
         topic: 'Hình học & Đo lường',
         badge: 'Chuẩn 5512 BGD',
         previewSnippet: '4 hoạt động: Khởi động -> Hình thành kiến thức -> Luyện tập -> Vận dụng',
+        activities: [
+          '1. Khởi động: Trò chơi nhận biết hướng chuyển động',
+          '2. Hình thành kiến thức: Định nghĩa Vectơ & độ dài',
+          '3. Luyện tập: Bài tập nhận biết vectơ cùng phương',
+          '4. Vận dụng: Bài toán tổng hợp lực trong vật lý',
+        ],
         previewType: 'lesson',
       },
+      content: 'I. MỤC TIÊU DẠY HỌC\n1. Về kiến thức: Hiểu khái niệm vectơ, hướng, độ dài vectơ.\n2. Về năng lực: Năng lực tư duy và lập luận toán học.\nII. TIẾN TRÌNH DẠY HỌC\n- Hoạt động 1: Khởi động nhận biết hướng chuyển động\n- Hoạt động 2: Hình thành định nghĩa đoạn thẳng có hướng\n- Hoạt động 3: Luyện tập vectơ cùng phương, bằng nhau\n- Hoạt động 4: Vận dụng tính lực tổng hợp',
     },
     {
       id: 'proj-latex-1',
@@ -68,10 +79,11 @@ export function getInitialSeedProjects(): ProjectItem[] {
       createdAt: Date.now() - 86400000 * 2,
       updatedAt: Date.now() - 3600000 * 1,
       isStarred: false,
+      content: LATEX_TEMPLATES[0]?.source || '\\documentclass[12pt,a4paper]{article}\n\\usepackage{amsmath,amssymb}\n\\begin{document}\n\\title{ĐỀ THI THAM KHẢO TỐT NGHIỆP THPT 2025}\n\\maketitle\n\\section*{PHẦN I. Câu trắc nghiệm nhiều phương án lựa chọn}\nCâu 1. Cho hàm số $y=f(x)$ có bảng biến thiên như sau...\n\\end{document}',
       metadata: {
         templateId: 'thpt_2025',
         badge: 'Cấu trúc 2025',
-        previewSnippet: '\\documentclass[12pt,a4paper]{article}\n\\usepackage{amsmath,amssymb}',
+        previewSnippet: 'ĐỀ THI THAM KHẢO TỐT NGHIỆP THPT 2025\nCâu 1. Cho hàm số y=f(x) có bảng biến thiên...\nCâu 2. Trong không gian Oxyz, cho mặt cầu (S)...',
         previewType: 'exam',
       },
     },
@@ -82,6 +94,7 @@ export function getInitialSeedProjects(): ProjectItem[] {
       createdAt: Date.now() - 86400000 * 5,
       updatedAt: Date.now() - 86400000 * 2,
       isStarred: false,
+      thumbnail: '<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg"><line x1="90" y1="210" x2="270" y2="210" stroke="#0f172a" stroke-width="2.5"/><line x1="270" y1="210" x2="330" y2="150" stroke="#0f172a" stroke-width="2.5"/><line x1="90" y1="210" x2="150" y2="150" stroke="#0f172a" stroke-width="1.5" stroke-dasharray="4,4"/><line x1="150" y1="150" x2="330" y2="150" stroke="#0f172a" stroke-width="1.5" stroke-dasharray="4,4"/><line x1="150" y1="150" x2="150" y2="50" stroke="#0f172a" stroke-width="1.5" stroke-dasharray="4,4"/><line x1="150" y1="50" x2="90" y2="210" stroke="#0f172a" stroke-width="2.5"/><line x1="150" y1="50" x2="270" y2="210" stroke="#0f172a" stroke-width="2.5"/><line x1="150" y1="50" x2="330" y2="150" stroke="#0f172a" stroke-width="2.5"/><text x="145" y="40" font-family="sans-serif" font-weight="bold" font-size="16" fill="#0f172a">S</text><text x="75" y="225" font-family="sans-serif" font-weight="bold" font-size="16" fill="#0f172a">A</text><text x="275" y="225" font-family="sans-serif" font-weight="bold" font-size="16" fill="#0f172a">B</text><text x="338" y="155" font-family="sans-serif" font-weight="bold" font-size="16" fill="#0f172a">C</text><text x="135" y="145" font-family="sans-serif" font-weight="bold" font-size="16" fill="#0f172a">D</text></svg>',
       metadata: {
         topic: 'Hình học không gian',
         badge: 'TikZ & SVG',
@@ -97,10 +110,11 @@ export function getInitialSeedProjects(): ProjectItem[] {
       createdAt: Date.now() - 86400000 * 6,
       updatedAt: Date.now() - 86400000 * 3,
       isStarred: true,
+      content: LATEX_TEMPLATES[1]?.source || '\\documentclass[12pt,a4paper]{article}\n\\usepackage{amsmath,amssymb}\n\\begin{document}\n\\title{CHUYÊN ĐỀ BẤT ĐẲNG THỨC CAUCHY - SCHWARZ}\n\\maketitle\n\\section*{1. Kiến thức cơ bản}\nBất đẳng thức Cauchy-Schwarz trong không gian $n$ chiều...\n\\end{document}',
       metadata: {
         templateId: 'topic_advanced',
         badge: 'Chuyên đề',
-        previewSnippet: 'Bất đẳng thức AM-GM và kỹ thuật chọn điểm rơi',
+        previewSnippet: 'CHUYÊN ĐỀ BẤT ĐẲNG THỨC CAUCHY - SCHWARZ\n1. Kiến thức cơ bản và chọn điểm rơi\n2. Phương pháp Cauchy ngược dấu',
         previewType: 'exam',
       },
     },
@@ -205,7 +219,8 @@ export function createNewProject(
   type: ProjectType,
   title: string,
   metadata?: Record<string, any>,
-  content?: any
+  content?: any,
+  thumbnail?: string
 ): ProjectItem {
   const newId = `proj-${type}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
   let cleanTitle = title.trim();
@@ -221,6 +236,7 @@ export function createNewProject(
     createdAt: Date.now(),
     updatedAt: Date.now(),
     isStarred: false,
+    thumbnail: thumbnail || metadata?.thumbnail || metadata?.svgCode || '',
     metadata: {
       ...metadata,
     },

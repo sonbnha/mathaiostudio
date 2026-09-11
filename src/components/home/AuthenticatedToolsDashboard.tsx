@@ -269,6 +269,109 @@ export default function AuthenticatedToolsDashboard({
     return new Date(timestamp).toLocaleDateString('vi-VN');
   };
 
+  // Helper to extract LaTeX title and clean question lines from real TeX code
+  const getLatexCardPreview = (item: ProjectItem): { title: string; lines: string[] } => {
+    const content = item.content || item.metadata?.source || item.thumbnail || item.metadata?.previewSnippet || '';
+    if (!content) {
+      return {
+        title: item.title.replace(/\.tex$/i, ''),
+        lines: ['(Chưa có nội dung văn bản TeX)'],
+      };
+    }
+
+    // Extract \title{...}
+    const titleMatch = content.match(/\\title\{([^}]+)\}/);
+    let docTitle = titleMatch ? titleMatch[1].trim() : '';
+
+    if (!docTitle) {
+      const secMatch = content.match(/\\section\*?\{([^}]+)\}/);
+      if (secMatch) docTitle = secMatch[1].trim();
+    }
+    if (!docTitle) {
+      docTitle = item.title.replace(/\.tex$/i, '');
+    }
+
+    // Extract non-header content lines
+    const rawLines = content.split('\n');
+    const cleanLines: string[] = [];
+
+    for (const line of rawLines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      if (trimmed.startsWith('%')) continue;
+      if (trimmed.startsWith('\\documentclass') || trimmed.startsWith('\\usepackage')) continue;
+      if (trimmed.startsWith('\\begin{document}') || trimmed.startsWith('\\end{document}')) continue;
+      if (trimmed.startsWith('\\maketitle') || trimmed.startsWith('\\title')) continue;
+      if (trimmed.startsWith('\\section') || trimmed.startsWith('\\subsection')) continue;
+
+      // Clean inline latex commands for readability
+      const sanitized = trimmed
+        .replace(/\\textbf\{([^}]+)\}/g, '$1')
+        .replace(/\\textit\{([^}]+)\}/g, '$1')
+        .replace(/\\underline\{([^}]+)\}/g, '$1')
+        .replace(/\$([^$]+)\$/g, '$1')
+        .replace(/\\[a-zA-Z]+/g, ' ')
+        .replace(/[{}\\]/g, '')
+        .trim();
+
+      if (sanitized.length > 2) {
+        cleanLines.push(sanitized);
+        if (cleanLines.length >= 2) break;
+      }
+    }
+
+    return {
+      title: docTitle,
+      lines: cleanLines.length > 0 ? cleanLines : ['Tài liệu biên soạn chuẩn XeLaTeX A4'],
+    };
+  };
+
+  // Helper to extract real Lesson Plan activities
+  const getLessonPlanCardPreview = (item: ProjectItem): { grade: string; topic: string; activities: string[] } => {
+    const grade = item.metadata?.grade || 'Toán THPT';
+    const topic = item.metadata?.topic || item.title;
+
+    let activities: string[] = [];
+    if (item.metadata?.activities && Array.isArray(item.metadata.activities) && item.metadata.activities.length > 0) {
+      activities = item.metadata.activities;
+    } else {
+      const text = item.content || item.thumbnail || item.metadata?.lessonContent || item.metadata?.previewSnippet || '';
+      if (text) {
+        const lines = text.split('\n');
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (
+            trimmed.toLowerCase().includes('hoạt động 1') ||
+            trimmed.toLowerCase().includes('hoạt động 2') ||
+            trimmed.toLowerCase().includes('hoạt động 3') ||
+            trimmed.toLowerCase().includes('hoạt động 4') ||
+            trimmed.toLowerCase().includes('hđ 1') ||
+            trimmed.toLowerCase().includes('hđ 2') ||
+            trimmed.toLowerCase().includes('hđ 3') ||
+            trimmed.toLowerCase().includes('hđ 4') ||
+            trimmed.startsWith('1. Khởi động') ||
+            trimmed.startsWith('2. Hình thành') ||
+            trimmed.startsWith('3. Luyện tập') ||
+            trimmed.startsWith('4. Vận dụng')
+          ) {
+            activities.push(trimmed.replace(/^[-*#\s]+/, '').slice(0, 42));
+            if (activities.length >= 3) break;
+          }
+        }
+      }
+    }
+
+    if (activities.length === 0) {
+      activities = [
+        '1. Khởi động: Tiếp cận vấn đề & tạo động cơ',
+        '2. Hình thành kiến thức: Xây dựng bài học mới',
+        '3. Luyện tập & Vận dụng: Củng cố kỹ năng',
+      ];
+    }
+
+    return { grade, topic, activities };
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased selection:bg-cyan-500 selection:text-slate-950 flex flex-col justify-between relative overflow-hidden transition-colors duration-200">
       {/* Background Decorative Glows */}
@@ -548,57 +651,116 @@ export default function AuthenticatedToolsDashboard({
                       className="group relative rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 hover:border-cyan-500/60 transition-all duration-200 shadow-2xs hover:shadow-xl hover:shadow-cyan-500/5 cursor-pointer flex flex-col overflow-hidden"
                     >
                       {/* 1. Top Section: Live Visual Miniature Thumbnail */}
-                      <div className="h-32 bg-slate-100/70 dark:bg-slate-950/70 border-b border-slate-200 dark:border-slate-800/80 relative flex items-center justify-center p-3 overflow-hidden group-hover:bg-slate-50 dark:group-hover:bg-slate-900/60 transition-colors">
-                        {/* GEOMETRY PREVIEW (SVG Geometry Vector Mockup) */}
-                        {isGeo && (
-                          <svg className="w-full h-full max-h-24 text-cyan-500" viewBox="0 0 160 90" fill="none">
-                            <circle cx="80" cy="45" r="38" stroke="currentColor" strokeWidth="1.5" strokeOpacity="0.4" strokeDasharray="3 3" />
-                            <polygon points="80,14 36,68 124,68" stroke="#06b6d4" strokeWidth="2" fill="rgba(6, 182, 212, 0.08)" />
-                            <line x1="80" y1="14" x2="80" y2="68" stroke="#ef4444" strokeWidth="1.5" strokeDasharray="2 2" />
-                            <circle cx="80" cy="14" r="3" fill="#06b6d4" />
-                            <circle cx="36" cy="68" r="3" fill="#06b6d4" />
-                            <circle cx="124" cy="68" r="3" fill="#06b6d4" />
-                            <circle cx="80" cy="68" r="2.5" fill="#ef4444" />
-                          </svg>
-                        )}
+                      <div className="h-32 bg-slate-100/70 dark:bg-slate-950/70 border-b border-slate-200 dark:border-slate-800/80 relative flex items-center justify-center p-2.5 overflow-hidden group-hover:bg-slate-50 dark:group-hover:bg-slate-900/60 transition-colors">
+                        {/* 1. GEOMETRY LIVE PREVIEW */}
+                        {isGeo &&
+                          (() => {
+                            const svgContent =
+                              item.thumbnail ||
+                              item.metadata?.svgCode ||
+                              (typeof item.content === 'string' && item.content.includes('<svg')
+                                ? item.content
+                                : null);
 
-                        {/* LESSON PLAN PREVIEW (Lesson Matrix Table Mockup) */}
-                        {isLp && (
-                          <div className="w-4/5 h-24 bg-white dark:bg-slate-900 rounded-xl border border-emerald-300/60 dark:border-emerald-800/60 shadow-xs p-2 flex flex-col justify-between text-[8px] font-mono">
-                            <div className="flex items-center justify-between border-b border-emerald-100 dark:border-emerald-900/50 pb-1 font-bold text-emerald-700 dark:text-emerald-400">
-                              <span>KHBD 5512</span>
-                              <span>{item.metadata?.grade || 'Toán 10'}</span>
-                            </div>
-                            <div className="space-y-1 text-slate-500">
-                              <div className="flex items-center gap-1">
-                                <span className="w-2 h-2 rounded bg-emerald-500/20 text-emerald-600 flex items-center justify-center font-bold">1</span>
-                                <span className="truncate">HĐ 1: Khởi động &amp; Tiếp cận</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <span className="w-2 h-2 rounded bg-emerald-500/20 text-emerald-600 flex items-center justify-center font-bold">2</span>
-                                <span className="truncate">HĐ 2: Hình thành kiến thức</span>
-                              </div>
-                            </div>
-                          </div>
-                        )}
+                            if (svgContent && svgContent.includes('<svg')) {
+                              return (
+                                <div
+                                  className="w-full h-full flex items-center justify-center [&>svg]:max-w-full [&>svg]:max-h-full [&>svg]:w-auto [&>svg]:h-auto pointer-events-none transition-transform group-hover:scale-[1.02]"
+                                  dangerouslySetInnerHTML={{ __html: svgContent }}
+                                />
+                              );
+                            }
 
-                        {/* LATEX PREVIEW (Simulated A4 TeX Sheet Mockup) */}
-                        {isLatex && (
-                          <div className="w-28 h-26 bg-white dark:bg-slate-900 rounded-lg border border-rose-300/60 dark:border-rose-800/60 shadow-md p-2 flex flex-col justify-between text-[7px] font-serif select-none">
-                            <div className="text-center font-bold border-b border-slate-200 dark:border-slate-800 pb-0.5 text-rose-800 dark:text-rose-300">
-                              ĐỀ THI TOÁN HỌC
-                            </div>
-                            <div className="space-y-1 text-slate-500">
-                              <div className="h-1 bg-slate-200 dark:bg-slate-800 rounded w-full" />
-                              <div className="h-1 bg-slate-200 dark:bg-slate-800 rounded w-4/5" />
-                              <div className="text-cyan-600 font-mono text-[6px]">$$\int f(x)dx = F(x)$$</div>
-                            </div>
-                            <div className="flex justify-between text-[6px] text-slate-400 font-mono">
-                              <span>Trang 1</span>
-                              <span>A4</span>
-                            </div>
-                          </div>
-                        )}
+                            return (
+                              <div className="w-full h-full rounded-2xl border border-dashed border-cyan-500/30 bg-cyan-500/5 flex flex-col items-center justify-center gap-1.5 text-cyan-600/70 dark:text-cyan-400/70">
+                                <Compass className="w-6 h-6 stroke-[1.5]" />
+                                <span className="text-[10px] font-mono font-medium">Bản vẽ trống</span>
+                              </div>
+                            );
+                          })()}
+
+                        {/* 2. LESSON PLAN LIVE PREVIEW */}
+                        {isLp &&
+                          (() => {
+                            const { grade, topic, activities } = getLessonPlanCardPreview(item);
+
+                            return (
+                              <div className="w-full max-w-[240px] h-[106px] bg-white dark:bg-slate-900 rounded-xl border border-emerald-300/70 dark:border-emerald-800/70 shadow-xs p-2 flex flex-col justify-between text-[8px] font-sans select-none overflow-hidden group-hover:border-emerald-400 transition-colors">
+                                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-1 text-[8px]">
+                                  <span className="font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                    {grade}
+                                  </span>
+                                  <span className="text-[7px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 font-mono font-semibold">
+                                    Chuẩn 5512
+                                  </span>
+                                </div>
+
+                                <div className="space-y-0.5 text-slate-600 dark:text-slate-300 text-[8px] py-0.5 overflow-hidden leading-tight">
+                                  {activities.slice(0, 3).map((act, idx) => (
+                                    <div key={idx} className="flex items-center gap-1 truncate">
+                                      <span className="w-3 h-3 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 flex items-center justify-center font-bold text-[7px] shrink-0 font-mono">
+                                        {idx + 1}
+                                      </span>
+                                      <span className="truncate">{act}</span>
+                                    </div>
+                                  ))}
+                                </div>
+
+                                <div className="flex justify-between items-center text-[7px] text-slate-400 font-mono border-t border-slate-100 dark:border-slate-800/80 pt-0.5">
+                                  <span className="truncate max-w-[130px]">{topic}</span>
+                                  <span className="text-emerald-600 font-bold shrink-0">4 Hoạt động</span>
+                                </div>
+                              </div>
+                            );
+                          })()}
+
+                        {/* 3. LATEX LIVE PREVIEW */}
+                        {isLatex &&
+                          (() => {
+                            const isImageDataUrl =
+                              item.thumbnail &&
+                              (item.thumbnail.startsWith('data:image/') || item.thumbnail.startsWith('http'));
+
+                            if (isImageDataUrl) {
+                              return (
+                                <img
+                                  src={item.thumbnail}
+                                  alt={item.title}
+                                  className="w-full h-full object-contain pointer-events-none rounded-lg shadow-xs"
+                                />
+                              );
+                            }
+
+                            const { title: latexTitle, lines } = getLatexCardPreview(item);
+
+                            return (
+                              <div className="w-full max-w-[220px] h-[106px] bg-white dark:bg-slate-900 rounded-xl border border-rose-300/70 dark:border-rose-800/70 shadow-xs p-2 flex flex-col justify-between text-[8px] font-sans select-none relative overflow-hidden group-hover:border-rose-400 transition-colors">
+                                <div className="border-b border-slate-100 dark:border-slate-800 pb-1">
+                                  <div className="flex items-center justify-between gap-1 text-[7px] text-rose-600 dark:text-rose-400 font-mono font-bold">
+                                    <span className="truncate">{item.metadata?.badge || 'XeLaTeX A4'}</span>
+                                    <span className="shrink-0 font-serif">TeX</span>
+                                  </div>
+                                  <p className="font-bold text-[9px] text-slate-800 dark:text-slate-200 truncate mt-0.5">
+                                    {latexTitle}
+                                  </p>
+                                </div>
+
+                                <div className="space-y-0.5 text-slate-500 dark:text-slate-400 text-[8px] font-mono leading-tight flex-1 py-0.5 overflow-hidden">
+                                  {lines.slice(0, 2).map((l, idx) => (
+                                    <p key={idx} className="truncate">
+                                      {l}
+                                    </p>
+                                  ))}
+                                </div>
+
+                                <div className="flex justify-between items-center text-[7px] text-slate-400 font-mono border-t border-slate-100 dark:border-slate-800/80 pt-0.5">
+                                  <span>Trang 1/A4</span>
+                                  <span className="text-rose-500 font-bold">PDF Ready</span>
+                                </div>
+                              </div>
+                            );
+                          })()}
 
                         {/* Star Toggle on top right of thumbnail */}
                         <button

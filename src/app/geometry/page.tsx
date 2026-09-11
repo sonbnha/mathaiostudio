@@ -420,6 +420,7 @@ function HomeContent() {
           ...curr,
           title: docTitle,
           updatedAt: Date.now(),
+          thumbnail: svgOutput || curr.thumbnail || '',
           metadata: {
             ...curr.metadata,
             promptText: prompt,
@@ -433,7 +434,7 @@ function HomeContent() {
     setCurrentDocId(project.id);
     setDocTitle(project.title);
     setPrompt(project.metadata?.promptText || project.title);
-    setSvgOutput(project.metadata?.svgCode || '');
+    setSvgOutput(project.metadata?.svgCode || project.thumbnail || '');
     setTikzCode(project.metadata?.tikzCode || '');
     setErrorMsg(null);
     setImagePreview(null);
@@ -456,6 +457,7 @@ function HomeContent() {
           ...curr,
           title: docTitle,
           updatedAt: Date.now(),
+          thumbnail: svgOutput || curr.thumbnail || '',
           metadata: {
             ...curr.metadata,
             promptText: prompt,
@@ -467,10 +469,16 @@ function HomeContent() {
     }
 
     const defaultTitle = generateDefaultGeometryTitle();
-    const newProj = createNewProject('geometry', defaultTitle, {
-      topic: 'Hình học phẳng & Không gian',
-      badge: 'SVG Vector',
-    });
+    const newProj = createNewProject(
+      'geometry',
+      defaultTitle,
+      {
+        topic: 'Hình học phẳng & Không gian',
+        badge: 'SVG Vector',
+      },
+      '',
+      ''
+    );
     setCurrentDocId(newProj.id);
     setDocTitle(newProj.title);
     setPrompt('');
@@ -780,6 +788,7 @@ function HomeContent() {
             ...existing,
             title: existing.title || title,
             updatedAt: Date.now(),
+            thumbnail: optimizedSvg,
             metadata: {
               ...existing.metadata,
               topic,
@@ -790,13 +799,19 @@ function HomeContent() {
             },
           });
         } else {
-          const created = createNewProject('geometry', title, {
-            topic,
-            badge: 'SVG Vector',
-            promptText: cleanPrompt,
-            svgCode: optimizedSvg,
-            tikzCode: tikzCode,
-          });
+          const created = createNewProject(
+            'geometry',
+            title,
+            {
+              topic,
+              badge: 'SVG Vector',
+              promptText: cleanPrompt,
+              svgCode: optimizedSvg,
+              tikzCode: tikzCode,
+            },
+            '',
+            optimizedSvg
+          );
           setCurrentDocId(created.id);
           setDocTitle(created.title);
           try {
@@ -806,13 +821,19 @@ function HomeContent() {
           } catch {}
         }
       } else {
-        const created = createNewProject('geometry', title, {
-          topic,
-          badge: 'SVG Vector',
-          promptText: cleanPrompt,
-          svgCode: optimizedSvg,
-          tikzCode: tikzCode,
-        });
+        const created = createNewProject(
+          'geometry',
+          title,
+          {
+            topic,
+            badge: 'SVG Vector',
+            promptText: cleanPrompt,
+            svgCode: optimizedSvg,
+            tikzCode: tikzCode,
+          },
+          '',
+          optimizedSvg
+        );
         setCurrentDocId(created.id);
         setDocTitle(created.title);
         try {
@@ -2065,6 +2086,7 @@ function HomeContent() {
                       saveProject({
                         ...existing,
                         updatedAt: Date.now(),
+                        thumbnail: newSvg,
                         metadata: {
                           ...existing.metadata,
                           svgCode: newSvg,

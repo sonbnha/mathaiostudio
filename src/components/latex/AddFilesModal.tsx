@@ -34,6 +34,8 @@ export default function AddFilesModal({
   onUploadFiles,
 }: AddFilesModalProps) {
   const [activeTab, setActiveTab] = useState<AddFilesTab>(defaultTab);
+  const [isRendered, setIsRendered] = useState(isOpen);
+  const [isVisible, setIsVisible] = useState(false);
 
   // Tab 1: New File State
   const [newFileName, setNewFileName] = useState('name.tex');
@@ -59,9 +61,10 @@ export default function AddFilesModal({
   const [isFetchingUrl, setIsFetchingUrl] = useState(false);
   const [urlError, setUrlError] = useState<string | null>(null);
 
-  // Reset or initialize state when modal opens or tab changes
+  // Animation mounting / unmounting lifecycle
   useEffect(() => {
     if (isOpen) {
+      setIsRendered(true);
       setActiveTab(defaultTab);
       setNewFileName('name.tex');
       setNewFileError(null);
@@ -76,18 +79,32 @@ export default function AddFilesModal({
       } catch {
         setProjectsList([]);
       }
+
+      const frameId = requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setIsVisible(true);
+        });
+      });
+      return () => cancelAnimationFrame(frameId);
+    } else {
+      setIsVisible(false);
+      const timer = setTimeout(() => {
+        setIsRendered(false);
+      }, 150);
+      return () => clearTimeout(timer);
     }
   }, [isOpen, defaultTab]);
 
   // Focus and select text when Tab 1 is active
   useEffect(() => {
     if (isOpen && activeTab === 'new_file') {
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         if (newFileInputRef.current) {
           newFileInputRef.current.focus();
           newFileInputRef.current.select();
         }
-      }, 50);
+      }, 60);
+      return () => clearTimeout(timer);
     }
   }, [isOpen, activeTab]);
 
@@ -279,20 +296,25 @@ export default function AddFilesModal({
     }
   };
 
-  if (!isOpen) return null;
+  if (!isRendered) return null;
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150"
+      onClick={onClose}
       onPaste={handlePaste}
+      className={`fixed inset-0 z-50 flex justify-center items-start pt-[10vh] sm:pt-[12vh] px-4 bg-black/15 transition-opacity duration-200 ${
+        isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
+      }`}
     >
-      {/* Modal Card */}
+      {/* Modal Card with Smooth Slide-Down Animation */}
       <div
-        className="max-w-2xl w-full rounded-xl bg-[#131926] border border-slate-700/60 shadow-2xl overflow-hidden flex flex-col text-slate-200"
         onClick={(e) => e.stopPropagation()}
+        className={`max-w-3xl lg:max-w-4xl w-full rounded-xl bg-[#131926] border border-slate-700/60 shadow-2xl overflow-hidden flex flex-col min-h-[460px] text-slate-200 transition-all duration-200 ease-out transform ${
+          isVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-4 scale-[0.98]'
+        }`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700/60 bg-[#161d2c]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700/60 bg-[#161d2c] select-none shrink-0">
           <h3 className="text-base font-bold text-slate-100">Thêm tệp</h3>
           <button
             type="button"
@@ -305,10 +327,10 @@ export default function AddFilesModal({
         </div>
 
         {/* Modal Body: 2 Columns */}
-        <div className="flex flex-1 min-h-[340px]">
+        <div className="flex flex-1 min-h-[380px]">
           {/* Left Column: Tab Sidebar */}
-          <div className="w-60 border-r border-slate-700/60 p-3 space-y-1 bg-slate-900/40 flex flex-col justify-between shrink-0 select-none">
-            <div className="space-y-1">
+          <div className="w-64 border-r border-slate-700/60 p-4 space-y-1 bg-slate-900/40 flex flex-col justify-between shrink-0 select-none">
+            <div className="space-y-1.5">
               {/* Tab 1 */}
               <button
                 type="button"
@@ -316,7 +338,7 @@ export default function AddFilesModal({
                   setActiveTab('new_file');
                   setNewFileError(null);
                 }}
-                className={`w-full px-3 py-2 text-sm rounded-lg flex items-center gap-2.5 transition cursor-pointer ${
+                className={`w-full px-3 py-2.5 text-sm rounded-lg flex items-center gap-2.5 transition cursor-pointer ${
                   activeTab === 'new_file'
                     ? 'bg-slate-800/90 text-emerald-400 font-medium shadow-xs'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
@@ -332,7 +354,7 @@ export default function AddFilesModal({
                 onClick={() => {
                   setActiveTab('upload');
                 }}
-                className={`w-full px-3 py-2 text-sm rounded-lg flex items-center gap-2.5 transition cursor-pointer ${
+                className={`w-full px-3 py-2.5 text-sm rounded-lg flex items-center gap-2.5 transition cursor-pointer ${
                   activeTab === 'upload'
                     ? 'bg-slate-800/90 text-emerald-400 font-medium shadow-xs'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
@@ -349,7 +371,7 @@ export default function AddFilesModal({
                   setActiveTab('from_project');
                   setProjectError(null);
                 }}
-                className={`w-full px-3 py-2 text-sm rounded-lg flex items-center gap-2.5 transition cursor-pointer ${
+                className={`w-full px-3 py-2.5 text-sm rounded-lg flex items-center gap-2.5 transition cursor-pointer ${
                   activeTab === 'from_project'
                     ? 'bg-slate-800/90 text-emerald-400 font-medium shadow-xs'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
@@ -366,7 +388,7 @@ export default function AddFilesModal({
                   setActiveTab('from_url');
                   setUrlError(null);
                 }}
-                className={`w-full px-3 py-2 text-sm rounded-lg flex items-center gap-2.5 transition cursor-pointer ${
+                className={`w-full px-3 py-2.5 text-sm rounded-lg flex items-center gap-2.5 transition cursor-pointer ${
                   activeTab === 'from_url'
                     ? 'bg-slate-800/90 text-emerald-400 font-medium shadow-xs'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
@@ -378,7 +400,7 @@ export default function AddFilesModal({
             </div>
 
             {/* Reference integrations (Disabled Overleaf style) */}
-            <div className="border-t border-slate-800/80 pt-2 space-y-1">
+            <div className="border-t border-slate-800/80 pt-3 space-y-1">
               <div
                 className="px-3 py-1.5 text-xs text-slate-500 rounded flex items-center justify-between opacity-50 cursor-not-allowed"
                 title="Tính năng liên kết tài liệu tham khảo sắp ra mắt"
@@ -412,8 +434,11 @@ export default function AddFilesModal({
             </div>
           </div>
 
-          {/* Right Column: Content Area */}
-          <div className="flex-1 p-6 flex flex-col justify-between min-h-[320px] bg-[#131926]">
+          {/* Right Column: Content Area with Fade-in Animation on Tab Change */}
+          <div
+            key={activeTab}
+            className="flex-1 p-8 flex flex-col justify-between min-h-[380px] bg-[#131926] transition-opacity duration-150 ease-out animate-in fade-in"
+          >
             {/* TAB 1: NEW FILE */}
             {activeTab === 'new_file' && (
               <form onSubmit={handleCreateNewFile} className="flex flex-col h-full justify-between">
@@ -429,13 +454,13 @@ export default function AddFilesModal({
                       setNewFileName(e.target.value);
                       if (newFileError) setNewFileError(null);
                     }}
-                    placeholder="vd: baitap.tex"
-                    className="w-full bg-[#0d121c] border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 font-mono transition-colors"
+                    placeholder="vd: name.tex"
+                    className="w-full rounded-lg py-2.5 px-3.5 bg-slate-950/60 border border-slate-600 focus:border-emerald-500 font-mono text-sm text-slate-100 placeholder-slate-500 transition-colors focus:outline-none"
                   />
                   {newFileError && (
                     <p className="text-xs text-red-400 mt-2">{newFileError}</p>
                   )}
-                  <p className="text-xs text-slate-400 mt-2">
+                  <p className="text-xs text-slate-400 mt-2.5">
                     Nhập tên tệp kết thúc bằng phần mở rộng (mặc định sẽ là <span className="font-mono text-emerald-400">.tex</span>).
                   </p>
                 </div>
@@ -444,13 +469,13 @@ export default function AddFilesModal({
                   <button
                     type="button"
                     onClick={onClose}
-                    className="border border-slate-600 px-4 py-2 rounded-lg text-slate-300 hover:bg-slate-800 text-sm font-medium transition cursor-pointer"
+                    className="border border-slate-600 px-5 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 text-sm font-medium transition cursor-pointer"
                   >
                     Hủy
                   </button>
                   <button
                     type="submit"
-                    className="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2 rounded-lg font-medium text-sm transition cursor-pointer shadow-xs"
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2.5 rounded-lg font-medium text-sm transition cursor-pointer shadow-xs"
                   >
                     Tạo
                   </button>
@@ -467,17 +492,17 @@ export default function AddFilesModal({
                     onDragLeave={handleDragLeave}
                     onDrop={handleDrop}
                     onClick={() => fileInputRef.current?.click()}
-                    className={`border-2 border-dashed rounded-xl p-8 text-center flex flex-col items-center justify-center min-h-[200px] transition-colors cursor-pointer ${
+                    className={`min-h-[240px] border-2 border-dashed rounded-2xl flex flex-col items-center justify-center p-8 bg-slate-900/20 transition-colors cursor-pointer ${
                       isDragging
                         ? 'border-emerald-500 bg-emerald-500/10'
-                        : 'border-slate-600 hover:border-emerald-500/70 bg-slate-900/30'
+                        : 'border-slate-600 hover:border-emerald-500'
                     }`}
                   >
                     <UploadCloud className="w-10 h-10 text-slate-400 mb-3" />
                     <p className="text-sm font-medium text-slate-200">
                       Thả hoặc dán tệp, thư mục, hình ảnh vào đây.
                     </p>
-                    <p className="text-xs text-slate-400 mt-1.5">
+                    <p className="text-xs text-slate-400 mt-2">
                       hoặc{' '}
                       <button
                         type="button"
@@ -530,7 +555,7 @@ export default function AddFilesModal({
                   <button
                     type="button"
                     onClick={onClose}
-                    className="border border-slate-600 px-4 py-2 rounded-lg text-slate-300 hover:bg-slate-800 text-sm font-medium transition cursor-pointer"
+                    className="border border-slate-600 px-5 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 text-sm font-medium transition cursor-pointer"
                   >
                     Hủy
                   </button>
@@ -541,7 +566,7 @@ export default function AddFilesModal({
             {/* TAB 3: FROM OTHER PROJECT */}
             {activeTab === 'from_project' && (
               <form onSubmit={handleCreateFromProject} className="flex flex-col h-full justify-between">
-                <div className="space-y-3.5">
+                <div className="space-y-4">
                   {/* Field 1: Project select */}
                   <div>
                     <label className="text-sm font-medium text-slate-300 mb-1.5 block">
@@ -553,7 +578,7 @@ export default function AddFilesModal({
                         setSelectedProjectId(e.target.value);
                         setProjectError(null);
                       }}
-                      className="w-full bg-[#0d121c] border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500 transition-colors"
+                      className="w-full bg-[#0d121c] border border-slate-700 rounded-lg px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-emerald-500 transition-colors"
                     >
                       <option value="">- Vui lòng chọn một dự án -</option>
                       {projectsList
@@ -579,7 +604,7 @@ export default function AddFilesModal({
                         setTargetProjectFileName(e.target.value);
                         setProjectError(null);
                       }}
-                      className="w-full bg-[#0d121c] border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 disabled:opacity-50 focus:outline-none focus:border-emerald-500 transition-colors"
+                      className="w-full bg-[#0d121c] border border-slate-700 rounded-lg px-3.5 py-2.5 text-sm text-slate-100 disabled:opacity-50 focus:outline-none focus:border-emerald-500 transition-colors"
                     >
                       <option value="">- Vui lòng chọn một tệp -</option>
                       {selectedProjectFiles.map((file) => (
@@ -588,7 +613,7 @@ export default function AddFilesModal({
                         </option>
                       ))}
                     </select>
-                    <span className="text-[11px] text-slate-400 mt-1 block">
+                    <span className="text-[11px] text-slate-400 mt-1.5 block">
                       hoặc chọn từ tệp xuất ra
                     </span>
                   </div>
@@ -606,7 +631,7 @@ export default function AddFilesModal({
                         setProjectError(null);
                       }}
                       placeholder="example.tex"
-                      className="w-full bg-[#0d121c] border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 font-mono transition-colors"
+                      className="w-full bg-[#0d121c] border border-slate-700 rounded-lg px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 font-mono transition-colors"
                     />
                   </div>
 
@@ -619,14 +644,14 @@ export default function AddFilesModal({
                   <button
                     type="button"
                     onClick={onClose}
-                    className="border border-slate-600 px-4 py-2 rounded-lg text-slate-300 hover:bg-slate-800 text-sm font-medium transition cursor-pointer"
+                    className="border border-slate-600 px-5 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 text-sm font-medium transition cursor-pointer"
                   >
                     Hủy
                   </button>
                   <button
                     type="submit"
                     disabled={!selectedProjectId || !selectedFileFromProject || !targetProjectFileName.trim()}
-                    className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-5 py-2 rounded-lg font-medium text-sm transition cursor-pointer shadow-xs"
+                    className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-2.5 rounded-lg font-medium text-sm transition cursor-pointer shadow-xs"
                   >
                     Tạo
                   </button>
@@ -637,7 +662,7 @@ export default function AddFilesModal({
             {/* TAB 4: FROM URL */}
             {activeTab === 'from_url' && (
               <form onSubmit={handleCreateFromUrl} className="flex flex-col h-full justify-between">
-                <div className="space-y-3.5">
+                <div className="space-y-4">
                   {/* Field 1: URL */}
                   <div>
                     <label className="text-sm font-medium text-slate-300 mb-1.5 block">
@@ -659,7 +684,7 @@ export default function AddFilesModal({
                         }
                       }}
                       placeholder="https://example.com/my-file.png"
-                      className="w-full bg-[#0d121c] border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
+                      className="w-full bg-[#0d121c] border border-slate-700 rounded-lg px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
                     />
                   </div>
 
@@ -675,8 +700,8 @@ export default function AddFilesModal({
                         setTargetUrlFileName(e.target.value);
                         setUrlError(null);
                       }}
-                      placeholder="my_file.tex"
-                      className="w-full bg-[#0d121c] border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 font-mono transition-colors"
+                      placeholder="my_file"
+                      className="w-full bg-[#0d121c] border border-slate-700 rounded-lg px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 font-mono transition-colors"
                     />
                   </div>
 
@@ -689,14 +714,14 @@ export default function AddFilesModal({
                   <button
                     type="button"
                     onClick={onClose}
-                    className="border border-slate-600 px-4 py-2 rounded-lg text-slate-300 hover:bg-slate-800 text-sm font-medium transition cursor-pointer"
+                    className="border border-slate-600 px-5 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 text-sm font-medium transition cursor-pointer"
                   >
                     Hủy
                   </button>
                   <button
                     type="submit"
                     disabled={!fetchUrl.trim() || isFetchingUrl}
-                    className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-5 py-2 rounded-lg font-medium text-sm transition cursor-pointer flex items-center gap-2 shadow-xs"
+                    className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-2.5 rounded-lg font-medium text-sm transition cursor-pointer flex items-center gap-2 shadow-xs"
                   >
                     {isFetchingUrl && <Loader2 className="w-4 h-4 animate-spin" />}
                     <span>{isFetchingUrl ? 'Đang tải…' : 'Tạo'}</span>

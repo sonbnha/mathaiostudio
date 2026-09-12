@@ -63,7 +63,10 @@ import {
   FolderPlus,
   MoreHorizontal,
   Image as ImageIcon,
+  FileArchive,
 } from 'lucide-react';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 import { APP_VERSION } from '@/config/version';
 import { useTheme } from '@/context/ThemeContext';
 import type { StudioFile, StudioImage, RestorePoint } from '@/components/latex/StudioTools';
@@ -91,6 +94,7 @@ import {
   saveProjectSettings,
 } from '@/components/latex/projectSettings';
 import ProjectSettingsModal from '@/components/latex/ProjectSettingsModal';
+import ShareProjectModal from '@/components/latex/ShareProjectModal';
 
 const TeXEditor = dynamic(() => import('@/components/latex/TeXEditor'), {
   ssr: false,
@@ -340,6 +344,8 @@ export default function LaTeXStudio({
 
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState(docTitle);
+  const [isProjectMenuOpen, setIsProjectMenuOpen] = useState(false);
+  const [isReadOnly, setIsReadOnly] = useState(false);
   const [activeDesktopMenu, setActiveDesktopMenu] = useState<'file' | 'edit' | 'insert' | 'view' | 'format' | 'help' | null>(null);
   const [isLayoutMenuOpen, setIsLayoutMenuOpen] = useState(false);
   const [activeToolbarPopover, setActiveToolbarPopover] = useState<'heading' | 'math' | 'image' | 'table' | null>(null);
@@ -349,7 +355,21 @@ export default function LaTeXStudio({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const desktopMenuRef = useRef<HTMLDivElement>(null);
   const layoutMenuRef = useRef<HTMLDivElement>(null);
+  const projectMenuRef = useRef<HTMLDivElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
+
+  // Parse URL access permissions (Viewer / Editor / Read-only)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const access = urlParams.get('access');
+      const role = urlParams.get('role');
+      const token = urlParams.get('token');
+      if (access === 'view' || role === 'viewer' || (token && token.startsWith('token_view_'))) {
+        setIsReadOnly(true);
+      }
+    }
+  }, []);
 
   // Global shortcut for Settings (Ctrl/Cmd + ,)
   useEffect(() => {
@@ -377,13 +397,16 @@ export default function LaTeXStudio({
       if (isLayoutMenuOpen && layoutMenuRef.current && !layoutMenuRef.current.contains(e.target as Node)) {
         setIsLayoutMenuOpen(false);
       }
+      if (isProjectMenuOpen && projectMenuRef.current && !projectMenuRef.current.contains(e.target as Node)) {
+        setIsProjectMenuOpen(false);
+      }
       if (activeToolbarPopover && toolbarRef.current && !toolbarRef.current.contains(e.target as Node)) {
         setActiveToolbarPopover(null);
       }
     };
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
-  }, [activeDesktopMenu, isLayoutMenuOpen, activeToolbarPopover]);
+  }, [activeDesktopMenu, isLayoutMenuOpen, isProjectMenuOpen, activeToolbarPopover]);
 
   // Fullscreen toggle handler
   const toggleFullscreen = useCallback(() => {
@@ -746,6 +769,90 @@ export default function LaTeXStudio({
     a.click();
     URL.revokeObjectURL(url);
   };
+
+  // Download PDF
+  const handleDownloadPDF = useCallback(() => {
+    setIsProjectMenuOpen(false);
+    if (pdf) {
+      const link = document.createElement('a');
+      link.href = pdf;
+      link.download = `${docTitle.replace(/\.tex$/, '')}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else {
+      void compile();
+    }
+  }, [pdf, docTitle, compile]);
+
+  // Download project as ZIP
+  const handleDownloadZip = useCallback(async () => {
+    setIsProjectMenuOpen(false);
+    try {
+      const zip = new JSZip();
+      files.forEach((file) => {
+        zip.file(file.name, file.content);
+      });
+      images.forEach((img) => {
+        if (img.url && img.url.startsWith('data:')) {
+          const base64Data = img.url.split(',')[1];
+          if (base64Data) {
+            zip.file(`images/${img.name}`, base64Data, { base64: true });
+          }
+        }
+      });
+      const blob = await zip.generateAsync({ type: 'blob' });
+      const zipName = `${docTitle.replace(/\.tex$/, '')}.zip`;
+      saveAs(blob, zipName);
+    } catch (err) {
+      console.error('Lỗi khi nén tệp zip:', err);
+      alert('Không thể tạo tệp nén ZIP.');
+    }
+  }, [files, images, docTitle]);
+
+  // Export document using format endpoint (docx, md, html)
+  const handleExportFormat = useCallback(async (format: 'docx' | 'md' | 'html') => {
+    setIsProjectMenuOpen(false);
+    try {
+      const res = await fetch('/api/latex/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          source,
+          format,
+          title: docTitle.replace(/\.tex$/, ''),
+        }),
+      });
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || 'Xuất tài liệu thất bại');
+      }
+      const blob = await res.blob();
+      const ext = format === 'docx' ? 'docx' : format === 'md' ? 'md' : 'html';
+      saveAs(blob, `${docTitle.replace(/\.tex$/, '')}.${ext}`);
+    } catch (err: any) {
+      console.error(`Lỗi xuất ${format}:`, err);
+      alert(`Lỗi xuất sang ${format.toUpperCase()}: ${err.message || 'Thất bại'}`);
+    }
+  }, [source, docTitle]);
+
+  // Make a copy of project
+  const handleDuplicateProject = useCallback(() => {
+    setIsProjectMenuOpen(false);
+    const baseTitle = docTitle.replace(/\.tex$/, '');
+    const newTitle = `${baseTitle} (Bản sao).tex`;
+    const newProject = createNewProject('latex', newTitle, { templateId: template }, files[0]?.content || source);
+    newProject.files = files;
+    saveProject(newProject);
+    router.push(`/latex?id=${newProject.id}`);
+  }, [docTitle, files, source, template, router]);
+
+  // Start inline rename
+  const handleStartRename = useCallback(() => {
+    setIsProjectMenuOpen(false);
+    setTitleInput(docTitle);
+    setIsEditingTitle(true);
+  }, [docTitle]);
 
   // Multi-file management
   const handleSelectFile = (fileName: string) => {
@@ -1859,8 +1966,8 @@ export default function LaTeXStudio({
           />
         </div>
 
-        {/* Center Side: Document Title (Click-to-rename) & Autosave Status */}
-        <div className="flex items-center gap-2 min-w-0 max-w-[38%] justify-center">
+        {/* Center Side: Document Title Dropdown Actions & Autosave / Read-only Status */}
+        <div className="flex items-center gap-2 min-w-0 max-w-[42%] justify-center">
           {isEditingTitle ? (
             <input
               type="text"
@@ -1885,24 +1992,114 @@ export default function LaTeXStudio({
               className="bg-slate-50 dark:bg-[#2a2e33] text-slate-900 dark:text-white border border-emerald-500 rounded px-2 py-0.5 text-xs font-semibold outline-none text-center truncate max-w-full"
             />
           ) : (
-            <button
-              type="button"
-              onClick={() => {
-                setTitleInput(docTitle);
-                setIsEditingTitle(true);
-              }}
-              className="flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#2a2e33] transition truncate max-w-full cursor-pointer group"
-              title="Bấm để đổi tên tài liệu"
-            >
-              <span className="truncate">{docTitle}</span>
-              <Edit2 className="w-3 h-3 text-slate-400 group-hover:text-emerald-500 shrink-0 opacity-60 group-hover:opacity-100 transition" />
-            </button>
+            <div className="relative" ref={projectMenuRef}>
+              <button
+                type="button"
+                onClick={() => setIsProjectMenuOpen((prev) => !prev)}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#2a2e33] transition truncate max-w-full cursor-pointer group"
+                title="Tác vụ dự án (Tải về, Xuất bản, Đổi tên...)"
+              >
+                <span className="truncate max-w-[160px] sm:max-w-[240px] md:max-w-[300px]">{docTitle}</span>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 shrink-0 transition" />
+              </button>
+
+              {isProjectMenuOpen && (
+                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 w-64 bg-white dark:bg-[#1e2124] border border-slate-200 dark:border-[#3e444b] rounded-xl shadow-2xl py-1.5 z-50 text-xs animate-in fade-in zoom-in-95 duration-100 select-none text-slate-700 dark:text-slate-200">
+                  <div className="px-3 py-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                    Tải về & Đóng gói
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleDownloadPDF}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-[#2a2e33] hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
+                  >
+                    <Download className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-xs">Tải xuống PDF</div>
+                      <div className="text-[10px] text-slate-400">Tài liệu đã biên dịch</div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleDownloadZip}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-[#2a2e33] hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
+                  >
+                    <FileArchive className="w-4 h-4 text-cyan-600 dark:text-cyan-400 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-xs">Tải mã nguồn (.zip)</div>
+                      <div className="text-[10px] text-slate-400">Đóng gói toàn bộ tệp dự án</div>
+                    </div>
+                  </button>
+
+                  <div className="my-1 border-t border-slate-100 dark:border-white/10" />
+
+                  <div className="px-3 py-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                    Xuất định dạng khác
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleExportFormat('docx')}
+                    className="w-full flex items-center gap-2.5 px-3 py-1.5 text-left hover:bg-slate-100 dark:hover:bg-[#2a2e33] hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
+                  >
+                    <FileText className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                    <span className="font-medium text-xs">Xuất sang Word (.docx)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleExportFormat('md')}
+                    className="w-full flex items-center gap-2.5 px-3 py-1.5 text-left hover:bg-slate-100 dark:hover:bg-[#2a2e33] hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
+                  >
+                    <FileCode className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                    <span className="font-medium text-xs">Xuất sang Markdown (.md)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleExportFormat('html')}
+                    className="w-full flex items-center gap-2.5 px-3 py-1.5 text-left hover:bg-slate-100 dark:hover:bg-[#2a2e33] hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
+                  >
+                    <Code2 className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400 shrink-0" />
+                    <span className="font-medium text-xs">Xuất sang HTML (.html)</span>
+                  </button>
+
+                  <div className="my-1 border-t border-slate-100 dark:border-white/10" />
+
+                  <button
+                    type="button"
+                    onClick={handleDuplicateProject}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-[#2a2e33] hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
+                  >
+                    <Copy className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
+                    <span className="font-medium text-xs">Tạo bản sao (Make a copy)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleStartRename}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-[#2a2e33] hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
+                  >
+                    <Edit2 className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
+                    <span className="font-medium text-xs">Đổi tên dự án</span>
+                  </button>
+                </div>
+              )}
+            </div>
           )}
 
-          <span className="hidden md:inline-flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400 shrink-0 select-none">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span>{storageNotice || 'Tự động lưu'}</span>
-          </span>
+          {isReadOnly ? (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 shrink-0 select-none">
+              <Eye className="w-3 h-3" />
+              <span>Chỉ xem</span>
+            </span>
+          ) : (
+            <span className="hidden md:inline-flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400 shrink-0 select-none">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span>{storageNotice || 'Tự động lưu'}</span>
+            </span>
+          )}
         </div>
 
         {/* Right Side: History, Layout, Share, Theme Toggle, Fullscreen Toggle */}
@@ -2956,6 +3153,7 @@ export default function LaTeXStudio({
                 }}
                 fontSize={projectSettings.fontSize || fontSize}
                 settings={projectSettings}
+                readOnly={isReadOnly}
                 onCompile={compile}
                 insertRequest={insertRequest}
                 editorActionRequest={editorActionRequest}
@@ -3405,142 +3603,13 @@ export default function LaTeXStudio({
         </div>
       )}
 
-      {/* Share / Xuất bản Modal */}
-      {isShareModalOpen && (
-        <div
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4"
-          onClick={() => setIsShareModalOpen(false)}
-        >
-          <div
-            className="bg-white dark:bg-[#1e2124] border border-slate-200 dark:border-[#3e444b] text-slate-800 dark:text-slate-100 rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-150"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-white/10">
-              <div className="flex items-center gap-2">
-                <Share2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                <h3 className="font-bold text-sm">Chia sẻ & Xuất bản dự án</h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsShareModalOpen(false)}
-                className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="p-4 space-y-4 text-xs">
-              {/* Share Link */}
-              <div>
-                <label className="text-slate-600 dark:text-slate-400 font-medium block mb-1.5">Liên kết chia sẻ trực tiếp:</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    readOnly
-                    value={typeof window !== 'undefined' ? window.location.href : ''}
-                    className="flex-1 bg-slate-100 dark:bg-[#141618] border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-slate-800 dark:text-slate-300 font-mono text-[11px] outline-none select-all"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (typeof window !== 'undefined') {
-                        navigator.clipboard.writeText(window.location.href);
-                        setCopiedShareLink(true);
-                        setTimeout(() => setCopiedShareLink(false), 2000);
-                      }
-                    }}
-                    className="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold flex items-center gap-1.5 transition cursor-pointer shrink-0"
-                  >
-                    {copiedShareLink ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{copiedShareLink ? 'Đã chép' : 'Sao chép'}</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Quick Export Options */}
-              <div className="pt-2 border-t border-slate-200 dark:border-white/10">
-                <p className="text-slate-600 dark:text-slate-400 font-medium mb-2.5">Tải xuống & Xuất bản tệp:</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {pdf ? (
-                    <a
-                      href={pdf}
-                      download={`${docTitle.replace(/\.tex$/, '')}.pdf`}
-                      className="flex items-center gap-2 p-2.5 rounded-lg bg-slate-100 dark:bg-[#2a2e33] hover:bg-slate-200 dark:hover:bg-[#343a40] text-slate-800 dark:text-slate-200 transition cursor-pointer border border-slate-200 dark:border-white/5"
-                    >
-                      <Download className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                      <div className="text-left">
-                        <div className="font-semibold text-xs">Tải PDF</div>
-                        <div className="text-[10px] text-slate-500 dark:text-slate-400">Tài liệu đã biên dịch</div>
-                      </div>
-                    </a>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsShareModalOpen(false);
-                        void compile();
-                      }}
-                      className="flex items-center gap-2 p-2.5 rounded-lg bg-slate-100 dark:bg-[#2a2e33] hover:bg-slate-200 dark:hover:bg-[#343a40] text-slate-800 dark:text-slate-200 transition cursor-pointer border border-slate-200 dark:border-white/5 text-left"
-                    >
-                      <RefreshCw className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                      <div>
-                        <div className="font-semibold text-xs">Biên dịch PDF</div>
-                        <div className="text-[10px] text-slate-500 dark:text-slate-400">Recompile để tải</div>
-                      </div>
-                    </button>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      exportTex();
-                      setIsShareModalOpen(false);
-                    }}
-                    className="flex items-center gap-2 p-2.5 rounded-lg bg-slate-100 dark:bg-[#2a2e33] hover:bg-slate-200 dark:hover:bg-[#343a40] text-slate-800 dark:text-slate-200 transition cursor-pointer border border-slate-200 dark:border-white/5 text-left"
-                  >
-                    <Code2 className="w-4 h-4 text-cyan-600 dark:text-cyan-400 shrink-0" />
-                    <div>
-                      <div className="font-semibold text-xs">Mã nguồn TeX</div>
-                      <div className="text-[10px] text-slate-500 dark:text-slate-400">Tệp .tex gốc</div>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      handleExportWord();
-                      setIsShareModalOpen(false);
-                    }}
-                    className="flex items-center gap-2 p-2.5 rounded-lg bg-slate-100 dark:bg-[#2a2e33] hover:bg-slate-200 dark:hover:bg-[#343a40] text-slate-800 dark:text-slate-200 transition cursor-pointer border border-slate-200 dark:border-white/5 text-left"
-                  >
-                    <FileDown className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
-                    <div>
-                      <div className="font-semibold text-xs">Xuất Word</div>
-                      <div className="text-[10px] text-slate-500 dark:text-slate-400">Định dạng .docx</div>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    disabled={!pdf}
-                    onClick={() => {
-                      setIsShareModalOpen(false);
-                      setIsPresentation(true);
-                    }}
-                    className="flex items-center gap-2 p-2.5 rounded-lg bg-slate-100 dark:bg-[#2a2e33] hover:bg-slate-200 dark:hover:bg-[#343a40] text-slate-800 dark:text-slate-200 transition cursor-pointer border border-slate-200 dark:border-white/5 text-left disabled:opacity-40"
-                  >
-                    <Tv className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
-                    <div>
-                      <div className="font-semibold text-xs">Trình chiếu</div>
-                      <div className="text-[10px] text-slate-500 dark:text-slate-400">Máy chiếu / Fullscreen</div>
-                    </div>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Share / Phân quyền Modal */}
+      <ShareProjectModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        docId={currentDocId || docId || 'default'}
+        docTitle={docTitle}
+      />
 
       {/* Fullscreen Transparent Pointer Shield during Dragging */}
       {isResizing && (

@@ -64,6 +64,7 @@ export interface TeXEditorProps {
   errors?: ParsedTeXIssue[];
   onMount?: (view: EditorView) => void;
   settings?: ProjectSettings;
+  readOnly?: boolean;
 }
 
 export const insertTextAtCursor = (
@@ -207,6 +208,7 @@ export default function TeXEditor({
   errors,
   onMount,
   settings,
+  readOnly = false,
 }: TeXEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -217,6 +219,7 @@ export default function TeXEditor({
   const bracketsCompartment = useRef(new Compartment());
   const autocompleteCompartment = useRef(new Compartment());
   const vimCompartment = useRef(new Compartment());
+  const readOnlyCompartment = useRef(new Compartment());
 
   // Ref callbacks to avoid stale closures in CodeMirror extensions
   const onCompileRef = useRef(onCompile);
@@ -343,6 +346,10 @@ export default function TeXEditor({
             '&': { fontSize: `${fontSize}px` },
           })
         ),
+        readOnlyCompartment.current.of([
+          EditorView.editable.of(!readOnly),
+          EditorState.readOnly.of(!!readOnly),
+        ]),
         updateListener,
       ],
     });
@@ -420,6 +427,18 @@ export default function TeXEditor({
       ),
     });
   }, [fontSize]);
+
+  // Sync readOnly
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+    view.dispatch({
+      effects: readOnlyCompartment.current.reconfigure([
+        EditorView.editable.of(!readOnly),
+        EditorState.readOnly.of(!!readOnly),
+      ]),
+    });
+  }, [readOnly]);
 
   // Sync theme changes, editorTheme, fontFamily, nonBlinkingCursor, lineHeight
   useEffect(() => {

@@ -65,7 +65,7 @@ export default function LaTeXStudioRoot() {
         {/* LEFTMOST ICON BAR */}
         <div className="w-[48px] bg-[#1a1a1b] border-r border-[#2d2d2d] flex flex-col items-center py-2 shrink-0 z-20">
           <div className="flex flex-col gap-3 w-full items-center">
-            <button className="p-2 text-slate-400 hover:text-white rounded hover:bg-[#2d2d2d]" title="Menu"><Menu className="w-[18px] h-[18px]" /></button>
+            <button className="p-2 text-slate-400 hover:text-white rounded hover:bg-[#2d2d2d]" title="Menu"><svg viewBox="0 0 16 16" width="18" height="18" fill="currentColor"><path d="M14 15V8a2 2 0 0 0-2-2H5.414l2.293-2.293-1.414-1.414L2 6.5l4.293 4.207 1.414-1.414L5.414 7H12v8h2z"/></svg></button>
             <button className="p-2 text-white bg-[#2d2d2d] rounded" title="Files"><FileText className="w-[18px] h-[18px]" /></button>
             <button className="p-2 text-slate-400 hover:text-white rounded hover:bg-[#2d2d2d]" title="Search"><svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M15.7 14.3l-4.2-4.2c.8-1.2 1.3-2.6 1.3-4.1 0-3.9-3.1-7-7-7s-7 3.1-7 7 3.1 7 7 7c1.5 0 2.9-.5 4.1-1.3l4.2 4.2c.2.2.5.3.7.3s.5-.1.7-.3c.4-.4.4-1 0-1.4zM2 6c0-2.8 2.2-5 5-5s5 2.2 5 5-2.2 5-5 5-5-2.2-5-5z"/></svg></button>
             <button className="p-2 text-slate-400 hover:text-white rounded hover:bg-[#2d2d2d]" title="Git"><svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M15.7 5.3l-5-5c-.4-.4-1-.4-1.4 0l-8 8c-.4.4-.4 1 0 1.4l5 5c.4.4 1 .4 1.4 0l8-8c.4-.4.4-1 0-1.4zM7 11.6L2.4 7 7 2.4l1.6 1.6L5.8 6.8c.2.4.4.9.4 1.4 0 .5-.2 1-.4 1.4l2.8 2.8L7 11.6zm6.6-3.2L10.8 11.2l-1.6-1.6 2.8-2.8c-.2-.4-.4-.9-.4-1.4 0-.5.2-1 .4-1.4L9.2 1.2 13.6 5.6c.4.4.4 1 0 1.4z"/></svg></button>
@@ -78,7 +78,7 @@ export default function LaTeXStudioRoot() {
         <PanelGroup orientation="horizontal">
           
           {/* COLUMN 1: SIDEBAR (FILE TREE + OUTLINE) */}
-          <Panel defaultSize={15} minSize={10} className="bg-[#222223] flex flex-col border-r border-[#2d2d2d] z-30">
+          <Panel defaultSize={15} minSize={10} className="bg-[#2a2b2c] flex flex-col border-r border-[#2d2d2d] z-30">
             <PanelGroup orientation="vertical">
               
               {/* FILE TREE */}
@@ -115,7 +115,7 @@ export default function LaTeXStudioRoot() {
               </PanelResizeHandle>
 
               {/* OUTLINE */}
-              <Panel defaultSize={40} minSize={10} className="flex flex-col bg-[#222223]">
+              <Panel defaultSize={40} minSize={10} className="flex flex-col bg-[#2a2b2c]">
                 <div className="px-3 py-2 flex items-center gap-1 cursor-pointer font-semibold text-slate-300">
                   <ChevronDown className="w-[14px] h-[14px]" />
                   <span>File outline</span>
@@ -158,7 +158,7 @@ export default function LaTeXStudioRoot() {
               </PanelResizeHandle>
 
               {/* COLUMN 3: PDF VIEWER */}
-              <Panel defaultSize={50} minSize={10} className="bg-[#38393a] flex flex-col z-10 shadow-[0_0_15px_rgba(0,0,0,0.2)] border-l border-[#1a1a1b]">
+              <Panel defaultSize={50} minSize={10} className="bg-[#525659] flex flex-col z-10 shadow-[0_0_15px_rgba(0,0,0,0.2)] border-l border-[#1a1a1b]">
                  <PDFViewerPanel />
               </Panel>
             </PanelGroup>

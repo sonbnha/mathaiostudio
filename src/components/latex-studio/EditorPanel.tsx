@@ -79,9 +79,9 @@ export default function EditorPanel() {
           }
         }),
         EditorView.theme({
-          "&": { backgroundColor: "#142333" }, // Overleaf dark blue-ish background
+          "&": { backgroundColor: "#1a2634" }, // Overleaf dark blue-ish background
           ".cm-content": { caretColor: "#fff" },
-          ".cm-gutters": { backgroundColor: "#142333", color: "#4f6579", borderRight: "none" },
+          ".cm-gutters": { backgroundColor: "#1a2634", color: "#4f6579", borderRight: "none" },
           ".cm-activeLine": { backgroundColor: "rgba(255, 255, 255, 0.05)" },
           ".cm-activeLineGutter": { backgroundColor: "rgba(255, 255, 255, 0.05)", color: "#a0aab5" },
         })
@@ -109,7 +109,7 @@ export default function EditorPanel() {
   }, [source, activeFileId]);
 
   return (
-    <div className="w-full h-full flex flex-col bg-[#142333]">
+    <div className="w-full h-full flex flex-col bg-[#1a2634]">
       
       {/* 1. TABS BAR */}
       <div className="h-[40px] bg-[#1a1a1b] flex items-center shrink-0 border-b border-[#2d2d2d] overflow-x-auto hide-scrollbar">
@@ -120,7 +120,7 @@ export default function EditorPanel() {
           return (
             <div 
               key={tabId} 
-              className={`flex items-center gap-2 px-3 h-full text-[13px] cursor-pointer transition-colors border-r border-[#2d2d2d] ${isActive ? 'bg-[#222223] text-white' : 'bg-[#1a1a1b] text-slate-400 hover:bg-[#2d2d2d]'}`} 
+              className={`flex items-center gap-2 px-3 h-full text-[13px] cursor-pointer transition-colors border-r border-[#2d2d2d] ${isActive ? 'bg-[#1a2634] text-white' : 'bg-[#1a1a1b] text-slate-400 hover:bg-[#2d2d2d]'}`} 
               onClick={() => setActiveFile(tabId)}
             >
               <FileText className={`w-[14px] h-[14px] ${isActive ? 'text-[#128a42]' : 'text-slate-500'}`} />
@@ -185,7 +185,7 @@ export default function EditorPanel() {
       </div>
 
       {/* 3. CODEMIRROR EDITOR CONTAINER */}
-      <div className="flex-1 min-h-0 w-full relative bg-[#142333]">
+      <div className="flex-1 min-h-0 w-full relative bg-[#1a2634]">
         {!activeFile ? (
           <div className="flex items-center justify-center w-full h-full text-slate-500 text-sm">
             No file open

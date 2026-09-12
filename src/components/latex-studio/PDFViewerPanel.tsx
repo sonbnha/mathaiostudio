@@ -7,10 +7,10 @@ export default function PDFViewerPanel() {
   const { isCompiling, autoCompile, setAutoCompile, pdfUrl } = useLaTeXStore();
 
   return (
-    <div className="w-full h-full flex flex-col bg-[#38393a]">
+    <div className="w-full h-full flex flex-col bg-[#525659]">
       
       {/* 1. PDF TOOLBAR */}
-      <div className="h-[40px] bg-[#222223] border-b border-[#2d2d2d] flex items-center justify-between px-2 shrink-0">
+      <div className="h-[40px] bg-[#2a2b2c] border-b border-[#2d2d2d] flex items-center justify-between px-2 shrink-0">
         
         {/* Left: Recompile, Logs, Download */}
         <div className="flex items-center gap-3">
@@ -45,7 +45,7 @@ export default function PDFViewerPanel() {
         <div className="flex items-center gap-2">
           {/* Go to Code */}
           <button className="text-slate-400 hover:text-white p-1 rounded hover:bg-[#3d3d3d] transition-colors" title="Go to code">
-            <FileCode2 className="w-[15px] h-[15px]" />
+            <svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor"><path d="M2 2h2v12H2V2zm11 3.5L9.5 2 8 3.5l2 2H5v2h5l-2 2 1.5 1.5 3.5-3.5z"/></svg>
           </button>
           
           <div className="w-px h-5 bg-[#3d3d3d] mx-1" />

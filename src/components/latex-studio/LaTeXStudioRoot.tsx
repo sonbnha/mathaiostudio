@@ -149,29 +149,27 @@ export default function LaTeXStudioRoot() {
           </Panel>
 
           {/* VERTICAL RESIZER 1 (Sidebar | Editor) */}
-          <PanelResizeHandle className="w-[8px] bg-[#1a2028] hover:bg-[#252f3d] transition-colors cursor-col-resize z-30 relative shrink-0">
-            {/* Upper 4-dot grip */}
-            <div className="absolute top-[40%] left-1/2 -translate-x-1/2 flex flex-col gap-[2.5px] pointer-events-none">
-              <div className="w-[2.5px] h-[2.5px] rounded-full bg-slate-500 opacity-80" />
-              <div className="w-[2.5px] h-[2.5px] rounded-full bg-slate-500 opacity-80" />
-              <div className="w-[2.5px] h-[2.5px] rounded-full bg-slate-500 opacity-80" />
-              <div className="w-[2.5px] h-[2.5px] rounded-full bg-slate-500 opacity-80" />
+          <PanelResizeHandle className="w-[8px] bg-[#222c38] border-x border-[#171f28] hover:bg-[#2b3746] transition-colors cursor-col-resize z-30 relative shrink-0">
+            {/* Upper 3-dot grip with wider spacing */}
+            <div className="absolute top-[40%] left-1/2 -translate-x-1/2 flex flex-col gap-[5px] pointer-events-none">
+              <div className="w-[2.5px] h-[2.5px] rounded-full bg-slate-400 opacity-80" />
+              <div className="w-[2.5px] h-[2.5px] rounded-full bg-slate-400 opacity-80" />
+              <div className="w-[2.5px] h-[2.5px] rounded-full bg-slate-400 opacity-80" />
             </div>
 
-            {/* Collapse Tab (thin, centered on splitter line) */}
+            {/* Collapse Tab (extra slender / dẹp, centered on splitter line) */}
             <div 
-              className="absolute top-[53%] left-1/2 -translate-x-1/2 w-[12px] h-[34px] bg-[#3a4452] hover:bg-[#4d596b] rounded-[3px] flex items-center justify-center cursor-pointer text-slate-200 border border-[#232a35] shadow-sm z-40 transition-colors"
+              className="absolute top-[53%] left-1/2 -translate-x-1/2 w-[8px] h-[36px] bg-[#3a4656] hover:bg-[#4a586d] rounded-[2px] flex items-center justify-center cursor-pointer text-slate-200 border border-[#232c37] shadow-sm z-40 transition-colors"
               title="Collapse file tree"
             >
-              <span className="text-[9px] font-bold leading-none select-none text-slate-200">{'<'}</span>
+              <span className="text-[8px] font-bold leading-none select-none text-slate-200">{'<'}</span>
             </div>
 
-            {/* Lower 4-dot grip */}
-            <div className="absolute top-[68%] left-1/2 -translate-x-1/2 flex flex-col gap-[2.5px] pointer-events-none">
-              <div className="w-[2.5px] h-[2.5px] rounded-full bg-slate-500 opacity-80" />
-              <div className="w-[2.5px] h-[2.5px] rounded-full bg-slate-500 opacity-80" />
-              <div className="w-[2.5px] h-[2.5px] rounded-full bg-slate-500 opacity-80" />
-              <div className="w-[2.5px] h-[2.5px] rounded-full bg-slate-500 opacity-80" />
+            {/* Lower 3-dot grip with wider spacing */}
+            <div className="absolute top-[68%] left-1/2 -translate-x-1/2 flex flex-col gap-[5px] pointer-events-none">
+              <div className="w-[2.5px] h-[2.5px] rounded-full bg-slate-400 opacity-80" />
+              <div className="w-[2.5px] h-[2.5px] rounded-full bg-slate-400 opacity-80" />
+              <div className="w-[2.5px] h-[2.5px] rounded-full bg-slate-400 opacity-80" />
             </div>
           </PanelResizeHandle>
 
@@ -185,49 +183,47 @@ export default function LaTeXStudioRoot() {
               </Panel>
 
               {/* VERTICAL RESIZER 2 (Editor | PDF) */}
-              <PanelResizeHandle className="w-[8px] bg-[#1a2028] hover:bg-[#252f3d] transition-colors cursor-col-resize z-30 relative shrink-0">
-                {/* SyncTeX Pill (Capsule, centered on splitter line) */}
+              <PanelResizeHandle className="w-[8px] bg-[#222c38] border-x border-[#171f28] hover:bg-[#2b3746] transition-colors cursor-col-resize z-30 relative shrink-0">
+                {/* SyncTeX Pill (Larger & pushed higher up at ~20%) */}
                 <div 
-                  className="absolute top-[27%] left-1/2 -translate-x-1/2 w-[22px] h-[46px] bg-[#1e2632] hover:bg-[#293545] rounded-full flex flex-col items-center justify-center cursor-pointer border border-[#333f4f] shadow-md z-40 transition-colors"
+                  className="absolute top-[20%] left-1/2 -translate-x-1/2 w-[25px] h-[52px] bg-[#1a232f] hover:bg-[#243040] rounded-full flex flex-col items-center justify-center cursor-pointer border border-[#323f52] shadow-md z-40 transition-colors"
                   title="SyncTeX (Code <-> PDF)"
                 >
                   <button 
                     className="w-full h-1/2 flex items-center justify-center text-slate-200 hover:text-white transition-colors"
                     title="Jump to PDF"
                   >
-                    <span className="text-[11px] font-bold leading-none select-none">→</span>
+                    <span className="text-[12px] font-bold leading-none select-none">→</span>
                   </button>
-                  <div className="w-[14px] h-[1px] bg-[#333f4f]" />
+                  <div className="w-[16px] h-[1px] bg-[#323f52]" />
                   <button 
                     className="w-full h-1/2 flex items-center justify-center text-slate-200 hover:text-white transition-colors"
                     title="Jump to Code"
                   >
-                    <span className="text-[11px] font-bold leading-none select-none">←</span>
+                    <span className="text-[12px] font-bold leading-none select-none">←</span>
                   </button>
                 </div>
 
-                {/* Upper 4-dot grip */}
-                <div className="absolute top-[40%] left-1/2 -translate-x-1/2 flex flex-col gap-[2.5px] pointer-events-none">
-                  <div className="w-[2.5px] h-[2.5px] rounded-full bg-slate-500 opacity-80" />
-                  <div className="w-[2.5px] h-[2.5px] rounded-full bg-slate-500 opacity-80" />
-                  <div className="w-[2.5px] h-[2.5px] rounded-full bg-slate-500 opacity-80" />
-                  <div className="w-[2.5px] h-[2.5px] rounded-full bg-slate-500 opacity-80" />
+                {/* Upper 3-dot grip with wider spacing */}
+                <div className="absolute top-[40%] left-1/2 -translate-x-1/2 flex flex-col gap-[5px] pointer-events-none">
+                  <div className="w-[2.5px] h-[2.5px] rounded-full bg-slate-400 opacity-80" />
+                  <div className="w-[2.5px] h-[2.5px] rounded-full bg-slate-400 opacity-80" />
+                  <div className="w-[2.5px] h-[2.5px] rounded-full bg-slate-400 opacity-80" />
                 </div>
 
-                {/* Collapse PDF Tab (thin, centered on splitter line) */}
+                {/* Collapse PDF Tab (extra slender / dẹp, centered on splitter line) */}
                 <div 
-                  className="absolute top-[53%] left-1/2 -translate-x-1/2 w-[12px] h-[34px] bg-[#3a4452] hover:bg-[#4d596b] rounded-[3px] flex items-center justify-center cursor-pointer text-slate-200 border border-[#232a35] shadow-sm z-40 transition-colors"
+                  className="absolute top-[53%] left-1/2 -translate-x-1/2 w-[8px] h-[36px] bg-[#3a4656] hover:bg-[#4a586d] rounded-[2px] flex items-center justify-center cursor-pointer text-slate-200 border border-[#232c37] shadow-sm z-40 transition-colors"
                   title="Collapse PDF viewer"
                 >
-                  <span className="text-[9px] font-bold leading-none select-none text-slate-200">{'>'}</span>
+                  <span className="text-[8px] font-bold leading-none select-none text-slate-200">{'>'}</span>
                 </div>
 
-                {/* Lower 4-dot grip */}
-                <div className="absolute top-[68%] left-1/2 -translate-x-1/2 flex flex-col gap-[2.5px] pointer-events-none">
-                  <div className="w-[2.5px] h-[2.5px] rounded-full bg-slate-500 opacity-80" />
-                  <div className="w-[2.5px] h-[2.5px] rounded-full bg-slate-500 opacity-80" />
-                  <div className="w-[2.5px] h-[2.5px] rounded-full bg-slate-500 opacity-80" />
-                  <div className="w-[2.5px] h-[2.5px] rounded-full bg-slate-500 opacity-80" />
+                {/* Lower 3-dot grip with wider spacing */}
+                <div className="absolute top-[68%] left-1/2 -translate-x-1/2 flex flex-col gap-[5px] pointer-events-none">
+                  <div className="w-[2.5px] h-[2.5px] rounded-full bg-slate-400 opacity-80" />
+                  <div className="w-[2.5px] h-[2.5px] rounded-full bg-slate-400 opacity-80" />
+                  <div className="w-[2.5px] h-[2.5px] rounded-full bg-slate-400 opacity-80" />
                 </div>
               </PanelResizeHandle>
 

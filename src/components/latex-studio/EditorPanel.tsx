@@ -123,13 +123,13 @@ export default function EditorPanel() {
               className={`flex items-center gap-2 px-3 h-full text-[13px] cursor-pointer transition-colors border-r border-[#2d2d2d] ${isActive ? 'bg-[#222223] text-white' : 'bg-[#1a1a1b] text-slate-400 hover:bg-[#2d2d2d]'}`} 
               onClick={() => setActiveFile(tabId)}
             >
-              <FileText className={`w-3.5 h-3.5 ${isActive ? 'text-[#128a42]' : 'text-slate-500'}`} />
+              <FileText className={`w-[14px] h-[14px] ${isActive ? 'text-[#128a42]' : 'text-slate-500'}`} />
               <span className="truncate max-w-[150px]">{f.name}</span>
               <button 
                 className={`ml-1 rounded-sm p-0.5 transition-colors ${isActive ? 'text-slate-300 hover:bg-[#3d3d3d]' : 'text-slate-500 hover:bg-[#3d3d3d] hover:text-white'}`} 
                 onClick={(e) => { e.stopPropagation(); closeTab(tabId); }}
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-[14px] h-[14px]" />
               </button>
             </div>
           );
@@ -139,30 +139,30 @@ export default function EditorPanel() {
       {/* 2. RICH TEXT TOOLBAR (OVERLEAF EXACT) */}
       <div className="h-[40px] border-b border-[#2d2d2d] bg-[#222223] flex items-center justify-between px-2 shrink-0">
         <div className="flex items-center gap-0.5">
-          <button className="p-1.5 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded transition-colors" title="Undo"><Undo2 className="w-4 h-4" /></button>
-          <button className="p-1.5 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded transition-colors" title="Redo"><Redo2 className="w-4 h-4" /></button>
+          <button className="p-1 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded transition-colors" title="Undo"><Undo2 className="w-[15px] h-[15px]" /></button>
+          <button className="p-1 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded transition-colors" title="Redo"><Redo2 className="w-[15px] h-[15px]" /></button>
           
           <div className="w-px h-5 bg-[#3d3d3d] mx-1.5" />
           
-          <button className="p-1.5 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded transition-colors font-serif font-bold" title="Bold"><Bold className="w-4 h-4" /></button>
-          <button className="p-1.5 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded transition-colors font-serif italic" title="Italic"><Italic className="w-4 h-4" /></button>
-          <button className="p-1.5 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded transition-colors font-serif" title="Text Size"><Type className="w-4 h-4" /></button>
+          <button className="p-1 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded transition-colors font-serif font-bold" title="Bold"><Bold className="w-[15px] h-[15px]" /></button>
+          <button className="p-1 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded transition-colors font-serif italic" title="Italic"><Italic className="w-[15px] h-[15px]" /></button>
+          <button className="p-1 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded transition-colors font-serif" title="Text Size"><Type className="w-[15px] h-[15px]" /></button>
           
           <div className="w-px h-5 bg-[#3d3d3d] mx-1.5" />
           
-          <button className="p-1.5 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded transition-colors" title="Insert Math"><Omega className="w-4 h-4" /></button>
-          <button className="p-1.5 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded transition-colors" title="Insert Image"><ImageIcon className="w-4 h-4" /></button>
-          <button className="p-1.5 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded transition-colors" title="List"><List className="w-4 h-4" /></button>
-          <button className="p-1.5 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded transition-colors" title="Align"><AlignLeft className="w-4 h-4" /></button>
+          <button className="p-1 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded transition-colors" title="Insert Math"><Omega className="w-[15px] h-[15px]" /></button>
+          <button className="p-1 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded transition-colors" title="Insert Image"><ImageIcon className="w-[15px] h-[15px]" /></button>
+          <button className="p-1 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded transition-colors" title="List"><List className="w-[15px] h-[15px]" /></button>
+          <button className="p-1 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded transition-colors" title="Align"><AlignLeft className="w-[15px] h-[15px]" /></button>
           
-          <button className="p-1.5 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded transition-colors ml-1" title="More">
-            <MoreHorizontal className="w-4 h-4" />
+          <button className="p-1 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded transition-colors ml-1" title="More">
+            <MoreHorizontal className="w-[15px] h-[15px]" />
           </button>
         </div>
         
         <div className="flex items-center gap-3">
-          <button className="text-slate-400 hover:text-white p-1.5 rounded hover:bg-[#3d3d3d] transition-colors" title="Search">
-            <Search className="w-4 h-4" />
+          <button className="text-slate-400 hover:text-white p-1 rounded hover:bg-[#3d3d3d] transition-colors" title="Search">
+            <Search className="w-[15px] h-[15px]" />
           </button>
           
           {/* Pill Toggle */}
@@ -177,7 +177,7 @@ export default function EditorPanel() {
               className={`px-3 py-1 text-[11px] font-semibold rounded-full transition-colors flex items-center gap-1 ${editorMode === 'visual' ? 'bg-[#128a42] text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
               onClick={() => setEditorMode('visual')}
             >
-              <Eye className="w-3.5 h-3.5" />
+              <Eye className="w-[14px] h-[14px]" />
               Visual
             </button>
           </div>

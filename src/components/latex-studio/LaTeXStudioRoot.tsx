@@ -150,8 +150,8 @@ export default function LaTeXStudioRoot() {
 
           {/* VERTICAL RESIZER 1 (Sidebar | Editor) */}
           <PanelResizeHandle className="w-[10px] bg-[#222c38] border-x border-[#171f28] hover:bg-[#2b3746] transition-colors cursor-col-resize z-30 relative shrink-0">
-            {/* Upper 4 square dots grip (pushed high up at 30%) */}
-            <div className="absolute top-[30%] left-1/2 -translate-x-1/2 flex flex-col gap-[3px] pointer-events-none">
+            {/* Upper 4 square dots grip (exactly 26% above center) */}
+            <div className="absolute top-[24%] left-1/2 -translate-x-1/2 flex flex-col gap-[3px] pointer-events-none">
               <div className="w-[2.5px] h-[2.5px] bg-slate-400 opacity-80" />
               <div className="w-[2.5px] h-[2.5px] bg-slate-400 opacity-80" />
               <div className="w-[2.5px] h-[2.5px] bg-slate-400 opacity-80" />
@@ -166,8 +166,8 @@ export default function LaTeXStudioRoot() {
               <span className="text-[9px] font-bold leading-none select-none text-slate-200">{'<'}</span>
             </div>
 
-            {/* Lower 4 square dots grip (pushed far down at 80%) */}
-            <div className="absolute top-[80%] left-1/2 -translate-x-1/2 flex flex-col gap-[3px] pointer-events-none">
+            {/* Lower 4 square dots grip (exactly 26% below center) */}
+            <div className="absolute top-[76%] left-1/2 -translate-x-1/2 flex flex-col gap-[3px] pointer-events-none">
               <div className="w-[2.5px] h-[2.5px] bg-slate-400 opacity-80" />
               <div className="w-[2.5px] h-[2.5px] bg-slate-400 opacity-80" />
               <div className="w-[2.5px] h-[2.5px] bg-slate-400 opacity-80" />
@@ -186,9 +186,9 @@ export default function LaTeXStudioRoot() {
 
               {/* VERTICAL RESIZER 2 (Editor | PDF) */}
               <PanelResizeHandle className="w-[10px] bg-[#222c38] border-x border-[#171f28] hover:bg-[#2b3746] transition-colors cursor-col-resize z-30 relative shrink-0">
-                {/* SyncTeX Pill (Centered at 18%) */}
+                {/* SyncTeX Pill (Positioned above upper grip at 10%) */}
                 <div 
-                  className="absolute top-[18%] left-1/2 -translate-x-1/2 w-[25px] h-[52px] bg-[#1a232f] hover:bg-[#243040] rounded-full flex flex-col items-center justify-center cursor-pointer border border-[#323f52] shadow-md z-40 transition-colors"
+                  className="absolute top-[10%] left-1/2 -translate-x-1/2 w-[25px] h-[52px] bg-[#1a232f] hover:bg-[#243040] rounded-full flex flex-col items-center justify-center cursor-pointer border border-[#323f52] shadow-md z-40 transition-colors"
                   title="SyncTeX (Code <-> PDF)"
                 >
                   <button 
@@ -206,8 +206,8 @@ export default function LaTeXStudioRoot() {
                   </button>
                 </div>
 
-                {/* Upper 4 square dots grip (at 32% right below SyncTeX) */}
-                <div className="absolute top-[32%] left-1/2 -translate-x-1/2 flex flex-col gap-[3px] pointer-events-none">
+                {/* Upper 4 square dots grip (exactly 26% above center) */}
+                <div className="absolute top-[24%] left-1/2 -translate-x-1/2 flex flex-col gap-[3px] pointer-events-none">
                   <div className="w-[2.5px] h-[2.5px] bg-slate-400 opacity-80" />
                   <div className="w-[2.5px] h-[2.5px] bg-slate-400 opacity-80" />
                   <div className="w-[2.5px] h-[2.5px] bg-slate-400 opacity-80" />
@@ -222,8 +222,8 @@ export default function LaTeXStudioRoot() {
                   <span className="text-[9px] font-bold leading-none select-none text-slate-200">{'>'}</span>
                 </div>
 
-                {/* Lower 4 square dots grip (pushed far down at 80%) */}
-                <div className="absolute top-[80%] left-1/2 -translate-x-1/2 flex flex-col gap-[3px] pointer-events-none">
+                {/* Lower 4 square dots grip (exactly 26% below center) */}
+                <div className="absolute top-[76%] left-1/2 -translate-x-1/2 flex flex-col gap-[3px] pointer-events-none">
                   <div className="w-[2.5px] h-[2.5px] bg-slate-400 opacity-80" />
                   <div className="w-[2.5px] h-[2.5px] bg-slate-400 opacity-80" />
                   <div className="w-[2.5px] h-[2.5px] bg-slate-400 opacity-80" />

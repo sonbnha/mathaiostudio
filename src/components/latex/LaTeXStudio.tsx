@@ -437,6 +437,12 @@ export default function LaTeXStudio({
 
   // Initial load
   useEffect(() => {
+    setIsProjectLoaded(false);
+    setPdf((oldPdf) => {
+      if (oldPdf) URL.revokeObjectURL(oldPdf);
+      return null;
+    });
+
     if (docId) {
       const proj = getProjectById(docId);
       const stored = getDocumentById(docId);
@@ -655,29 +661,27 @@ export default function LaTeXStudio({
     [source, files, activeFileName, pdf, engine, projectSettings.mainDocument, currentDocId, docId, user?.email]
   );
 
-  // Auto-recompile immediately on project load (Initial Load Trigger with hydration check)
-  const hasInitialCompiledRef = useRef<string | null>(null);
+  // Auto-recompile immediately on project load or document switch (Client-side Navigation)
+  const lastCompiledProjectIdRef = useRef<string | null>(null);
   useEffect(() => {
-    const activeId = currentDocId || docId;
-    if (!activeId) return;
-
-    // 1. Kiểm tra dự án đã tải xong và có nội dung mã TeX hợp lệ (> 10 ký tự)
+    const currentProjectId = currentDocId || docId;
     const content = (activeFileName === 'main.tex' ? source : files.find((f) => f.name === 'main.tex')?.content) || source || '';
-    if (!content.trim() || content.trim().length <= 10 || hasInitialCompiledRef.current === activeId || pdf) return;
 
-    // 2. Đảm bảo trạng thái không đang trong quá trình nạp dự án
-    if (!isProjectLoaded) return;
+    // Chưa tải xong ID hoặc nội dung rỗng/quá ngắn thì bỏ qua
+    if (!currentProjectId || !isProjectLoaded || !content.trim() || content.trim().length <= 10) return;
 
-    // 3. Đánh dấu đã kích hoạt
-    hasInitialCompiledRef.current = activeId;
+    // Nếu ID tài liệu này đã được biên dịch rồi thì không tự chạy lại
+    if (lastCompiledProjectIdRef.current === currentProjectId) return;
 
-    // 4. Delay nhẹ 200-300ms để đảm bảo worker/state của CodeMirror và server endpoint đã đồng bộ
+    // Đánh dấu dự án này đang được xử lý biên dịch
+    lastCompiledProjectIdRef.current = currentProjectId;
+
     const timer = setTimeout(() => {
       void compile(content);
-    }, 250);
+    }, 200);
 
     return () => clearTimeout(timer);
-  }, [currentDocId, docId, isProjectLoaded, source, files, activeFileName, pdf, compile]);
+  }, [currentDocId, docId, isProjectLoaded, source, files, activeFileName, compile]);
 
   // Periodic Auto-Snapshot (every 5 minutes if content changed)
   const lastSnapshotSourceRef = useRef<string>(source);

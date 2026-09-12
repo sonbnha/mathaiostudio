@@ -173,6 +173,9 @@ export default function LaTeXStudio({
   const [isHistoryView, setIsHistoryView] = useState<boolean>(false);
   const [historyToast, setHistoryToast] = useState<string | null>(null);
   const [storageNotice, setStorageNotice] = useState<string>('Tự động lưu');
+  const [cloudRevision, setCloudRevision] = useState<number>(1);
+  const [userRole, setUserRole] = useState<'owner' | 'editor' | 'reviewer' | 'viewer'>('owner');
+  const [syncStatus, setSyncStatus] = useState<'saved' | 'saving' | 'offline' | 'conflict' | 'error'>('saved');
 
   // Overleaf Layout & Ribbon Modes
   const [editorMode, setEditorMode] = useState<'code' | 'visual'>('code');
@@ -527,7 +530,48 @@ export default function LaTeXStudio({
       }
     }
     setIsProjectLoaded(true);
-  }, [docId]);
+
+    // Cloud fetch & permission validation
+    const effectiveId = docId || currentDocId;
+    if (effectiveId && typeof window !== 'undefined') {
+      fetch(`/api/latex/projects/${encodeURIComponent(effectiveId)}`)
+        .then((res) => {
+          if (res.ok) return res.json();
+          if (res.status === 404 && user) {
+            // Not in cloud yet -> auto-migrate to cloud
+            const localP = getProjectById(effectiveId);
+            if (localP) {
+              fetch('/api/latex/projects', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  id: localP.id,
+                  title: localP.title,
+                  templateId: localP.metadata?.templateId || 'blank',
+                  mainDocument: localP.metadata?.mainDocument || 'main.tex',
+                  compilerEngine: engine,
+                  files: localP.files || [{ name: 'main.tex', content: localP.content || '' }],
+                  metadata: localP.metadata || {},
+                  settings: projectSettings,
+                  isStarred: localP.isStarred,
+                }),
+              }).catch(() => {});
+            }
+          }
+          return null;
+        })
+        .then((data) => {
+          if (data?.project) {
+            setCloudRevision(data.project.revision || 1);
+            if (data.userRole) setUserRole(data.userRole);
+            if (data.isReadOnly) setIsReadOnly(true);
+            setSyncStatus('saved');
+            setStorageNotice('Đã đồng bộ đám mây');
+          }
+        })
+        .catch(() => {});
+    }
+  }, [docId, user]);
 
 
   // Debounced Auto-save (2 seconds)
@@ -574,7 +618,48 @@ export default function LaTeXStudio({
           history,
         };
         saveDocument(docItem);
-        setStorageNotice(`Đã lưu lúc ${new Date().toLocaleTimeString('vi-VN')}`);
+
+        // Also sync to Cloud API if user is logged in
+        if (user && !isReadOnly) {
+          setSyncStatus('saving');
+          fetch(`/api/latex/projects/${encodeURIComponent(currentDocId)}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: docTitle,
+              templateId: template,
+              mainDocument: targetMain,
+              compilerEngine: engine,
+              files,
+              images,
+              metadata: itemToSave.metadata,
+              settings: projectSettings,
+              isStarred: itemToSave.isStarred,
+              clientRevision: cloudRevision,
+            }),
+          })
+            .then(async (res) => {
+              if (res.ok) {
+                const data = await res.json();
+                if (data.revision) setCloudRevision(data.revision);
+                setSyncStatus('saved');
+                setStorageNotice(`Đã lưu đám mây (${new Date().toLocaleTimeString('vi-VN')})`);
+              } else if (res.status === 409) {
+                setSyncStatus('conflict');
+                setStorageNotice('Xung đột phiên bản đám mây');
+              } else {
+                setSyncStatus('offline');
+                setStorageNotice(`Đã lưu cục bộ (${new Date().toLocaleTimeString('vi-VN')})`);
+              }
+            })
+            .catch(() => {
+              setSyncStatus('offline');
+              setStorageNotice(`Đã lưu cục bộ (${new Date().toLocaleTimeString('vi-VN')})`);
+            });
+        } else {
+          setSyncStatus('offline');
+          setStorageNotice(`Đã lưu cục bộ (${new Date().toLocaleTimeString('vi-VN')})`);
+        }
       } catch {
         // quota
       }
@@ -583,7 +668,7 @@ export default function LaTeXStudio({
     return () => {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     };
-  }, [source, docTitle, template, files, activeFileName, images, history, currentDocId]);
+  }, [source, docTitle, template, files, activeFileName, images, history, currentDocId, user, isReadOnly, cloudRevision, engine, projectSettings]);
 
   // Insert helper
   const handleInsert = useCallback((text: string) => {
@@ -3800,8 +3885,22 @@ export default function LaTeXStudio({
           <span>MathAIO Studio © {new Date().getFullYear()}</span>
           <span className="text-slate-300 dark:text-slate-700">|</span>
           <span className="inline-flex items-center gap-1 font-mono text-[10px]">
-            <Save className="w-3 h-3 text-emerald-500" />
-            {storageNotice}
+            {syncStatus === 'saving' && <RefreshCw className="w-3 h-3 text-cyan-400 animate-spin" />}
+            {syncStatus === 'saved' && <Check className="w-3 h-3 text-emerald-400" />}
+            {syncStatus === 'offline' && <Save className="w-3 h-3 text-amber-400" />}
+            {syncStatus === 'conflict' && <AlertTriangle className="w-3 h-3 text-red-400" />}
+            {syncStatus === 'error' && <AlertCircle className="w-3 h-3 text-red-400" />}
+            <span
+              className={
+                syncStatus === 'conflict'
+                  ? 'text-red-400 font-semibold'
+                  : syncStatus === 'saved'
+                  ? 'text-emerald-500 dark:text-emerald-400'
+                  : 'text-slate-500 dark:text-slate-400'
+              }
+            >
+              {storageNotice}
+            </span>
           </span>
           <Link
             href="/changelog?from=%2Flatex"

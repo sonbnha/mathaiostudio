@@ -84,8 +84,9 @@ import IntegrationsModal from '@/components/latex/IntegrationsModal';
 import InsertDialogs, { type InsertDialogType } from '@/components/latex/InsertDialogs';
 import ProjectSearchPanel from '@/components/latex/ProjectSearchPanel';
 import { WordCountModal } from '@/components/latex/WordCountModal';
-import { createProjectSyncTeXMap, findSnippetInCode, findSnippetInPDF } from '@/lib/synctexParser';
-import type { PDFHighlightTarget } from '@/components/latex/PDFPreview';
+import { compileFingerprint, resolveProjectPath } from '@/lib/synctexParser';
+import type { PDFSyncTarget, SourceSyncTarget } from '@/lib/synctexParser';
+import type { PDFHighlightTarget, PDFPosition } from '@/components/latex/PDFPreview';
 import { LATEX_TEMPLATES, DEFAULT_TEMPLATE_ID, getTemplateById } from '@/components/latex/LaTeXTemplates';
 import {
   EDITOR_COMMANDS,
@@ -163,7 +164,16 @@ export default function LaTeXStudio({
   const [status, setStatus] = useState<'ready' | 'compiling' | 'success' | 'error'>('ready');
   const [errorLog, setErrorLog] = useState<string>('');
   const [pdf, setPdf] = useState<string | null>(null);
-  const [compiledSource, setCompiledSource] = useState<string>('');
+  const [compiledFingerprint, setCompiledFingerprint] = useState('');
+  const [diagnosticFingerprint, setDiagnosticFingerprint] = useState('');
+  const [logMainDocument, setLogMainDocument] = useState('main.tex');
+  const [logAvailable, setLogAvailable] = useState(false);
+  const [compilerLabel, setCompilerLabel] = useState(engineLabel);
+  const [compileBuild, setCompileBuild] = useState<{id: string; available: boolean} | null>(null);
+  const [pdfSyncNotice, setPdfSyncNotice] = useState('');
+  const lastPDFPosition = useRef<PDFPosition | null>(null);
+  const syncRequest = useRef(0);
+  const syncController = useRef<AbortController | null>(null);
   const [zoom, setZoom] = useState<number | 'page-width'>('page-width');
   const [fontSize, setFontSize] = useState<number>(14);
 
@@ -579,6 +589,21 @@ export default function LaTeXStudio({
   // Initial load
   useEffect(() => {
     setIsProjectLoaded(false);
+    compileAbortControllerRef.current?.abort();
+    ++compileRevisionRef.current;
+    ++syncRequest.current;
+    syncController.current?.abort();
+    setCompileBuild(null);
+    setPdfCurrentPage(1);
+    setPdfTotalPages(1);
+    setJumpToPage(undefined);
+    setCompiledFingerprint('');
+    setDiagnosticFingerprint('');
+    setLogAvailable(false);
+    setErrorLog('');
+    setHighlightTarget(null);
+    lastPDFPosition.current = null;
+    setPdfSyncNotice('');
     setPdf((oldPdf) => {
       if (oldPdf) URL.revokeObjectURL(oldPdf);
       return null;
@@ -819,6 +844,16 @@ export default function LaTeXStudio({
   }, []);
 
 
+  const currentFingerprint = useMemo(() => compileFingerprint(
+    files.map(f => ({name: f.name, content: f.name === activeFileName ? source : f.content})),
+    images, projectSettings.mainDocument || 'main.tex', engine, projectSettings.draftMode, projectSettings.stopOnError
+  ), [files, activeFileName, source, images, projectSettings.mainDocument, engine, projectSettings.draftMode, projectSettings.stopOnError]);
+  const pdfIsStale = !!pdf && currentFingerprint !== compiledFingerprint;
+  const diagnosticsAreStale = !!diagnosticFingerprint && currentFingerprint !== diagnosticFingerprint;
+  const syncContext = useRef({buildId: '', current: '', compiled: ''});
+  syncContext.current = {buildId: compileBuild?.id || '', current: currentFingerprint, compiled: compiledFingerprint};
+  useEffect(() => () => { if (pdf) URL.revokeObjectURL(pdf); }, [pdf]);
+
   // Compile LaTeX to PDF
   const compile = useCallback(
     async (sourceToCompile?: string) => {
@@ -848,8 +883,14 @@ export default function LaTeXStudio({
       const mainContent = sourceToCompile || mainFile?.content || currentActiveText;
       if (!mainContent?.trim()) return;
 
+      const sentFiles = filesSnapshot.map(f => ({...f, content: f.name === mainFile?.name ? mainContent : f.content}));
+      const sentFingerprint = compileFingerprint(sentFiles, images, targetMain, engine, projectSettings.draftMode, projectSettings.stopOnError);
       setStatus('compiling');
       setErrorLog('');
+      setLogAvailable(false);
+      setDiagnosticFingerprint(sentFingerprint);
+      setLogMainDocument(mainFile?.name || targetMain);
+      setPdfSyncNotice('');
 
       try {
         // Build multi-file resources array including sub-files and images
@@ -882,7 +923,7 @@ export default function LaTeXStudio({
 
         const res = await fetch('/api/latex/compile', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
           signal: controller.signal,
           body: JSON.stringify({
             source: mainContent,
@@ -909,17 +950,24 @@ export default function LaTeXStudio({
           } catch {
             errData = { error: 'Lỗi máy chủ biên dịch.' };
           }
-          const errorLogMessage = errData.log || errData.error || 'Biên dịch thất bại.';
+          const errorLogMessage = `! ${errData.error || 'Biên dịch thất bại.'}\n${errData.log || ''}`;
           throw new Error(errorLogMessage);
         }
 
-        const blob = await res.blob();
-        if (compileRevisionRef.current !== currentRevision) return;
-
-        if (pdf) URL.revokeObjectURL(pdf);
-        const url = URL.createObjectURL(blob);
+        const result = await res.json();
+        if (compileRevisionRef.current !== currentRevision || controller.signal.aborted) return;
+        if (typeof result.pdf !== 'string') throw new Error('Máy chủ không trả về PDF.');
+        const bytes = Uint8Array.from(atob(result.pdf), c => c.charCodeAt(0));
+        const url = URL.createObjectURL(new Blob([bytes], {type: 'application/pdf'}));
+        ++syncRequest.current;
+        syncController.current?.abort();
+        setHighlightTarget(null);
         setPdf(url);
-        setCompiledSource(mainContent);
+        setCompiledFingerprint(sentFingerprint);
+        setCompilerLabel(result.engineLabel || engineLabel);
+        setCompileBuild(result.buildId ? {id: result.buildId, available: !!result.synctexAvailable} : null);
+        setErrorLog(result.log || (result.hasErrors ? '! Bộ biên dịch báo lỗi. Kiểm tra PDF và biên dịch lại.' : ''));
+        setLogAvailable(!!result.log);
         setStatus('success');
         setOutputView('pdf');
 
@@ -942,6 +990,7 @@ export default function LaTeXStudio({
         setStatus('error');
         const rawLog = err?.message || 'Lỗi không xác định khi biên dịch.';
         setErrorLog(rawLog);
+        setLogAvailable(true);
         setOutputView('console');
       }
     },
@@ -950,7 +999,6 @@ export default function LaTeXStudio({
       files,
       images,
       activeFileName,
-      pdf,
       engine,
       projectSettings.mainDocument,
       projectSettings.draftMode,
@@ -974,10 +1022,9 @@ export default function LaTeXStudio({
     if (lastCompiledProjectIdRef.current === currentProjectId) return;
 
     // Đánh dấu dự án này đang được xử lý biên dịch
-    lastCompiledProjectIdRef.current = currentProjectId;
-
     const timer = setTimeout(() => {
-      void compile(content);
+      lastCompiledProjectIdRef.current = currentProjectId;
+      void compile();
     }, 200);
 
     return () => clearTimeout(timer);
@@ -989,6 +1036,7 @@ export default function LaTeXStudio({
       if (compileAbortControllerRef.current) {
         compileAbortControllerRef.current.abort();
       }
+      syncController.current?.abort();
     };
   }, []);
 
@@ -1471,91 +1519,59 @@ export default function LaTeXStudio({
     [editorCtx]
   );
 
-  // Real SyncTeX Map
-  const synctexMap = useMemo(
-    () => createProjectSyncTeXMap(files, projectSettings.mainDocument || 'main.tex', pdfTotalPages || 1),
-    [files, projectSettings.mainDocument, pdfTotalPages]
-  );
+  const navigateToSource = (file: string, line: number) => {
+    const resolved = resolveProjectPath(file, files.map(f => f.name));
+    if (!resolved) { setPdfSyncNotice(`Không tìm thấy tệp dự án: ${file}`); return; }
+    if (resolved !== activeFileName) handleSelectFile(resolved);
+    setEditorMode('code');
+    if (layoutMode === 'pdf') setLayoutMode('split');
+    setTargetLine(line);
+    setCursorLine(line);
+    setTargetLineJump({line, id: performance.now()});
+  };
 
-  // SyncTeX Handlers
-  const handleSyncPDFToCode = useCallback(
-    (page: number, ratio: number, snippet?: string) => {
-      // 1. Precise text matching: if user selected text or clicked a word on PDF
-      if (snippet && snippet.trim().length >= 2) {
-        const match = findSnippetInCode(files, snippet.trim());
-        if (match) {
-          if (match.file && match.file !== activeFileName && files.some((f) => f.name === match.file)) {
-            handleSelectFile(match.file);
-          }
-          setTargetLine(match.line);
-          setCursorLine(match.line);
-          setTargetLineJump({ line: match.line, id: Date.now() });
-          return;
-        }
-      }
+  const requestSync = async (payload: Record<string, unknown>) => {
+    if (!compileBuild?.available) { setPdfSyncNotice('Bộ biên dịch chưa cung cấp dữ liệu SyncTeX cho PDF này.'); return null; }
+    if (pdfIsStale) { setPdfSyncNotice('Dự án đã thay đổi. Recompile trước khi đồng bộ vị trí.'); return null; }
+    syncController.current?.abort();
+    const controller = new AbortController();
+    syncController.current = controller;
+    const requestId = ++syncRequest.current;
+    const buildId = compileBuild.id;
+    setPdfSyncNotice('');
+    try {
+      const response = await fetch('/api/latex/synctex', {method: 'POST', headers: {'Content-Type': 'application/json'},
+        signal: controller.signal, body: JSON.stringify({...payload, buildId})});
+      const result = await response.json();
+      const context = syncContext.current;
+      if (requestId !== syncRequest.current || context.buildId !== buildId || context.current !== context.compiled) return null;
+      if (!response.ok) throw new Error(result.error || 'Không thể đồng bộ vị trí.');
+      return result;
+    } catch (error) {
+      if (!controller.signal.aborted && requestId === syncRequest.current) setPdfSyncNotice(error instanceof Error ? error.message : 'Không thể đồng bộ vị trí.');
+      return null;
+    }
+  };
 
-      // 2. Structural SyncTeX reverse map
-      const res = synctexMap.reverse(page, ratio);
-      if (res) {
-        if (res.file && res.file !== activeFileName && files.some((f) => f.name === res.file)) {
-          handleSelectFile(res.file);
-        }
-        setTargetLine(res.line);
-        setCursorLine(res.line);
-        setTargetLineJump({ line: res.line, id: Date.now() });
-      }
-    },
-    [synctexMap, activeFileName, files, handleSelectFile]
-  );
+  const handleSyncPDFToCode = async (page?: number, y?: number, x?: number) => {
+    const position = x !== undefined && y !== undefined && page ? {page, x, y} : lastPDFPosition.current;
+    if (!position) { setPdfSyncNotice('Nhấp đúp vào vị trí cần tìm trong PDF.'); return; }
+    const result: SourceSyncTarget | null = await requestSync({direction: 'reverse', ...position});
+    if (result) navigateToSource(result.file, result.line);
+  };
 
-  const handleSyncCodeToPDF = useCallback(
-    (lineNumber?: number, explicit = false, snippet?: string) => {
-      let targetLineNum = lineNumber;
-      let textSnippet = snippet;
-
-      if (editorViewRef.current) {
-        const view = editorViewRef.current;
-        const sel = view.state.selection.main;
-        if (!targetLineNum) {
-          targetLineNum = view.state.doc.lineAt(sel.head).number;
-        }
-        if (!textSnippet && !sel.empty) {
-          textSnippet = view.state.sliceDoc(sel.from, sel.to).trim();
-        }
-        if (!textSnippet && targetLineNum && targetLineNum <= view.state.doc.lines) {
-          const lText = view.state.doc.line(targetLineNum).text.trim();
-          const isBoilerplate = /^\s*\\(begin|end|documentclass|usepackage|vspace|hspace|centering|newpage|clearpage|pagebreak|noindent|label|ref|bibliographystyle|bibliography)\b/.test(lText);
-          if (!isBoilerplate && lText.length >= 4) {
-            textSnippet = lText;
-          }
-        }
-      }
-
-      if (!targetLineNum) {
-        targetLineNum = cursorLine || targetLine || 1;
-      }
-      setCursorLine(targetLineNum);
-      if (!explicit) return; // Only perform forward scroll and target ping when user explicitly clicks Sync button or presses shortcut
-
-      // 1. Precise text matching in PDF DOM textLayer
-      if (textSnippet) {
-        const pdfMatch = findSnippetInPDF(textSnippet);
-        if (pdfMatch) {
-          setHighlightTarget({ page: pdfMatch.page, yRatio: pdfMatch.yRatio, id: Date.now() });
-          setPdfCurrentPage(pdfMatch.page);
-          return;
-        }
-      }
-
-      // 2. Structural SyncTeX forward map
-      const res = synctexMap.forward(activeFileName || 'main.tex', targetLineNum);
-      if (res) {
-        setHighlightTarget({ page: res.page, yRatio: res.yRatio, id: Date.now() });
-        setPdfCurrentPage(res.page);
-      }
-    },
-    [synctexMap, activeFileName, cursorLine, targetLine]
-  );
+  const handleSyncCodeToPDF = async (lineNumber?: number, explicit = false) => {
+    const view = editorViewRef.current;
+    const line = lineNumber || (view ? view.state.doc.lineAt(view.state.selection.main.head).number : cursorLine);
+    setCursorLine(line);
+    if (!explicit) return;
+    const result: PDFSyncTarget | null = await requestSync({direction: 'forward', file: activeFileName || 'main.tex', line});
+    if (result) {
+      setOutputView('pdf');
+      if (layoutMode === 'code') setLayoutMode('split');
+      setHighlightTarget({...result, id: performance.now()});
+    }
+  };
 
   // Resizer 1: Left Sidebar Divider (60px - 450px, offset by Activity Bar 44px, Snap below 20px)
   const handleMouseDownSidebarDivider = (e: React.MouseEvent) => {
@@ -1656,7 +1672,7 @@ export default function LaTeXStudio({
     window.addEventListener('mouseup', onMouseUp);
   };
 
-  const { errors, warnings } = parseTeXLog(errorLog);
+  const { errors, warnings } = parseTeXLog(errorLog, logMainDocument, files.map(f => f.name));
 
   if (isHistoryView) {
     return (
@@ -3693,7 +3709,7 @@ export default function LaTeXStudio({
                 onCursorLine={handleSyncCodeToPDF}
                 targetLine={targetLine}
                 targetLineJump={targetLineJump}
-                errors={errors}
+                errors={diagnosticsAreStale ? [] : errors.filter(e => e.file === activeFileName)}
                 projectFiles={files}
                 projectImages={images}
                 onMount={(view) => {
@@ -3774,7 +3790,7 @@ export default function LaTeXStudio({
                     onMouseDown={(e) => e.stopPropagation()}
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleSyncPDFToCode(pdfCurrentPage || 1, 0.25);
+                      handleSyncPDFToCode();
                     }}
                     className="w-6 h-6 bg-white dark:bg-[#20262b] border border-emerald-400 dark:border-emerald-600 rounded-[4px] text-emerald-700 dark:text-emerald-300 flex items-center justify-center cursor-pointer pointer-events-auto shadow-md transition-all duration-150 hover:bg-emerald-500 hover:text-white"
                     title="Đồng bộ PDF sang Code (SyncTeX: Bôi đen chữ hoặc nhấp đúp vào trang PDF)"
@@ -3945,7 +3961,7 @@ export default function LaTeXStudio({
                   )}
                   {errors.length === 0 && status !== 'error' && warnings.length === 0 && (
                     <span className="px-1 py-0.1 rounded-full text-[9px] font-bold bg-emerald-600 text-white">
-                      0
+                      {logAvailable ? '0' : '—'}
                     </span>
                   )}
                 </div>
@@ -4046,7 +4062,7 @@ export default function LaTeXStudio({
               <button
                 type="button"
                 disabled={!pdf}
-                onClick={() => handleSyncPDFToCode(pdfCurrentPage || 1, 0.25)}
+                onClick={() => handleSyncPDFToCode()}
                 className="h-6 px-2 flex items-center gap-1 rounded text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 transition cursor-pointer disabled:opacity-40"
                 title="Nhảy đến dòng mã nguồn tương ứng (SyncTeX: Nhấp đúp vào trang PDF hoặc bấm nút này)"
               >
@@ -4058,23 +4074,10 @@ export default function LaTeXStudio({
 
           {/* Main Output Body */}
           <div className="flex-1 min-h-0 w-full h-full flex flex-col relative overflow-hidden bg-slate-200 dark:bg-[#525659]">
+            {pdfSyncNotice && <div role="status" className="text-xs p-2 bg-amber-100 text-amber-900 flex justify-between gap-2"><span>{pdfSyncNotice}</span><button onClick={() => setPdfSyncNotice('')} aria-label="Đóng thông báo">×</button></div>}
             {outputView === 'pdf' ? (
               pdf ? (
                 <div className="flex-1 min-h-0 w-full h-full flex flex-col relative overflow-hidden bg-slate-200 dark:bg-[#525659]">
-                  {source !== compiledSource && (
-                    <div
-                      role="status"
-                      className="text-xs px-3 py-1 bg-amber-500/20 border-b border-amber-500/30 text-amber-800 dark:text-amber-200 flex items-center justify-between shrink-0 w-full z-10"
-                    >
-                      <span className="truncate">Mã nguồn đã sửa đổi. Bấm Recompile để cập nhật PDF.</span>
-                      <button
-                        onClick={() => void compile()}
-                        className="underline font-bold hover:text-amber-950 dark:hover:text-white cursor-pointer ml-2 shrink-0"
-                      >
-                        Cập nhật
-                      </button>
-                    </div>
-                  )}
                   <PDFPreview
                     url={pdf}
                     zoom={zoom}
@@ -4088,7 +4091,10 @@ export default function LaTeXStudio({
                     isPresentation={isPresentation}
                     onClosePresentation={() => setIsPresentation(false)}
                     invertColors={projectSettings.pdfInvertColors}
-                    isOutOfSync={Boolean(pdf && compiledSource && source !== compiledSource)}
+                    isOutOfSync={pdfIsStale}
+                    syncAvailable={!!compileBuild?.available}
+                    initialPage={pdfCurrentPage}
+                    onPositionChange={(position) => { lastPDFPosition.current = position; }}
                     onRecompile={() => void compile()}
                   />
                 </div>
@@ -4134,14 +4140,13 @@ export default function LaTeXStudio({
             ) : (
               <ErrorConsole
                 log={errorLog}
+                mainDocument={logMainDocument}
+                projectFiles={files.map(f => f.name)}
+                logAvailable={logAvailable}
+                isStale={diagnosticsAreStale}
                 onJumpToLine={(line, file) => {
-                  if (file && file !== activeFileName && files.some((f) => f.name === file)) {
-                    handleSelectFile(file);
-                  }
-                  setTargetLine(line);
-                  if (layoutMode === 'pdf') {
-                    setLayoutMode('split');
-                  }
+                  if (diagnosticsAreStale) { setPdfSyncNotice('Nhật ký thuộc bản mã trước. Recompile để cập nhật vị trí lỗi.'); return; }
+                  navigateToSource(file || logMainDocument, line);
                 }}
                 onAIFix={handleAIFix}
                 fixBusy={fixBusy}
@@ -4223,7 +4228,7 @@ export default function LaTeXStudio({
 
           <div className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[10px]">{engine.toUpperCase()} qua {engineLabel}</span>
+            <span className="text-[10px]">{engine.toUpperCase()} qua {compilerLabel}</span>
           </div>
         </div>
       </footer>

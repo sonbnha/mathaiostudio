@@ -1,4 +1,4 @@
-import { compileLatex, CompileError, SOURCE_LIMIT, type CompileResource, type CompileOptions } from '@/lib/latexCompiler';
+import { compileLatexArtifacts, boundedBody, CompileError, SOURCE_LIMIT, type CompileResource, type CompileOptions } from '@/lib/latexCompiler';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -28,7 +28,14 @@ export async function POST(request: Request) {
   }
 
   try {
-    const rawBody = await request.json();
+    let rawBody;
+    try {
+      const bytes = await boundedBody(new Response(request.body), 24_000_000);
+      rawBody = JSON.parse(new TextDecoder().decode(bytes));
+    } catch (error) {
+      if (error instanceof CompileError) throw error;
+      return fail('JSON không hợp lệ.', 400);
+    }
     if (!rawBody || typeof rawBody !== 'object') {
       return fail('Dữ liệu yêu cầu không hợp lệ.', 400);
     }
@@ -91,7 +98,29 @@ export async function POST(request: Request) {
       };
     }
 
-    const pdf = await compileLatex(compileInput, request.signal);
+    if (typeof compileInput !== 'string') {
+      const seen = new Set<string>();
+      let textSize = 0;
+      if (compileInput.resources.length > 500) return fail('Dự án có quá nhiều tệp.', 413);
+      for (const resource of compileInput.resources) {
+        if (!resource || typeof resource.path !== 'string' || !resource.path ||
+            resource.path.startsWith('/') || resource.path.startsWith('-') ||
+            /[\\:\x00-\x1f]/.test(resource.path) || resource.path.split('/').some((part) => !part || part === '..' || part === '.')) {
+          return fail('Đường dẫn tài nguyên không hợp lệ.', 400);
+        }
+        if (seen.has(resource.path)) return fail('Trùng đường dẫn tài nguyên.', 400);
+        seen.add(resource.path);
+        if (resource.content !== undefined && typeof resource.content !== 'string') return fail('Nội dung tệp không hợp lệ.', 400);
+        if (resource.data !== undefined && typeof resource.data !== 'string') return fail('Dữ liệu tệp không hợp lệ.', 400);
+        textSize += Buffer.byteLength(resource.content || '', 'utf8');
+      }
+      if (textSize > SOURCE_LIMIT) return fail('Mã nguồn quá lớn (tối đa 500 KB).', 413);
+    }
+    const artifacts = await compileLatexArtifacts(compileInput, request.signal);
+    if (request.headers.get('accept')?.includes('application/json')) {
+      return Response.json({ ...artifacts, engineLabel: process.env.LATEX_COMPILER_MODE === 'artifacts' ? 'TeX + SyncTeX' : new URL(process.env.LATEX_COMPILER_URL || 'https://latex.ytotech.com').hostname, pdf: Buffer.from(artifacts.pdf).toString('base64') }, { headers: privateHeaders });
+    }
+    const pdf = artifacts.pdf;
     return new Response(new Blob([pdf as Uint8Array<ArrayBuffer>], { type: 'application/pdf' }), {
       headers: {
         ...privateHeaders,

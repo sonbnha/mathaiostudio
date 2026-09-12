@@ -1,6 +1,16 @@
 /** LaTeX-on-HTTP adapter. Source is sent only to the configured server, never as a URL. */
 export const SOURCE_LIMIT = 500_000;
-const PDF_LIMIT = 10_000_000;
+export const PDF_LIMIT = 10_000_000;
+const ARTIFACT_LIMIT = 15_000_000;
+
+export interface CompileArtifacts {
+  pdf: Uint8Array;
+  log: string;
+  buildId: string | null;
+  synctexAvailable: boolean;
+  hasErrors: boolean;
+}
+
 
 export interface CompileResource {
   path: string;
@@ -21,7 +31,7 @@ export class CompileError extends Error {
   constructor(message: string, public status: number, public log = '') { super(message); }
 }
 
-async function boundedBody(response: Response, limit: number): Promise<Uint8Array> {
+export async function boundedBody(response: Response, limit: number): Promise<Uint8Array> {
   const reader = response.body?.getReader();
   if (!reader) throw new CompileError('Engine trả về phản hồi rỗng.', 502);
   const chunks: Uint8Array[] = []; let length = 0;
@@ -38,22 +48,22 @@ async function boundedBody(response: Response, limit: number): Promise<Uint8Arra
   return result;
 }
 
-export async function compileLatex(
+export async function compileLatexArtifacts(
   input: string | CompileOptions,
   signal?: AbortSignal
-): Promise<Uint8Array> {
+): Promise<CompileArtifacts> {
   const endpoint = process.env.LATEX_COMPILER_URL || 'https://latex.ytotech.com/builds/sync';
   const url = new URL(endpoint);
   if (url.protocol !== 'https:' && !(process.env.NODE_ENV !== 'production' && ['localhost', '127.0.0.1'].includes(url.hostname))) {
     throw new CompileError('Địa chỉ engine phải sử dụng HTTPS.', 503);
   }
-  const headers: Record<string, string> = {'Content-Type': 'application/json', 'Accept': 'application/pdf'};
+  const headers: Record<string, string> = {'Content-Type': 'application/json', 'Accept': process.env.LATEX_COMPILER_MODE === 'artifacts' ? 'application/json' : 'application/pdf'};
   if (process.env.LATEX_COMPILER_TOKEN) headers.Authorization = `Bearer ${process.env.LATEX_COMPILER_TOKEN}`;
 
   let compilerName = 'xelatex';
   let stopOnError = false;
   let draftMode = false;
-  let resourcesPayload: Array<{ main?: boolean; path: string; content?: string; data?: string }> = [];
+  let resourcesPayload: Array<{ main?: boolean; path: string; content?: string; file?: string }> = [];
 
   if (typeof input === 'string') {
     resourcesPayload = [{ main: true, path: 'document.tex', content: input }];
@@ -78,16 +88,16 @@ export async function compileLatex(
         // Apply draft mode to main TeX document if enabled
         if (draftMode && isMain && typeof fileContent === 'string') {
           if (!fileContent.includes('PassOptionsToPackage{draft}{graphicx}')) {
-            fileContent = `\\PassOptionsToPackage{draft}{graphicx}\n${fileContent}`;
+            fileContent = `\\PassOptionsToPackage{draft}{graphicx}${fileContent}`;
           }
         }
 
-        const res: { main?: boolean; path: string; content?: string; data?: string } = {
+        const res: { main?: boolean; path: string; content?: string; file?: string } = {
           path: r.path,
         };
         if (isMain) res.main = true;
         if (fileContent !== undefined) res.content = fileContent;
-        if (r.data !== undefined) res.data = r.data;
+        if (r.data !== undefined) res.file = r.data;
         return res;
       });
 
@@ -154,12 +164,29 @@ export async function compileLatex(
       );
     }
 
+    if (response.headers.get('content-type')?.includes('application/json')) {
+      const raw = await boundedBody(response, ARTIFACT_LIMIT);
+      const result = JSON.parse(new TextDecoder().decode(raw));
+      if (typeof result.pdf !== 'string') throw new CompileError('Engine không trả về PDF.', 502);
+      const pdf = new Uint8Array(Buffer.from(result.pdf, 'base64'));
+      if (pdf.length > PDF_LIMIT) throw new CompileError('PDF vượt giới hạn 10 MB.', 413);
+      if (new TextDecoder().decode(pdf.slice(0, 5)) !== '%PDF-') throw new CompileError('Engine không trả về PDF hợp lệ.', 502);
+      const buildId = typeof result.buildId === 'string' && /^[a-f0-9]{32}$/.test(result.buildId) ? result.buildId : null;
+      return { pdf, log: typeof result.log === 'string' ? result.log.slice(-300_000) : '', buildId,
+        synctexAvailable: Boolean(buildId && result.synctexAvailable && process.env.LATEX_COMPILER_MODE === 'artifacts'),
+        hasErrors: Boolean(result.hasErrors) };
+    }
     const bytes = await boundedBody(response, PDF_LIMIT);
     if (new TextDecoder().decode(bytes.slice(0, 5)) !== '%PDF-') throw new CompileError('Engine không trả về PDF hợp lệ.', 502);
-    return bytes;
+    return { pdf: bytes, log: '', buildId: null, synctexAvailable: false, hasErrors: false };
   } catch (error) {
     if (error instanceof CompileError) throw error;
     if (error instanceof Error && ['TimeoutError', 'AbortError'].includes(error.name)) throw new CompileError('Biên dịch quá thời gian cho phép (45 giây).', 504);
     throw new CompileError('Không kết nối được dịch vụ biên dịch. Vui lòng thử lại sau.', 502);
   }
+}
+
+/** Backwards-compatible PDF-only interface for existing callers. */
+export async function compileLatex(input: string | CompileOptions, signal?: AbortSignal): Promise<Uint8Array> {
+  return (await compileLatexArtifacts(input, signal)).pdf;
 }

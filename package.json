@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "version:patch": "node scripts/bump-version.js patch",
-    "version:minor": "node scripts/bump-version.js minor"
+    "version:minor": "node scripts/bump-version.js minor",
+    "dev:latex": "node scripts/dev-latex.mjs",
+    "test:latex": "node --import tsx --test src/lib/latexCompiler.test.ts src/lib/phase6.test.ts"
   },
   "dependencies": {
     "@babel/runtime": "^8.0.5",

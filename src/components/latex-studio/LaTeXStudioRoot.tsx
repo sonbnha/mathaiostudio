@@ -123,7 +123,7 @@ export default function LaTeXStudioRoot() {
               </Panel>
 
               {/* HORIZONTAL RESIZER inside Sidebar */}
-              <PanelResizeHandle className="h-[10px] bg-[#222c38] border-y border-[#171f28] hover:bg-[#2b3746] transition-colors cursor-row-resize flex items-center justify-center shrink-0 z-30">
+              <PanelResizeHandle className="h-[9px] bg-[#222c38] hover:bg-[#2b3746] transition-colors cursor-row-resize flex items-center justify-center shrink-0 z-30">
                 {/* 4 square dots arranged horizontally in the center */}
                 <div className="flex flex-row gap-[3px] pointer-events-none">
                   <div className="w-[2.5px] h-[2.5px] bg-slate-400 opacity-80" />
@@ -149,7 +149,7 @@ export default function LaTeXStudioRoot() {
           </Panel>
 
           {/* VERTICAL RESIZER 1 (Sidebar | Editor) */}
-          <PanelResizeHandle className="w-[10px] bg-[#222c38] border-x border-[#171f28] hover:bg-[#2b3746] transition-colors cursor-col-resize z-30 relative shrink-0">
+          <PanelResizeHandle className="w-[9px] bg-[#222c38] hover:bg-[#2b3746] transition-colors cursor-col-resize z-30 relative shrink-0">
             {/* Upper 4 square dots grip (exactly 26% above center) */}
             <div className="absolute top-[24%] left-1/2 -translate-x-1/2 flex flex-col gap-[3px] pointer-events-none">
               <div className="w-[2.5px] h-[2.5px] bg-slate-400 opacity-80" />
@@ -158,9 +158,9 @@ export default function LaTeXStudioRoot() {
               <div className="w-[2.5px] h-[2.5px] bg-slate-400 opacity-80" />
             </div>
 
-            {/* Collapse Tab (10px wide, 56px long, centered dead center vertically & horizontally) */}
+            {/* Collapse Tab (9px wide, 56px long, centered dead center vertically & horizontally) */}
             <div 
-              className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-[10px] h-[56px] bg-[#3a4656] hover:bg-[#4a586d] rounded-[2px] flex items-center justify-center cursor-pointer text-slate-200 border border-[#232c37] shadow-sm z-40 transition-colors"
+              className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-[9px] h-[56px] bg-[#3a4656] hover:bg-[#4a586d] rounded-[2px] flex items-center justify-center cursor-pointer text-slate-200 shadow-sm z-40 transition-colors"
               title="Collapse file tree"
             >
               <span className="text-[9px] font-bold leading-none select-none text-slate-200">{'<'}</span>
@@ -185,7 +185,7 @@ export default function LaTeXStudioRoot() {
               </Panel>
 
               {/* VERTICAL RESIZER 2 (Editor | PDF) */}
-              <PanelResizeHandle className="w-[10px] bg-[#222c38] border-x border-[#171f28] hover:bg-[#2b3746] transition-colors cursor-col-resize z-30 relative shrink-0">
+              <PanelResizeHandle className="w-[9px] bg-[#222c38] hover:bg-[#2b3746] transition-colors cursor-col-resize z-30 relative shrink-0">
                 {/* SyncTeX Pill (Positioned above upper grip at 10%) */}
                 <div 
                   className="absolute top-[10%] left-1/2 -translate-x-1/2 w-[25px] h-[52px] bg-[#1a232f] hover:bg-[#243040] rounded-full flex flex-col items-center justify-center cursor-pointer border border-[#323f52] shadow-md z-40 transition-colors"
@@ -214,9 +214,9 @@ export default function LaTeXStudioRoot() {
                   <div className="w-[2.5px] h-[2.5px] bg-slate-400 opacity-80" />
                 </div>
 
-                {/* Collapse PDF Tab (10px wide, 56px long, centered dead center vertically & horizontally) */}
+                {/* Collapse PDF Tab (9px wide, 56px long, centered dead center vertically & horizontally) */}
                 <div 
-                  className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-[10px] h-[56px] bg-[#3a4656] hover:bg-[#4a586d] rounded-[2px] flex items-center justify-center cursor-pointer text-slate-200 border border-[#232c37] shadow-sm z-40 transition-colors"
+                  className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-[9px] h-[56px] bg-[#3a4656] hover:bg-[#4a586d] rounded-[2px] flex items-center justify-center cursor-pointer text-slate-200 shadow-sm z-40 transition-colors"
                   title="Collapse PDF viewer"
                 >
                   <span className="text-[9px] font-bold leading-none select-none text-slate-200">{'>'}</span>

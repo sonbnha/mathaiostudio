@@ -54,7 +54,7 @@ export default function PDFViewerCore({ url, scale = 1.0 }: PDFViewerCoreProps) 
       canvas.style.width = `${viewport.width / 1.5}px`;
       canvas.style.height = `${viewport.height / 1.5}px`;
 
-      const renderContext = {
+      const renderContext: any = {
         canvasContext: context,
         viewport: viewport
       };

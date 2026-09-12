@@ -158,12 +158,12 @@ export default function LaTeXStudioRoot() {
               <div className="w-[2.5px] h-[2.5px] bg-slate-400 opacity-80" />
             </div>
 
-            {/* Collapse Tab (7px wide, 56px long, centered dead center vertically & horizontally) */}
+            {/* Collapse Tab (9px wide, slightly wider than 7px splitter, centered dead center) */}
             <div 
-              className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-[7px] h-[56px] bg-[#3a4656] hover:bg-[#4a586d] rounded-[2px] flex items-center justify-center cursor-pointer text-slate-200 shadow-sm z-40 transition-colors"
+              className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-[9px] h-[56px] bg-[#3a4656] hover:bg-[#4a586d] rounded-[2px] flex items-center justify-center cursor-pointer text-slate-200 shadow-sm z-40 transition-colors"
               title="Collapse file tree"
             >
-              <span className="text-[8px] font-bold leading-none select-none text-slate-200">{'<'}</span>
+              <span className="text-[9px] font-bold leading-none select-none text-slate-200">{'<'}</span>
             </div>
 
             {/* Lower 4 square dots grip (exactly 26% below center) */}
@@ -214,12 +214,12 @@ export default function LaTeXStudioRoot() {
                   <div className="w-[2.5px] h-[2.5px] bg-slate-400 opacity-80" />
                 </div>
 
-                {/* Collapse PDF Tab (7px wide, 56px long, centered dead center vertically & horizontally) */}
+                {/* Collapse PDF Tab (9px wide, slightly wider than 7px splitter, centered dead center) */}
                 <div 
-                  className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-[7px] h-[56px] bg-[#3a4656] hover:bg-[#4a586d] rounded-[2px] flex items-center justify-center cursor-pointer text-slate-200 shadow-sm z-40 transition-colors"
+                  className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-[9px] h-[56px] bg-[#3a4656] hover:bg-[#4a586d] rounded-[2px] flex items-center justify-center cursor-pointer text-slate-200 shadow-sm z-40 transition-colors"
                   title="Collapse PDF viewer"
                 >
-                  <span className="text-[8px] font-bold leading-none select-none text-slate-200">{'>'}</span>
+                  <span className="text-[9px] font-bold leading-none select-none text-slate-200">{'>'}</span>
                 </div>
 
                 {/* Lower 4 square dots grip (exactly 26% below center) */}

@@ -64,6 +64,10 @@ import {
   MoreHorizontal,
   Image as ImageIcon,
   FileArchive,
+  MessageSquare,
+  MessageCircle,
+  FolderSync,
+  Bookmark,
 } from 'lucide-react';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
@@ -74,6 +78,10 @@ import FileTreeExplorer from '@/components/latex/FileTreeExplorer';
 import ErrorConsole, { parseTeXLog } from '@/components/latex/ErrorConsole';
 import MathSymbolsPopover from '@/components/latex/MathSymbolsPopover';
 import AIAssistantDropdown from '@/components/latex/AIAssistantDropdown';
+import ReviewPanel, { type CommentItem } from '@/components/latex/ReviewPanel';
+import ChatPanel, { type ChatMessage } from '@/components/latex/ChatPanel';
+import IntegrationsModal from '@/components/latex/IntegrationsModal';
+import InsertDialogs, { type InsertDialogType } from '@/components/latex/InsertDialogs';
 import { LATEX_TEMPLATES, DEFAULT_TEMPLATE_ID, getTemplateById } from '@/components/latex/LaTeXTemplates';
 import {
   EDITOR_COMMANDS,
@@ -196,7 +204,12 @@ export default function LaTeXStudio({
   const wordInputRef = useRef<HTMLInputElement>(null);
 
   // Sidebar & Dual resizers state
-  const [activeActivityTab, setActiveActivityTab] = useState<'files' | 'search' | 'ai'>('files');
+  const [activeActivityTab, setActiveActivityTab] = useState<'files' | 'search' | 'review' | 'chat' | 'ai'>('files');
+  const [isIntegrationsOpen, setIsIntegrationsOpen] = useState<boolean>(false);
+  const [insertDialogType, setInsertDialogType] = useState<InsertDialogType>(null);
+  const [trackChangesEnabled, setTrackChangesEnabled] = useState<boolean>(false);
+  const [comments, setComments] = useState<CommentItem[]>([]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [sidebarWidth, setSidebarWidth] = useState<number>(260); // 180px - 360px (0 when collapsed)
   const [lastSidebarWidth, setLastSidebarWidth] = useState<number>(260);
   const isSidebarOpen = sidebarWidth > 0;
@@ -300,7 +313,7 @@ export default function LaTeXStudio({
     }
   };
 
-  const handleActivityTabClick = (tab: 'files' | 'search' | 'ai') => {
+  const handleActivityTabClick = (tab: 'files' | 'search' | 'review' | 'chat' | 'ai') => {
     if (sidebarWidth > 0 && activeActivityTab === tab) {
       setLastSidebarWidth(sidebarWidth);
       setSidebarWidth(0);
@@ -311,6 +324,117 @@ export default function LaTeXStudio({
       }
     }
   };
+
+  // Comments management
+  const handleAddComment = (comment: Omit<CommentItem, 'id' | 'createdAt' | 'resolved'>) => {
+    const newComment: CommentItem = {
+      ...comment,
+      id: `comment_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      createdAt: Date.now(),
+      resolved: false,
+    };
+    setComments((prev) => [newComment, ...prev]);
+  };
+
+  const handleResolveComment = (id: string) => {
+    setComments((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, resolved: !c.resolved } : c))
+    );
+  };
+
+  const handleDeleteComment = (id: string) => {
+    setComments((prev) => prev.filter((c) => c.id !== id));
+  };
+
+  const handleReplyComment = (commentId: string, replyText: string) => {
+    setComments((prev) =>
+      prev.map((c) => {
+        if (c.id !== commentId) return c;
+        const newReply = {
+          id: `reply_${Date.now()}`,
+          author: user?.email || 'Bạn',
+          content: replyText,
+          createdAt: Date.now(),
+        };
+        return {
+          ...c,
+          replies: [...(c.replies || []), newReply],
+        };
+      })
+    );
+  };
+
+  // Chat management
+  const handleSendMessage = (text: string, snippet?: string) => {
+    const newMsg: ChatMessage = {
+      id: `msg_${Date.now()}`,
+      sender: user?.email || 'Bạn',
+      text,
+      snippet,
+      timestamp: Date.now(),
+    };
+    setChatMessages((prev) => [...prev, newMsg]);
+  };
+
+  // Import BibTeX from Zotero/Mendeley
+  const handleImportBibTeX = (bibtexContent: string, fileName = 'references.bib') => {
+    const existingIndex = files.findIndex((f) => f.name === fileName);
+    if (existingIndex >= 0) {
+      setFiles((prev) =>
+        prev.map((f, i) => (i === existingIndex ? { ...f, content: `${f.content}\n\n${bibtexContent}` } : f))
+      );
+    } else {
+      setFiles((prev) => [...prev, { name: fileName, content: bibtexContent }]);
+      setOpenTabs((prev) => [...prev, fileName]);
+    }
+    setHistoryToast(`Đã đồng bộ thành công ${fileName}!`);
+    setTimeout(() => setHistoryToast(null), 3000);
+  };
+
+  // Persist user layout and panel state per-project in localStorage
+  useEffect(() => {
+    const projectId = currentDocId || docId || 'default';
+    try {
+      const savedLayout = localStorage.getItem(`latex_layout_${projectId}`);
+      if (savedLayout) {
+        const parsed = JSON.parse(savedLayout);
+        if (parsed.layoutMode) setLayoutMode(parsed.layoutMode);
+        if (typeof parsed.editorRatio === 'number') setEditorRatio(parsed.editorRatio);
+        if (typeof parsed.sidebarWidth === 'number') setSidebarWidth(parsed.sidebarWidth);
+        if (parsed.activeActivityTab) setActiveActivityTab(parsed.activeActivityTab);
+      }
+      const savedComments = localStorage.getItem(`latex_comments_${projectId}`);
+      if (savedComments) setComments(JSON.parse(savedComments));
+      const savedChat = localStorage.getItem(`latex_chat_${projectId}`);
+      if (savedChat) setChatMessages(JSON.parse(savedChat));
+    } catch {
+      // Ignore parse error
+    }
+  }, [currentDocId, docId]);
+
+  useEffect(() => {
+    const projectId = currentDocId || docId || 'default';
+    try {
+      localStorage.setItem(
+        `latex_layout_${projectId}`,
+        JSON.stringify({ layoutMode, editorRatio, sidebarWidth, activeActivityTab })
+      );
+    } catch {}
+  }, [layoutMode, editorRatio, sidebarWidth, activeActivityTab, currentDocId, docId]);
+
+  useEffect(() => {
+    const projectId = currentDocId || docId || 'default';
+    try {
+      localStorage.setItem(`latex_comments_${projectId}`, JSON.stringify(comments));
+    } catch {}
+  }, [comments, currentDocId, docId]);
+
+  useEffect(() => {
+    const projectId = currentDocId || docId || 'default';
+    try {
+      localStorage.setItem(`latex_chat_${projectId}`, JSON.stringify(chatMessages));
+    } catch {}
+  }, [chatMessages, currentDocId, docId]);
 
   // Measure PDF panel width for responsive toolbar
   useEffect(() => {
@@ -1546,6 +1670,17 @@ export default function LaTeXStudio({
                     <span>Nhập từ Word (.docx)</span>
                   </button>
 
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveDesktopMenu(null);
+                      setIsIntegrationsOpen(true);
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-slate-700 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-[#2c3238] hover:text-slate-900 dark:hover:text-white text-left text-[13px] transition-colors cursor-pointer"
+                  >
+                    <span>Tích hợp ngoài (Zotero, Git…)</span>
+                  </button>
+
                   <div className="border-b border-slate-200 dark:border-white/10 my-1 mx-1" />
 
                   <button
@@ -1738,118 +1873,64 @@ export default function LaTeXStudio({
 
                   <div className="border-b border-slate-200 dark:border-white/10 my-1 mx-1" />
 
-                  {/* Submenu: Công thức toán học */}
-                  <div className="relative group/math">
-                    <button
-                      type="button"
-                      className="w-full flex items-center justify-between px-3 py-1.5 text-slate-700 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-[#2c3238] hover:text-slate-900 dark:hover:text-white text-left text-[13px] transition-colors cursor-pointer"
-                    >
-                      <span>Công thức toán học</span>
-                      <ChevronRight className="w-3.5 h-3.5 text-slate-400 dark:text-neutral-500 group-hover/math:text-slate-900 dark:group-hover/math:text-white" />
-                    </button>
-
-                    <div className="absolute left-full top-0 ml-1 w-52 bg-white dark:bg-[#1e2226] border border-slate-200 dark:border-white/10 rounded shadow-xl py-1 text-[13px] text-slate-700 dark:text-neutral-300 z-50 select-none hidden group-hover/math:block animate-in fade-in duration-100">
-                      <button
-                        type="button"
-                        onClick={() => runCommand('mathInline')}
-                        className="w-full flex items-center justify-between px-3 py-1.5 text-slate-700 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-[#2c3238] hover:text-slate-900 dark:hover:text-white text-left text-[13px] transition-colors cursor-pointer"
-                      >
-                        <span>Trên dòng (Inline)</span>
-                        <span className="text-emerald-600 dark:text-emerald-400 font-mono text-[11px]">\(x\)</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => runCommand('mathDisplay')}
-                        className="w-full flex items-center justify-between px-3 py-1.5 text-slate-700 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-[#2c3238] hover:text-slate-900 dark:hover:text-white text-left text-[13px] transition-colors cursor-pointer"
-                      >
-                        <span>Dòng riêng (Display)</span>
-                        <span className="text-emerald-600 dark:text-emerald-400 font-mono text-[11px]">\[x\]</span>
-                      </button>
-                    </div>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveDesktopMenu(null);
+                      setInsertDialogType('equation');
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-slate-700 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-[#2c3238] hover:text-slate-900 dark:hover:text-white text-left text-[13px] transition-colors cursor-pointer"
+                  >
+                    <span>Công thức toán học…</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-mono text-[11px]">∑</span>
+                  </button>
 
                   <div className="border-b border-slate-200 dark:border-white/10 my-1 mx-1" />
 
                   <button
                     type="button"
-                    onClick={() => runCommand('figure')}
+                    onClick={() => {
+                      setActiveDesktopMenu(null);
+                      setInsertDialogType('image');
+                    }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-slate-700 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-[#2c3238] hover:text-slate-900 dark:hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Hình ảnh</span>
+                    <span>Hình ảnh (Figure)…</span>
                   </button>
-
-                  {/* Bảng biểu with Flyout Submenu */}
-                  <div className="relative group/table">
-                    <button
-                      type="button"
-                      onClick={() => runCommand('table', { rows: 3, cols: 3 })}
-                      className="w-full flex items-center justify-between px-3 py-1.5 text-slate-700 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-[#2c3238] hover:text-slate-900 dark:hover:text-white text-left text-[13px] transition-colors cursor-pointer"
-                    >
-                      <span>Bảng biểu</span>
-                      <ChevronRight className="w-3.5 h-3.5 text-slate-400 dark:text-neutral-500 group-hover/table:text-slate-900 dark:group-hover/table:text-white" />
-                    </button>
-
-                    <div className="absolute left-full top-0 ml-1 w-64 bg-white dark:bg-[#1e2226] border border-slate-200 dark:border-white/10 rounded-lg shadow-2xl p-3 text-xs text-slate-700 dark:text-neutral-300 z-50 select-none hidden group-hover/table:block animate-in fade-in duration-100">
-                      <div className="text-[11px] font-semibold text-slate-500 dark:text-neutral-400 uppercase tracking-wider mb-2">
-                        Chèn bảng
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => runCommand('table', { rows: 3, cols: 3 })}
-                        className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 transition-colors text-left cursor-pointer mb-2.5 border border-emerald-500/20"
-                      >
-                        <Sparkles className="w-3.5 h-3.5 shrink-0" />
-                        <span className="font-medium text-[11px]">✨ Bảng mẫu chuẩn (3 × 3)</span>
-                      </button>
-
-                      <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-neutral-400 mb-1.5 font-medium">
-                        <span>Chọn kích thước</span>
-                        <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">
-                          {tableHoverSize.rows > 0 && tableHoverSize.cols > 0
-                            ? `${tableHoverSize.rows} × ${tableHoverSize.cols}`
-                            : '10 × 10'}
-                        </span>
-                      </div>
-
-                      {/* 10x10 Matrix Grid */}
-                      <div
-                        className="grid grid-cols-10 gap-1 p-1.5 bg-slate-100 dark:bg-[#141618] rounded border border-slate-200 dark:border-white/5"
-                        onMouseLeave={() => setTableHoverSize({ rows: 0, cols: 0 })}
-                      >
-                        {Array.from({ length: 10 }).map((_, rIdx) =>
-                          Array.from({ length: 10 }).map((_, cIdx) => {
-                            const r = rIdx + 1;
-                            const c = cIdx + 1;
-                            const isHighlighted =
-                              r <= tableHoverSize.rows && c <= tableHoverSize.cols;
-                            return (
-                              <div
-                                key={`${r}-${c}`}
-                                onMouseEnter={() =>
-                                  setTableHoverSize({ rows: r, cols: c })
-                                }
-                                onClick={() => runCommand('table', { rows: r, cols: c })}
-                                className={`w-4 h-4 rounded-xs border cursor-pointer transition-colors ${
-                                  isHighlighted
-                                    ? 'bg-emerald-500/40 border-emerald-500'
-                                    : 'bg-white dark:bg-white/5 border-slate-300 dark:border-white/10 hover:border-emerald-500/50'
-                                }`}
-                                title={`${r} hàng × ${c} cột`}
-                              />
-                            );
-                          })
-                        )}
-                      </div>
-                    </div>
-                  </div>
 
                   <button
                     type="button"
-                    onClick={() => runCommand('cite')}
+                    onClick={() => {
+                      setActiveDesktopMenu(null);
+                      setInsertDialogType('table');
+                    }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-slate-700 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-[#2c3238] hover:text-slate-900 dark:hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Trích dẫn</span>
-                    <span className="text-slate-400 dark:text-neutral-500 font-mono text-[11px]">\\cite</span>
+                    <span>Bảng biểu (Table)…</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveDesktopMenu(null);
+                      setInsertDialogType('citation');
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-slate-700 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-[#2c3238] hover:text-slate-900 dark:hover:text-white text-left text-[13px] transition-colors cursor-pointer"
+                  >
+                    <span>Trích dẫn (\cite)…</span>
+                    <span className="text-slate-400 dark:text-neutral-500 font-mono text-[11px]">\cite</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveDesktopMenu(null);
+                      setInsertDialogType('crossref');
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-slate-700 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-[#2c3238] hover:text-slate-900 dark:hover:text-white text-left text-[13px] transition-colors cursor-pointer"
+                  >
+                    <span>Tham chiếu chéo (\ref)…</span>
+                    <span className="text-slate-400 dark:text-neutral-500 font-mono text-[11px]">\ref</span>
                   </button>
 
                   <button
@@ -1857,20 +1938,8 @@ export default function LaTeXStudio({
                     onClick={() => runCommand('link')}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-slate-700 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-[#2c3238] hover:text-slate-900 dark:hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Liên kết</span>
-                    <span className="text-slate-400 dark:text-neutral-500 font-mono text-[11px]">\\href</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveDesktopMenu(null);
-                      handleInsert('\\ref{sec:label}');
-                    }}
-                    className="w-full flex items-center justify-between px-3 py-1.5 text-slate-700 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-[#2c3238] hover:text-slate-900 dark:hover:text-white text-left text-[13px] transition-colors cursor-pointer"
-                  >
-                    <span>Tham chiếu chéo</span>
-                    <span className="text-slate-400 dark:text-neutral-500 font-mono text-[11px]">\\ref</span>
+                    <span>Liên kết (\href)</span>
+                    <span className="text-slate-400 dark:text-neutral-500 font-mono text-[11px]">\href</span>
                   </button>
 
                   <button
@@ -1881,7 +1950,7 @@ export default function LaTeXStudio({
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-slate-700 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-[#2c3238] hover:text-slate-900 dark:hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
-                    <span>Ghi chú</span>
+                    <span>Ghi chú (%)</span>
                     <span className="text-slate-400 dark:text-neutral-500 font-mono text-[11px]">%</span>
                   </button>
 
@@ -2000,6 +2069,42 @@ export default function LaTeXStudio({
                   >
                     <span>Chế độ tập trung</span>
                     {isFullscreen && <span className="text-emerald-600 dark:text-emerald-400 text-xs">✓</span>}
+                  </button>
+
+                  <div className="border-b border-slate-200 dark:border-white/10 my-1 mx-1" />
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSidebarOpen((prev) => !prev);
+                      setActiveDesktopMenu(null);
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-slate-700 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-[#2c3238] hover:text-slate-900 dark:hover:text-white text-left text-[13px] transition-colors cursor-pointer"
+                  >
+                    <span className={isSidebarOpen ? 'text-slate-900 dark:text-white font-medium' : ''}>Bật/Tắt Cây thư mục</span>
+                    {isSidebarOpen && <span className="text-emerald-600 dark:text-emerald-400 text-xs">✓</span>}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleActivityTabClick('review');
+                      setActiveDesktopMenu(null);
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-slate-700 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-[#2c3238] hover:text-slate-900 dark:hover:text-white text-left text-[13px] transition-colors cursor-pointer"
+                  >
+                    <span>Bật/Tắt Panel Đánh giá</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleActivityTabClick('chat');
+                      setActiveDesktopMenu(null);
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-slate-700 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-[#2c3238] hover:text-slate-900 dark:hover:text-white text-left text-[13px] transition-colors cursor-pointer"
+                  >
+                    <span>Bật/Tắt Panel Trò chuyện</span>
                   </button>
 
                   <div className="border-b border-slate-200 dark:border-white/10 my-1 mx-1" />
@@ -2564,6 +2669,55 @@ export default function LaTeXStudio({
               <Search className="w-4.5 h-4.5" />
             </button>
 
+            {/* Review / Comments button */}
+            <button
+              type="button"
+              onClick={() => handleActivityTabClick('review')}
+              className={`relative p-2 rounded-lg transition-colors cursor-pointer group flex items-center justify-center ${
+                isSidebarOpen && activeActivityTab === 'review'
+                  ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-xs border border-slate-200/80 dark:border-slate-700'
+                  : 'text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-slate-100'
+              }`}
+              title="Đánh giá & Bình luận (Review & Track Changes)"
+            >
+              {isSidebarOpen && activeActivityTab === 'review' && (
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-emerald-500 rounded-r" />
+              )}
+              <MessageSquare className="w-4.5 h-4.5" />
+              {comments.filter((c) => !c.resolved).length > 0 && (
+                <span className="absolute -top-1 -right-1 px-1 min-w-3.5 h-3.5 rounded-full bg-emerald-600 text-white text-[9px] font-bold flex items-center justify-center">
+                  {comments.filter((c) => !c.resolved).length}
+                </span>
+              )}
+            </button>
+
+            {/* Chat button */}
+            <button
+              type="button"
+              onClick={() => handleActivityTabClick('chat')}
+              className={`relative p-2 rounded-lg transition-colors cursor-pointer group flex items-center justify-center ${
+                isSidebarOpen && activeActivityTab === 'chat'
+                  ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-xs border border-slate-200/80 dark:border-slate-700'
+                  : 'text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-slate-100'
+              }`}
+              title="Trò chuyện nhóm (Project Chat)"
+            >
+              {isSidebarOpen && activeActivityTab === 'chat' && (
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-emerald-500 rounded-r" />
+              )}
+              <MessageCircle className="w-4.5 h-4.5" />
+            </button>
+
+            {/* Integrations button */}
+            <button
+              type="button"
+              onClick={() => setIsIntegrationsOpen(true)}
+              className="relative p-2 rounded-lg transition-colors cursor-pointer group flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-slate-100"
+              title="Tích hợp nguồn ngoài (Zotero, Mendeley, Git, Cloud)"
+            >
+              <FolderSync className="w-4.5 h-4.5" />
+            </button>
+
             {/* AI Assistant button */}
             <button
               type="button"
@@ -2902,6 +3056,38 @@ export default function LaTeXStudio({
                   </div>
                 </form>
               </div>
+            )}
+
+            {activeActivityTab === 'review' && (
+              <ReviewPanel
+                comments={comments}
+                onAddComment={handleAddComment}
+                onResolveComment={handleResolveComment}
+                onDeleteComment={handleDeleteComment}
+                onReplyComment={handleReplyComment}
+                onJumpToLine={(line, file) => {
+                  if (file && file !== activeFileName && files.some((f) => f.name === file)) {
+                    handleSelectFile(file);
+                  }
+                  setTargetLine(line);
+                  if (layoutMode === 'pdf') {
+                    setLayoutMode('split');
+                  }
+                }}
+                activeFileName={activeFileName || 'main.tex'}
+                trackChangesEnabled={trackChangesEnabled}
+                onToggleTrackChanges={(en) => setTrackChangesEnabled(en)}
+                currentUserEmail={user?.email}
+              />
+            )}
+
+            {activeActivityTab === 'chat' && (
+              <ChatPanel
+                messages={chatMessages}
+                onSendMessage={handleSendMessage}
+                onInsertCodeSnippet={(snip) => handleInsert(snip)}
+                currentUserEmail={user?.email || 'Bạn'}
+              />
             )}
           </div>
         )}
@@ -3679,16 +3865,30 @@ export default function LaTeXStudio({
                 )}
               </div>
 
-              {/* Quick Download PDF */}
+              {/* Quick Download PDF & Popout PDF */}
               {pdf && (
-                <a
-                  href={pdf}
-                  download={`${docTitle.replace(/\.tex$/, '')}.pdf`}
-                  className="h-6 w-6 flex items-center justify-center rounded-sm border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition shrink-0"
-                  title="Tải PDF nhanh về máy"
-                >
-                  <Download className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                </a>
+                <>
+                  <a
+                    href={pdf}
+                    download={`${docTitle.replace(/\.tex$/, '')}.pdf`}
+                    className="h-6 w-6 flex items-center justify-center rounded-sm border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition shrink-0"
+                    title="Tải PDF nhanh về máy"
+                  >
+                    <Download className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (pdf) {
+                        window.open(pdf, '_blank', 'noopener,noreferrer');
+                      }
+                    }}
+                    className="h-6 w-6 flex items-center justify-center rounded-sm border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition shrink-0"
+                    title="Mở PDF trong tab / cửa sổ mới (Overleaf PDF Popout)"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                  </button>
+                </>
               )}
 
               {/* Overleaf Logs Button with Badge */}
@@ -3997,6 +4197,21 @@ export default function LaTeXStudio({
         existingFileNames={files.map((f) => f.name)}
         onAddFile={handleAddFileWithContent}
         onUploadFiles={handleUploadMultipleAssets}
+      />
+
+      {/* Integrations Modal (Zotero, Mendeley, Git, Cloud Export) */}
+      <IntegrationsModal
+        isOpen={isIntegrationsOpen}
+        onClose={() => setIsIntegrationsOpen(false)}
+        onImportBibTeX={handleImportBibTeX}
+      />
+
+      {/* Insert Dialogs (Table, Figure, Equation, Citation, Cross-Ref) */}
+      <InsertDialogs
+        type={insertDialogType}
+        onClose={() => setInsertDialogType(null)}
+        onInsertText={handleInsert}
+        projectImages={images}
       />
     </div>
   );

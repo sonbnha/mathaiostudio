@@ -82,6 +82,8 @@ import ReviewPanel, { type CommentItem } from '@/components/latex/ReviewPanel';
 import ChatPanel, { type ChatMessage } from '@/components/latex/ChatPanel';
 import IntegrationsModal from '@/components/latex/IntegrationsModal';
 import InsertDialogs, { type InsertDialogType } from '@/components/latex/InsertDialogs';
+import ProjectSearchPanel from '@/components/latex/ProjectSearchPanel';
+import { WordCountModal } from '@/components/latex/WordCountModal';
 import { LATEX_TEMPLATES, DEFAULT_TEMPLATE_ID, getTemplateById } from '@/components/latex/LaTeXTemplates';
 import {
   EDITOR_COMMANDS,
@@ -207,6 +209,7 @@ export default function LaTeXStudio({
   const [activeActivityTab, setActiveActivityTab] = useState<'files' | 'search' | 'review' | 'chat' | 'ai'>('files');
   const [isIntegrationsOpen, setIsIntegrationsOpen] = useState<boolean>(false);
   const [insertDialogType, setInsertDialogType] = useState<InsertDialogType>(null);
+  const [isWordCountOpen, setIsWordCountOpen] = useState<boolean>(false);
   const [trackChangesEnabled, setTrackChangesEnabled] = useState<boolean>(false);
   const [comments, setComments] = useState<CommentItem[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -1291,6 +1294,30 @@ export default function LaTeXStudio({
     setOpenTabs(nextTabs);
 
     if (activeFileName === fileName) {
+      if (remainingFiles.length > 0) {
+        const nextFile = nextTabs.length > 0
+          ? remainingFiles.find((f) => f.name === nextTabs[nextTabs.length - 1]) || remainingFiles[0]
+          : remainingFiles[0];
+        setActiveFileName(nextFile.name);
+        setSource(nextFile.content);
+        if (!nextTabs.includes(nextFile.name)) {
+          setOpenTabs([...nextTabs, nextFile.name]);
+        }
+      } else {
+        setActiveFileName(null);
+        setSource('');
+        setOpenTabs([]);
+      }
+    }
+  };
+
+  const handleDeleteMultipleFiles = (fileNames: string[]) => {
+    const remainingFiles = files.filter((f) => !fileNames.includes(f.name));
+    setFiles(remainingFiles);
+    const nextTabs = openTabs.filter((t) => !fileNames.includes(t));
+    setOpenTabs(nextTabs);
+
+    if (activeFileName && fileNames.includes(activeFileName)) {
       if (remainingFiles.length > 0) {
         const nextFile = nextTabs.length > 0
           ? remainingFiles.find((f) => f.name === nextTabs[nextTabs.length - 1]) || remainingFiles[0]
@@ -2828,6 +2855,7 @@ export default function LaTeXStudio({
                 onSelectFile={handleSelectFile}
                 onCreateFile={handleCreateFile}
                 onDeleteFile={handleDeleteFile}
+                onDeleteMultipleFiles={handleDeleteMultipleFiles}
                 onRenameFile={handleRenameFile}
                 onSetMainDocument={handleSetMainDocument}
                 onUploadAsset={handleUploadAsset}
@@ -2839,117 +2867,24 @@ export default function LaTeXStudio({
             )}
 
             {activeActivityTab === 'search' && (
-              <div className="h-full flex flex-col overflow-hidden text-xs select-none">
-                {/* Search Header */}
-                <div className="w-full h-8 flex items-center justify-between px-2 border-b border-slate-200 dark:border-white/5 bg-slate-100 dark:bg-[#181a1d] select-none flex-shrink-0">
-                  <div className="flex items-center gap-1.5 text-slate-700 dark:text-neutral-300">
-                    <Search className="w-3.5 h-3.5 text-slate-500 dark:text-neutral-400" />
-                    <span className="font-semibold text-[11px] uppercase tracking-wider text-slate-700 dark:text-neutral-300">Tìm kiếm</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsSidebarOpen(false)}
-                    className="w-4 h-4 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer rounded hover:bg-slate-200 dark:hover:bg-white/10 transition-colors flex-shrink-0"
-                    title="Đóng bảng điều khiển"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-
-                {/* Search Form (Overleaf Style) */}
-                <div className="border-b border-slate-200 dark:border-white/5 shrink-0">
-                  {/* Row 1: Input + Green Search Button */}
-                  <div className="flex items-center gap-1.5 px-2 pt-2">
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Tìm kiếm trong tất cả tệp..."
-                      className="flex-1 bg-slate-100 dark:bg-[#1e2227] border border-slate-200 dark:border-white/10 rounded px-2 py-1 text-xs text-slate-800 dark:text-neutral-200 placeholder-slate-400 dark:placeholder-neutral-500 focus:outline-none focus:border-emerald-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {}}
-                      className="flex-shrink-0 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium px-2.5 py-1 rounded transition-colors cursor-pointer"
-                    >
-                      Tìm kiếm
-                    </button>
-                  </div>
-
-                  {/* Row 2: Aa, .*, W filter toggle buttons */}
-                  <div className="flex items-center gap-1 px-2 pt-1.5 pb-2">
-                    <button
-                      type="button"
-                      onClick={() => setMatchCase(!matchCase)}
-                      className={`px-1.5 py-0.5 text-[11px] rounded font-mono border transition-colors cursor-pointer ${
-                        matchCase
-                          ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border-emerald-500/50'
-                          : 'border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-transparent text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-neutral-200 hover:bg-slate-200 dark:hover:bg-white/5'
-                      }`}
-                      title="Khớp chữ hoa/thường (Match Case)"
-                    >
-                      Aa
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setUseRegex(!useRegex)}
-                      className={`px-1.5 py-0.5 text-[11px] rounded font-mono border transition-colors cursor-pointer ${
-                        useRegex
-                          ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border-emerald-500/50'
-                          : 'border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-transparent text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-neutral-200 hover:bg-slate-200 dark:hover:bg-white/5'
-                      }`}
-                      title="Biểu thức chính quy (Regex)"
-                    >
-                      .*
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setWholeWord(!wholeWord)}
-                      className={`px-1.5 py-0.5 text-[11px] rounded font-mono border transition-colors cursor-pointer ${
-                        wholeWord
-                          ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border-emerald-500/50'
-                          : 'border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-transparent text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-neutral-200 hover:bg-slate-200 dark:hover:bg-white/5'
-                      }`}
-                      title="Khớp nguyên từ (Whole Word)"
-                    >
-                      W
-                    </button>
-                  </div>
-                </div>
-
-                {/* Match Results Count & List */}
-                <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-1">
-                  <div className="text-[11px] font-mono text-slate-500 dark:text-neutral-400 mb-1 flex items-center justify-between">
-                    <span>Kết quả ({searchMatches.length})</span>
-                    {searchQuery && (
-                      <span className="text-[10px] text-cyan-600 dark:text-cyan-400">
-                        {activeFileName}
-                      </span>
-                    )}
-                  </div>
-                  {searchMatches.length > 0 ? (
-                    searchMatches.map((m, idx) => (
-                      <button
-                        key={`${m.line}-${idx}`}
-                        type="button"
-                        onClick={() => setTargetLine(m.line)}
-                        className="w-full text-left p-1.5 rounded hover:bg-slate-100 dark:hover:bg-[#252a2e] text-slate-700 dark:text-slate-300 transition text-[11px] font-mono cursor-pointer border border-transparent hover:border-slate-200 dark:hover:border-white/5"
-                      >
-                        <span className="text-cyan-600 dark:text-cyan-500 font-bold mr-1.5">L{m.line}:</span>
-                        <span className="truncate">{m.text.trim()}</span>
-                      </button>
-                    ))
-                  ) : searchQuery ? (
-                    <div className="text-center py-6 text-slate-400 dark:text-neutral-500 text-xs">
-                      Không tìm thấy kết quả phù hợp
-                    </div>
-                  ) : (
-                    <div className="text-center py-6 text-slate-400 dark:text-neutral-500 text-xs">
-                      Nhập từ khóa để bắt đầu tìm kiếm
-                    </div>
-                  )}
-                </div>
-              </div>
+              <ProjectSearchPanel
+                files={files}
+                activeFileName={activeFileName}
+                onSelectFileAndLine={(fileName, line) => {
+                  if (fileName !== activeFileName) {
+                    handleSelectFile(fileName);
+                  }
+                  setTargetLine(line);
+                }}
+                onUpdateFiles={(newFiles) => {
+                  setFiles(newFiles);
+                  const active = newFiles.find((f) => f.name === activeFileName);
+                  if (active && active.content !== undefined) {
+                    setSource(active.content);
+                  }
+                }}
+                onClose={() => setIsSidebarOpen(false)}
+              />
             )}
 
             {activeActivityTab === 'ai' && (
@@ -3678,6 +3613,8 @@ export default function LaTeXStudio({
                 onCursorLine={handleSyncCodeToPDF}
                 targetLine={targetLine}
                 errors={errors}
+                projectFiles={files}
+                projectImages={images}
                 onMount={(view) => {
                   editorViewRef.current = view;
                 }}
@@ -4174,9 +4111,22 @@ export default function LaTeXStudio({
           </Link>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-[10px]">{engine.toUpperCase()} qua {engineLabel}</span>
+        <div className="flex items-center gap-3">
+          {/* Word count quick trigger */}
+          <button
+            type="button"
+            onClick={() => setIsWordCountOpen(true)}
+            className="inline-flex items-center gap-1 hover:text-slate-800 dark:hover:text-slate-200 cursor-pointer font-mono text-[10px] px-1.5 py-0.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+            title="Xem thống kê số từ và ký tự (Word Count)"
+          >
+            <FileText className="w-3 h-3 text-emerald-500" />
+            <span>Đếm từ</span>
+          </button>
+
+          <div className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-[10px]">{engine.toUpperCase()} qua {engineLabel}</span>
+          </div>
         </div>
       </footer>
       {/* Project Settings Modal */}
@@ -4212,6 +4162,15 @@ export default function LaTeXStudio({
         onClose={() => setInsertDialogType(null)}
         onInsertText={handleInsert}
         projectImages={images}
+      />
+
+      {/* Word Count Modal */}
+      <WordCountModal
+        isOpen={isWordCountOpen}
+        onClose={() => setIsWordCountOpen(false)}
+        activeFileName={activeFileName || 'main.tex'}
+        activeFileContent={source}
+        allFiles={files}
       />
     </div>
   );

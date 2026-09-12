@@ -27,150 +27,13 @@ import {
   X,
   MoreVertical,
   Download,
+  Check,
+  Archive,
 } from 'lucide-react';
 import { saveAs } from 'file-saver';
+import JSZip from 'jszip';
 import type { StudioFile } from '@/components/latex/StudioTools';
-
-export interface OutlineItem {
-  id: string;
-  title: string;
-  level: 1 | 2 | 3;
-  type: 'section' | 'part_vn' | 'subsection' | 'question' | 'subsub' | 'item';
-  line: number;
-}
-
-function cleanTexText(raw: string): string {
-  return raw
-    .replace(/\\textbf\{([^}]+)\}/g, '$1')
-    .replace(/\\textit\{([^}]+)\}/g, '$1')
-    .replace(/\\underline\{([^}]+)\}/g, '$1')
-    .replace(/\$([^$]+)\$/g, '$1')
-    .replace(/\\[a-zA-Z]+/g, ' ')
-    .replace(/[{}]/g, '')
-    .replace(/\\\\/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-export function parseTexOutline(source: string): OutlineItem[] {
-  if (!source) return [];
-  const lines = source.split('\n');
-  const items: OutlineItem[] = [];
-
-  for (let i = 0; i < lines.length; i++) {
-    const rawLine = lines[i];
-    const line = rawLine.trim();
-    if (line.startsWith('%')) continue;
-
-    // 1. \title{...}
-    const titleMatch = line.match(/\\title\*?\{([^}]+)\}/);
-    if (titleMatch) {
-      items.push({
-        id: `outline-title-${i}`,
-        title: cleanTexText(titleMatch[1]),
-        level: 1,
-        type: 'section',
-        line: i + 1,
-      });
-      continue;
-    }
-
-    // 2. \part, \chapter, \section
-    const secMatch = line.match(/\\(part|chapter|section)\*?\{([^}]+)\}/);
-    if (secMatch) {
-      items.push({
-        id: `outline-sec-${i}`,
-        title: cleanTexText(secMatch[2]),
-        level: 1,
-        type: 'section',
-        line: i + 1,
-      });
-      continue;
-    }
-
-    // 3. \textbf{PHẦN ...}
-    const phanMatch = line.match(/\\textbf\{(PHẦN\s+[^\}]+)\}/i);
-    if (phanMatch) {
-      items.push({
-        id: `outline-phan-${i}`,
-        title: cleanTexText(phanMatch[1]),
-        level: 1,
-        type: 'part_vn',
-        line: i + 1,
-      });
-      continue;
-    }
-
-    // 4. \subsection
-    const subsecMatch = line.match(/\\subsection\*?\{([^}]+)\}/);
-    if (subsecMatch) {
-      items.push({
-        id: `outline-subsec-${i}`,
-        title: cleanTexText(subsecMatch[1]),
-        level: 2,
-        type: 'subsection',
-        line: i + 1,
-      });
-      continue;
-    }
-
-    // 5. \textbf{Câu ...} or standalone Câu \d+
-    const cauMatch = line.match(/\\textbf\{(Câu\s+\d+[^}]*)\}/i) || line.match(/^(Câu\s+\d+[\.:]?\s*[^\\]*)/i);
-    if (cauMatch) {
-      const qText = cleanTexText(cauMatch[1]);
-      items.push({
-        id: `outline-cau-${i}`,
-        title: qText.slice(0, 45) + (qText.length > 45 ? '…' : ''),
-        level: 2,
-        type: 'question',
-        line: i + 1,
-      });
-      continue;
-    }
-
-    // 6. \subsubsection or \paragraph
-    const subsubMatch = line.match(/\\(subsubsection|paragraph)\*?\{([^}]+)\}/);
-    if (subsubMatch) {
-      items.push({
-        id: `outline-subsub-${i}`,
-        title: cleanTexText(subsubMatch[2]),
-        level: 3,
-        type: 'subsub',
-        line: i + 1,
-      });
-      continue;
-    }
-
-    // 7. \item (with label or descriptive text)
-    const itemMatch = line.match(/^\\item(?:\[([^\]]+)\])?\s*(.*)/);
-    if (itemMatch) {
-      const label = itemMatch[1];
-      const text = itemMatch[2];
-      if (label) {
-        items.push({
-          id: `outline-item-${i}`,
-          title: cleanTexText(label + (text ? ': ' + text.slice(0, 30) : '')),
-          level: 3,
-          type: 'item',
-          line: i + 1,
-        });
-      } else if (text && text.length > 4 && !text.startsWith('\\begin')) {
-        const itemClean = cleanTexText(text);
-        if (itemClean) {
-          items.push({
-            id: `outline-item-${i}`,
-            title: itemClean.slice(0, 38) + (itemClean.length > 38 ? '…' : ''),
-            level: 3,
-            type: 'item',
-            line: i + 1,
-          });
-        }
-      }
-    }
-  }
-
-  return items;
-}
+import { parseTexOutline, type OutlineItem } from '@/components/latex/outlineParser';
 
 export interface FileTreeExplorerProps {
   files: StudioFile[];
@@ -180,11 +43,13 @@ export interface FileTreeExplorerProps {
   onSelectFile: (fileName: string) => void;
   onCreateFile: (fileName: string) => void;
   onDeleteFile: (fileName: string) => void;
+  onDeleteMultipleFiles?: (fileNames: string[]) => void;
   onRenameFile: (oldName: string, newName: string) => void;
   onSetMainDocument?: (fileName: string) => void;
   onUploadAsset: (file: File) => void;
   onOpenAddFilesModal?: (tab: 'new_file' | 'upload' | 'from_project' | 'from_url') => void;
   onJumpToLine?: (line: number) => void;
+  onMoveFile?: (fileName: string, targetFolder: string) => void;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
 }
@@ -197,11 +62,13 @@ export default function FileTreeExplorer({
   onSelectFile,
   onCreateFile,
   onDeleteFile,
+  onDeleteMultipleFiles,
   onRenameFile,
   onSetMainDocument,
   onUploadAsset,
   onOpenAddFilesModal,
   onJumpToLine,
+  onMoveFile,
   isCollapsed,
   onToggleCollapse,
 }: FileTreeExplorerProps) {
@@ -213,6 +80,8 @@ export default function FileTreeExplorer({
   const [renameInput, setRenameInput] = useState('');
   const [activeMenuFileName, setActiveMenuFileName] = useState<string | null>(null);
   const [fileToDelete, setFileToDelete] = useState<string | null>(null);
+  const [selectedFileNames, setSelectedFileNames] = useState<string[]>([]);
+  const [draggedFileName, setDraggedFileName] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const menuContainerRef = useRef<HTMLDivElement>(null);
 
@@ -244,6 +113,50 @@ export default function FileTreeExplorer({
       saveAs(blob, file.name);
     } catch (err) {
       console.error('Lỗi khi tải tệp:', err);
+    }
+  };
+
+  const handleBatchDownloadZip = async () => {
+    if (selectedFileNames.length === 0) return;
+    try {
+      const zip = new JSZip();
+      for (const name of selectedFileNames) {
+        const file = files.find((f) => f.name === name);
+        if (file) {
+          const content = file.name === activeFileName ? (source || file.content || '') : (file.content || '');
+          zip.file(file.name, content);
+        }
+      }
+      const blob = await zip.generateAsync({ type: 'blob' });
+      saveAs(blob, `selected_files_${selectedFileNames.length}.zip`);
+    } catch (err) {
+      console.error('Lỗi nén tệp đã chọn:', err);
+    }
+  };
+
+  const handleBatchDelete = () => {
+    if (selectedFileNames.length === 0) return;
+    if (confirm(`Bạn có chắc chắn muốn xóa ${selectedFileNames.length} tệp đã chọn?`)) {
+      if (onDeleteMultipleFiles) {
+        onDeleteMultipleFiles(selectedFileNames);
+      } else {
+        selectedFileNames.forEach((name) => onDeleteFile(name));
+      }
+      setSelectedFileNames([]);
+    }
+  };
+
+  const handleFileClick = (fileName: string, e: React.MouseEvent) => {
+    if (e.shiftKey || e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      setSelectedFileNames((prev) =>
+        prev.includes(fileName) ? prev.filter((n) => n !== fileName) : [...prev, fileName]
+      );
+    } else {
+      if (selectedFileNames.length > 0) {
+        setSelectedFileNames([]);
+      }
+      onSelectFile(fileName);
     }
   };
 
@@ -315,14 +228,20 @@ export default function FileTreeExplorer({
   };
 
   const getOutlineIcon = (item: OutlineItem) => {
-    if (item.type === 'part_vn' || item.type === 'section') {
+    if (item.type === 'part' || item.type === 'chapter' || item.type === 'section') {
       return <Bookmark className="w-3 h-3 text-cyan-500 shrink-0" />;
     }
-    if (item.type === 'question') {
+    if (item.type === 'exercise' || item.type === 'theorem') {
       return <CheckSquare className="w-3 h-3 text-emerald-500 shrink-0" />;
     }
-    if (item.type === 'subsection') {
+    if (item.type === 'subsection' || item.type === 'subsubsection') {
       return <ChevronRight className="w-3 h-3 text-indigo-400 shrink-0" />;
+    }
+    if (item.type === 'figure' || item.type === 'table') {
+      return <ImageIcon className="w-3 h-3 text-amber-500 shrink-0" />;
+    }
+    if (item.type === 'equation') {
+      return <Hash className="w-3 h-3 text-purple-500 shrink-0" />;
     }
     return <Dot className="w-4 h-4 text-slate-400 -mx-1 shrink-0" />;
   };
@@ -538,6 +457,41 @@ export default function FileTreeExplorer({
         {/* File Tree List */}
         {isTreeExpanded && (
           <div className="flex-1 min-h-0 overflow-y-auto p-1.5 space-y-0.5 scrollbar-thin">
+            {/* Batch Selection Bar */}
+            {selectedFileNames.length > 0 && (
+              <div className="p-2 rounded-lg bg-cyan-500/15 border border-cyan-500/30 mb-2 flex items-center justify-between text-xs">
+                <span className="font-semibold text-cyan-700 dark:text-cyan-300">
+                  Đã chọn {selectedFileNames.length} tệp
+                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={handleBatchDownloadZip}
+                    className="p-1 rounded bg-cyan-600 hover:bg-cyan-700 text-white transition cursor-pointer"
+                    title="Tải về file ZIP"
+                  >
+                    <Archive className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleBatchDelete}
+                    className="p-1 rounded bg-rose-600 hover:bg-rose-700 text-white transition cursor-pointer"
+                    title="Xóa các tệp đã chọn"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedFileNames([])}
+                    className="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 transition cursor-pointer"
+                    title="Bỏ chọn"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* New File Inline Form */}
             {isAddingFile && (
               <form
@@ -611,6 +565,7 @@ export default function FileTreeExplorer({
             {/* Files */}
             {files.map((file) => {
               const isActive = file.name === activeFileName;
+              const isSelected = selectedFileNames.includes(file.name);
               const isMain = file.name === (mainDocument || 'main.tex');
               const isTexFile = file.name.toLowerCase().endsWith('.tex');
               const isEditing = editingFileName === file.name;
@@ -618,13 +573,21 @@ export default function FileTreeExplorer({
               return (
                 <div
                   key={file.name}
+                  draggable={!isEditing}
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData('text/plain', file.name);
+                    setDraggedFileName(file.name);
+                  }}
+                  onDragEnd={() => setDraggedFileName(null)}
                   className={`group flex items-center justify-between px-2 py-1 rounded-lg cursor-pointer transition ${
-                    isActive
+                    isSelected
+                      ? 'bg-cyan-500/25 text-cyan-800 dark:text-cyan-200 font-semibold border border-cyan-500/40 shadow-xs'
+                      : isActive
                       ? 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 font-semibold border border-cyan-500/25 shadow-2xs'
                       : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/80 hover:text-slate-900 dark:hover:text-slate-200'
                   }`}
-                  onClick={() => {
-                    if (!isEditing) onSelectFile(file.name);
+                  onClick={(e) => {
+                    if (!isEditing) handleFileClick(file.name, e);
                   }}
                 >
                   <div className="flex items-center gap-1.5 min-w-0 flex-1">

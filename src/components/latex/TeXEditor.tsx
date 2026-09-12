@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import {
   EditorView,
   keymap,
@@ -36,7 +36,12 @@ import {
   defaultHighlightStyle,
   bracketMatching,
   StreamLanguage,
+  foldGutter,
+  codeFolding,
+  foldKeymap,
+  foldService,
 } from '@codemirror/language';
+import { linter, type Diagnostic } from '@codemirror/lint';
 import { stex } from '@codemirror/legacy-modes/mode/stex';
 import { oneDark } from '@codemirror/theme-one-dark';
 import {
@@ -51,6 +56,8 @@ import { useTheme } from '@/context/ThemeContext';
 import type { ParsedTeXIssue } from '@/components/latex/ErrorConsole';
 import type { ProjectSettings } from '@/components/latex/projectSettings';
 import { getEditorThemeExtension } from '@/components/latex/editorThemes';
+import type { StudioFile, StudioImage } from '@/components/latex/StudioTools';
+import { createLatexCompletionSource } from '@/components/latex/latexCompletions';
 
 export interface TeXEditorProps {
   source: string;
@@ -65,6 +72,8 @@ export interface TeXEditorProps {
   onMount?: (view: EditorView) => void;
   settings?: ProjectSettings;
   readOnly?: boolean;
+  projectFiles?: StudioFile[];
+  projectImages?: StudioImage[];
 }
 
 export const insertTextAtCursor = (
@@ -153,15 +162,118 @@ const latexSnippets = [
   },
 ];
 
-const latexCompletionSource = (context: CompletionContext): CompletionResult | null => {
-  const word = context.matchBefore(/\\[a-zA-Z]*/);
-  if (!word) return null;
-  if (word.from === word.to && !context.explicit) return null;
-  return {
-    from: word.from,
-    options: latexSnippets,
-  };
-};
+export const latexFoldService = foldService.of((state, lineStart, lineEnd) => {
+  const line = state.doc.lineAt(lineStart);
+  const text = line.text;
+
+  // Fold \begin{env} ... \end{env}
+  const beginMatch = text.match(/\\begin\{([^}]+)\}/);
+  if (beginMatch) {
+    const env = beginMatch[1];
+    const endTag = `\\end{${env}}`;
+    for (let l = line.number + 1; l <= state.doc.lines; l++) {
+      const nextLine = state.doc.line(l);
+      if (nextLine.text.includes(endTag)) {
+        return { from: line.to, to: nextLine.to };
+      }
+    }
+  }
+
+  // Fold \section{...} to next \section, \chapter, or end
+  const secMatch = text.match(/\\(section|chapter|part)\*?\{/);
+  if (secMatch) {
+    for (let l = line.number + 1; l <= state.doc.lines; l++) {
+      const nextLine = state.doc.line(l);
+      if (/\\(section|chapter|part)\*?\{/.test(nextLine.text)) {
+        return { from: line.to, to: state.doc.line(l - 1).to };
+      }
+    }
+    return { from: line.to, to: state.doc.length };
+  }
+
+  return null;
+});
+
+export const latexLinter = linter((view) => {
+  const diagnostics: Diagnostic[] = [];
+  const doc = view.state.doc;
+  const text = doc.toString();
+
+  // 1. Check brace matching
+  const stack: { char: string; pos: number }[] = [];
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (c === '\\') {
+      i++; // skip escaped char
+      continue;
+    }
+    if (c === '{') {
+      stack.push({ char: '{', pos: i });
+    } else if (c === '}') {
+      if (stack.length === 0) {
+        diagnostics.push({
+          from: i,
+          to: i + 1,
+          severity: 'error',
+          message: 'Dấu ngoặc nhọn đóng "}" thừa không có ngoặc mở tương ứng',
+        });
+      } else {
+        stack.pop();
+      }
+    }
+  }
+  for (const unclosed of stack) {
+    diagnostics.push({
+      from: unclosed.pos,
+      to: unclosed.pos + 1,
+      severity: 'warning',
+      message: 'Dấu ngoặc nhọn mở "{" chưa được đóng',
+    });
+  }
+
+  // 2. Check \begin{env} without \end{env}
+  const envStack: { env: string; pos: number; line: number }[] = [];
+  const envRegex = /\\(begin|end)\{([^}]+)\}/g;
+  let m;
+  while ((m = envRegex.exec(text)) !== null) {
+    const type = m[1];
+    const env = m[2];
+    const pos = m.index;
+    const lineNum = doc.lineAt(pos).number;
+
+    if (type === 'begin') {
+      envStack.push({ env, pos, line: lineNum });
+    } else {
+      const last = envStack.pop();
+      if (!last) {
+        diagnostics.push({
+          from: pos,
+          to: pos + m[0].length,
+          severity: 'error',
+          message: `Thừa thẻ đóng \\end{${env}} không có \\begin tương ứng`,
+        });
+      } else if (last.env !== env) {
+        diagnostics.push({
+          from: pos,
+          to: pos + m[0].length,
+          severity: 'error',
+          message: `Sai cặp môi trường: \\begin{${last.env}} (dòng ${last.line}) đóng bằng \\end{${env}}`,
+        });
+      }
+    }
+  }
+
+  for (const unclosed of envStack) {
+    diagnostics.push({
+      from: unclosed.pos,
+      to: unclosed.pos + `\\begin{${unclosed.env}}`.length,
+      severity: 'warning',
+      message: `Môi trường \\begin{${unclosed.env}} chưa có \\end{${unclosed.env}} tương ứng`,
+    });
+  }
+
+  return diagnostics;
+});
 
 const setErrorEffect = StateEffect.define<ParsedTeXIssue[]>();
 
@@ -209,10 +321,26 @@ export default function TeXEditor({
   onMount,
   settings,
   readOnly = false,
+  projectFiles = [],
+  projectImages = [],
 }: TeXEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const { resolvedTheme } = useTheme();
+
+  const projectFilesRef = useRef(projectFiles);
+  projectFilesRef.current = projectFiles;
+  const projectImagesRef = useRef(projectImages);
+  projectImagesRef.current = projectImages;
+
+  const latexCompletion = useMemo(
+    () =>
+      createLatexCompletionSource(
+        () => projectFilesRef.current,
+        () => projectImagesRef.current
+      ),
+    []
+  );
 
   const fontSizeCompartment = useRef(new Compartment());
   const themeCompartment = useRef(new Compartment());
@@ -286,6 +414,7 @@ export default function TeXEditor({
           return true;
         },
       },
+      ...foldKeymap,
       ...defaultKeymap,
       ...historyKeymap,
       ...searchKeymap,
@@ -309,6 +438,10 @@ export default function TeXEditor({
       extensions: [
         lineNumbers(),
         highlightActiveLineGutter(),
+        foldGutter(),
+        codeFolding(),
+        latexFoldService,
+        latexLinter,
         history(),
         drawSelection(),
         dropCursor(),
@@ -321,7 +454,7 @@ export default function TeXEditor({
         ),
         autocompleteCompartment.current.of(
           settings?.autoComplete !== false
-            ? autocompletion({ override: [latexCompletionSource] })
+            ? autocompletion({ override: [latexCompletion] })
             : []
         ),
         vimCompartment.current.of(
@@ -398,11 +531,11 @@ export default function TeXEditor({
     view.dispatch({
       effects: autocompleteCompartment.current.reconfigure(
         settings?.autoComplete !== false
-          ? autocompletion({ override: [latexCompletionSource] })
+          ? autocompletion({ override: [latexCompletion] })
           : []
       ),
     });
-  }, [settings?.autoComplete]);
+  }, [settings?.autoComplete, latexCompletion]);
 
   // Sync Vim keybindings
   useEffect(() => {

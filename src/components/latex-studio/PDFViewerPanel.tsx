@@ -1,6 +1,7 @@
 'use client';
 import React from 'react';
 import { useLaTeXStore } from '@/store/useLaTeXStore';
+import PDFViewerCore from './PDFViewerCore';
 import { ChevronDown, Download, FileWarning, ArrowUp, ArrowDown, ZoomIn, ZoomOut, Maximize, FileCode2 } from 'lucide-react';
 
 export default function PDFViewerPanel() {
@@ -87,13 +88,7 @@ export default function PDFViewerPanel() {
 
       {/* 2. PDF CANVAS AREA */}
       <div className="flex-1 overflow-auto bg-[#525659] relative flex justify-center p-4">
-        {/* Placeholder for PDF Render */}
-        <div className="bg-white w-[600px] h-[800px] shadow-lg flex flex-col items-center justify-center relative">
-          <p className="text-slate-400 font-serif">PDF Document Preview</p>
-          
-          {/* Fake SyncTeX Highlight Overlay */}
-          <div className="absolute top-[200px] left-[50px] w-[300px] h-[20px] bg-yellow-400/40 pointer-events-none hidden" />
-        </div>
+        <PDFViewerCore url={pdfUrl} scale={1.0} />
       </div>
 
     </div>

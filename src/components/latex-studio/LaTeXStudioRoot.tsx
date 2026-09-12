@@ -5,20 +5,19 @@ import { useLaTeXStore } from '@/store/useLaTeXStore';
 import EditorPanel from './EditorPanel';
 import PDFViewerPanel from './PDFViewerPanel';
 import { 
-  FileText, Upload, FolderPlus, FilePlus, Trash2, Settings, HelpCircle, 
-  ChevronDown, Layout, History, FileUp, Search, MessageSquarePlus, Edit3, MoreVertical, Play
+  FileText, Upload, FolderPlus, FilePlus, Settings, HelpCircle, 
+  ChevronDown, Layout, History, FileUp, Search, MessageSquarePlus, Edit3, MoreVertical
 } from 'lucide-react';
 
 export default function LaTeXStudioRoot() {
   const { files, activeFileId, setActiveFile } = useLaTeXStore();
   const [leftCollapsed, setLeftCollapsed] = useState(false);
-  const [rightCollapsed, setRightCollapsed] = useState(false);
 
   return (
     <div className="w-full h-screen flex flex-col bg-[#142333] text-slate-200 overflow-hidden font-sans text-[13px]">
       
       {/* 1. TOP NAVBAR (EXACT OVERLEAF MATCH) */}
-      <header className="h-[40px] border-b border-[#2d2d2d] flex items-center justify-between px-3 shrink-0 bg-[#1a1a1b]">
+      <header className="h-[40px] border-b border-[#2d2d2d] flex items-center justify-between px-3 shrink-0 bg-[#1a1a1b] z-50">
         <div className="flex items-center gap-1">
           {/* Overleaf Leaf Logo */}
           <div className="w-8 h-8 flex items-center justify-center mr-2 cursor-pointer hover:bg-[#2d2d2d] rounded">
@@ -27,14 +26,14 @@ export default function LaTeXStudioRoot() {
             </svg>
           </div>
           
-          <div className="flex items-center text-[#b3b3b3] text-[13px]">
+          <div className="flex items-center text-[#b3b3b3] text-[13px] font-normal">
             <button className="hover:bg-[#2d2d2d] hover:text-white px-2 py-1 rounded transition-colors">File</button>
             <button className="hover:bg-[#2d2d2d] hover:text-white px-2 py-1 rounded transition-colors">Edit</button>
             <button className="hover:bg-[#2d2d2d] hover:text-white px-2 py-1 rounded transition-colors">Insert</button>
             <button className="hover:bg-[#2d2d2d] hover:text-white px-2 py-1 rounded transition-colors">View</button>
             <button className="hover:bg-[#2d2d2d] hover:text-white px-2 py-1 rounded transition-colors">Format</button>
             <button className="hover:bg-[#2d2d2d] hover:text-white px-2 py-1 rounded transition-colors">Help</button>
-            <button className="ml-2 bg-[#202e3b] text-[#6eb6ff] hover:bg-[#2a3c4d] px-3 py-1 rounded-full font-semibold transition-colors">
+            <button className="ml-2 bg-[#202e3b] text-[#6eb6ff] hover:bg-[#2a3c4d] px-3 py-1.5 rounded-full font-semibold transition-colors">
               Upgrade
             </button>
           </div>
@@ -64,16 +63,16 @@ export default function LaTeXStudioRoot() {
       </header>
 
       {/* 2. WORKSPACE AREA */}
-      <div className="flex-1 min-h-0 w-full flex">
+      <div className="flex-1 min-h-0 w-full flex relative z-10">
         
         {/* LEFTMOST ICON BAR */}
-        <div className="w-[40px] bg-[#1a1a1b] border-r border-[#2d2d2d] flex flex-col items-center py-2 shrink-0 z-20">
-          <div className="flex flex-col gap-2 w-full items-center">
-            <button className="p-1.5 text-[#128a42] bg-[#2d2d2d] rounded" title="Files"><FileText className="w-[18px] h-[18px]" /></button>
+        <div className="w-[40px] bg-[#1a1a1b] border-r border-[#1a1a1b] flex flex-col items-center py-2 shrink-0 z-30">
+          <div className="flex flex-col gap-3 w-full items-center">
+            <button className="p-1.5 text-[#128a42] bg-[#2d2d2d] rounded shadow-sm" title="Files"><FileText className="w-[18px] h-[18px]" /></button>
             <button className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-[#2d2d2d]" title="Search"><Search className="w-[18px] h-[18px]" /></button>
             <button className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-[#2d2d2d]" title="Review"><MessageSquarePlus className="w-[18px] h-[18px]" /></button>
           </div>
-          <div className="mt-auto flex flex-col gap-2 w-full items-center mb-1">
+          <div className="mt-auto flex flex-col gap-3 w-full items-center mb-1">
             <button className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-[#2d2d2d]" title="Help"><HelpCircle className="w-[18px] h-[18px]" /></button>
             <button className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-[#2d2d2d]" title="Settings"><Settings className="w-[18px] h-[18px]" /></button>
           </div>
@@ -82,21 +81,21 @@ export default function LaTeXStudioRoot() {
         <PanelGroup orientation="horizontal">
           
           {/* COLUMN 1: SIDEBAR (FILE TREE + OUTLINE) */}
-          <Panel defaultSize={15} minSize={10} className="bg-[#1a1a1b] flex flex-col z-30">
+          <Panel defaultSize={15} minSize={10} className="bg-[#1a1a1b] flex flex-col z-20">
             <PanelGroup orientation="vertical">
               
               {/* FILE TREE */}
               <Panel defaultSize={60} minSize={20} className="flex flex-col">
                 <div className="px-3 py-2 flex items-center justify-between group">
-                  <div className="flex items-center gap-1 cursor-pointer font-semibold text-slate-300">
-                    <span className="text-[10px]">▼</span>
+                  <div className="flex items-center gap-1.5 cursor-pointer font-semibold text-slate-300 hover:text-white">
+                    <span className="text-[9px]">v</span>
                     <span>File tree</span>
                   </div>
                   <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button className="p-1 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded" title="New File"><FilePlus className="w-[14px] h-[14px]" /></button>
-                    <button className="p-1 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded" title="New Folder"><FolderPlus className="w-[14px] h-[14px]" /></button>
-                    <button className="p-1 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded" title="Upload"><FileUp className="w-[14px] h-[14px]" /></button>
-                    <button className="p-1 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded" title="Rename"><Edit3 className="w-[14px] h-[14px]" /></button>
+                    <button className="p-1 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded"><FilePlus className="w-[14px] h-[14px]" /></button>
+                    <button className="p-1 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded"><FolderPlus className="w-[14px] h-[14px]" /></button>
+                    <button className="p-1 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded"><FileUp className="w-[14px] h-[14px]" /></button>
+                    <button className="p-1 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded"><Edit3 className="w-[14px] h-[14px]" /></button>
                   </div>
                 </div>
                 <div className="flex-1 overflow-y-auto pb-2 custom-scrollbar">
@@ -124,22 +123,23 @@ export default function LaTeXStudioRoot() {
               </Panel>
 
               {/* HORIZONTAL RESIZER inside Sidebar */}
-              <PanelResizeHandle className="h-1.5 bg-[#1a1a1b] hover:bg-[#3d3d3d] transition-colors cursor-row-resize flex items-center justify-center">
-                <div className="flex gap-[2px]">
-                  <div className="w-[2px] h-[2px] rounded-full bg-slate-600" />
-                  <div className="w-[2px] h-[2px] rounded-full bg-slate-600" />
-                  <div className="w-[2px] h-[2px] rounded-full bg-slate-600" />
-                  <div className="w-[2px] h-[2px] rounded-full bg-slate-600" />
+              <PanelResizeHandle className="h-[5px] bg-transparent hover:bg-slate-700/20 transition-colors cursor-row-resize flex flex-col items-center justify-center relative">
+                <div className="w-full h-[1px] bg-[#2d2d2d]" />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex gap-[2px]">
+                  <div className="w-[2px] h-[2px] rounded-full bg-slate-500" />
+                  <div className="w-[2px] h-[2px] rounded-full bg-slate-500" />
+                  <div className="w-[2px] h-[2px] rounded-full bg-slate-500" />
+                  <div className="w-[2px] h-[2px] rounded-full bg-slate-500" />
                 </div>
               </PanelResizeHandle>
 
               {/* OUTLINE */}
               <Panel defaultSize={40} minSize={10} className="flex flex-col bg-[#1a1a1b]">
-                <div className="px-3 py-2 flex items-center gap-1 cursor-pointer font-semibold text-slate-300">
-                  <span className="text-[10px]">▼</span>
+                <div className="px-3 py-2 flex items-center gap-1.5 cursor-pointer font-semibold text-slate-300 hover:text-white">
+                  <span className="text-[9px]">v</span>
                   <span>File outline</span>
                 </div>
-                <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center justify-center text-center text-slate-400 text-[12px]">
+                <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center justify-center text-center text-slate-400 text-[12px] custom-scrollbar">
                   <p>We can't find any sections or subsections in this file.</p>
                   <a href="#" className="text-blue-400 hover:underline mt-1">Find out more about the file outline</a>
                 </div>
@@ -148,12 +148,30 @@ export default function LaTeXStudioRoot() {
             </PanelGroup>
           </Panel>
 
-          {/* VERTICAL RESIZER (Sidebar | Editor) with Collapsible Arrow */}
-          <PanelResizeHandle className="w-1.5 bg-[#1a1a1b] border-l border-[#2d2d2d] hover:bg-[#3d3d3d] transition-colors cursor-col-resize z-40 flex items-center justify-center relative">
-            <div className="absolute top-1/2 -translate-y-1/2 flex flex-col items-center justify-center -translate-x-1/2">
-              <div className="w-[14px] h-[24px] bg-[#2a2b2c] rounded-[3px] flex items-center justify-center cursor-pointer border border-[#1a1a1b] hover:bg-[#3d3d3d] z-50 text-slate-300 shadow-sm">
+          {/* VERTICAL RESIZER 1 (Sidebar | Editor) */}
+          <PanelResizeHandle className="w-[6px] hover:bg-slate-700/20 transition-colors cursor-col-resize z-40 relative flex justify-center group bg-[#142333]">
+            {/* The actual divider line */}
+            <div className="w-[1px] h-full bg-[#1a1a1b]" />
+            
+            {/* Middle 4-dot grip */}
+            <div className="absolute top-[45%] flex flex-col gap-[2px]">
+              <div className="w-[2px] h-[2px] rounded-full bg-slate-500" />
+              <div className="w-[2px] h-[2px] rounded-full bg-slate-500" />
+              <div className="w-[2px] h-[2px] rounded-full bg-slate-500" />
+              <div className="w-[2px] h-[2px] rounded-full bg-slate-500" />
+            </div>
+
+            {/* Collapse Tab (sticking right) */}
+            <div className="absolute bottom-[20%] right-[-12px] w-[12px] h-[36px] bg-[#3a3f44] hover:bg-[#525960] rounded-r-[4px] flex items-center justify-center cursor-pointer text-slate-200 border border-l-0 border-[#1a1a1b] shadow-sm">
                  <span className="text-[10px] font-bold">{'<'}</span>
-              </div>
+            </div>
+
+            {/* Bottom 4-dot grip */}
+            <div className="absolute bottom-[10%] flex flex-col gap-[2px]">
+              <div className="w-[2px] h-[2px] rounded-full bg-slate-500" />
+              <div className="w-[2px] h-[2px] rounded-full bg-slate-500" />
+              <div className="w-[2px] h-[2px] rounded-full bg-slate-500" />
+              <div className="w-[2px] h-[2px] rounded-full bg-slate-500" />
             </div>
           </PanelResizeHandle>
 
@@ -162,47 +180,49 @@ export default function LaTeXStudioRoot() {
             <PanelGroup orientation="horizontal">
               
               {/* COLUMN 2: EDITOR */}
-              <Panel defaultSize={50} minSize={10} className="bg-[#142333] flex flex-col z-10 shadow-[0_0_15px_rgba(0,0,0,0.2)]">
+              <Panel defaultSize={50} minSize={10} className="bg-[#142333] flex flex-col z-10 shadow-none">
                  <EditorPanel />
               </Panel>
 
-              {/* VERTICAL RESIZER (Editor | PDF) with SyncTeX Arrows! */}
-              <PanelResizeHandle className="w-[5px] bg-[#2d3135] hover:bg-[#4d5155] transition-colors cursor-col-resize z-40 relative flex flex-col items-center">
-                
-                {/* SyncTeX Pill (sticking left, near top) */}
-                <div className="absolute top-[10%] right-full w-[24px] py-1 bg-[#1e252b] rounded-l-[16px] flex flex-col items-center justify-center cursor-pointer shadow-md text-white border-y border-l border-[#1a2026]">
-                     <div className="hover:bg-[#36424d] w-full flex justify-center py-1 rounded-tl-[16px]" title="Go to PDF location">
-                        <span className="text-[14px] leading-none font-bold">{'→'}</span>
+              {/* VERTICAL RESIZER 2 (Editor | PDF) */}
+              <PanelResizeHandle className="w-[6px] hover:bg-slate-700/20 transition-colors cursor-col-resize z-40 relative flex justify-center group bg-[#142333]">
+                {/* The actual divider line */}
+                <div className="w-[1px] h-full bg-[#1a1a1b]" />
+
+                {/* SyncTeX Pill (sticking left) */}
+                <div className="absolute top-[10%] left-[-16px] w-[16px] py-1 bg-[#2a2b2c] rounded-l-[4px] flex flex-col items-center justify-center cursor-pointer shadow-md text-slate-300 border border-r-0 border-[#1a1a1b]">
+                     <div className="hover:text-white w-full flex justify-center py-1" title="Go to PDF location">
+                        <span className="text-[12px] leading-none font-bold">{'→'}</span>
                      </div>
-                     <div className="hover:bg-[#36424d] w-full flex justify-center py-1 rounded-bl-[16px]" title="Go to Code location">
-                        <span className="text-[14px] leading-none font-bold">{'←'}</span>
+                     <div className="hover:text-white w-full flex justify-center py-1" title="Go to Code location">
+                        <span className="text-[12px] leading-none font-bold">{'←'}</span>
                      </div>
                 </div>
 
-                {/* 4-dot grip in middle */}
-                <div className="absolute top-1/2 -translate-y-1/2 flex flex-col gap-[2px]">
-                  <div className="w-[2px] h-[2px] rounded-full bg-slate-400 opacity-70" />
-                  <div className="w-[2px] h-[2px] rounded-full bg-slate-400 opacity-70" />
-                  <div className="w-[2px] h-[2px] rounded-full bg-slate-400 opacity-70" />
-                  <div className="w-[2px] h-[2px] rounded-full bg-slate-400 opacity-70" />
+                {/* Middle 4-dot grip */}
+                <div className="absolute top-[45%] flex flex-col gap-[2px]">
+                  <div className="w-[2px] h-[2px] rounded-full bg-slate-500" />
+                  <div className="w-[2px] h-[2px] rounded-full bg-slate-500" />
+                  <div className="w-[2px] h-[2px] rounded-full bg-slate-500" />
+                  <div className="w-[2px] h-[2px] rounded-full bg-slate-500" />
                 </div>
 
-                {/* Collapse PDF Tab (sticking right, lower down) */}
-                <div className="absolute bottom-[20%] left-full w-[10px] h-[36px] bg-[#5b646c] hover:bg-[#727d87] rounded-r-[3px] flex items-center justify-center cursor-pointer z-50 text-white shadow-sm border-y border-r border-[#2d3135]">
+                {/* Collapse Tab (sticking right) */}
+                <div className="absolute bottom-[20%] right-[-12px] w-[12px] h-[36px] bg-[#3a3f44] hover:bg-[#525960] rounded-r-[4px] flex items-center justify-center cursor-pointer text-slate-200 border border-l-0 border-[#1a1a1b] shadow-sm">
                      <span className="text-[10px] font-bold">{'>'}</span>
                 </div>
 
                 {/* Bottom 4-dot grip */}
                 <div className="absolute bottom-[10%] flex flex-col gap-[2px]">
-                  <div className="w-[2px] h-[2px] rounded-full bg-slate-400 opacity-70" />
-                  <div className="w-[2px] h-[2px] rounded-full bg-slate-400 opacity-70" />
-                  <div className="w-[2px] h-[2px] rounded-full bg-slate-400 opacity-70" />
-                  <div className="w-[2px] h-[2px] rounded-full bg-slate-400 opacity-70" />
+                  <div className="w-[2px] h-[2px] rounded-full bg-slate-500" />
+                  <div className="w-[2px] h-[2px] rounded-full bg-slate-500" />
+                  <div className="w-[2px] h-[2px] rounded-full bg-slate-500" />
+                  <div className="w-[2px] h-[2px] rounded-full bg-slate-500" />
                 </div>
               </PanelResizeHandle>
 
               {/* COLUMN 3: PDF VIEWER */}
-              <Panel defaultSize={50} minSize={10} className="bg-[#525659] flex flex-col relative z-10 shadow-[0_0_15px_rgba(0,0,0,0.2)] border-l border-[#1a1a1b]">
+              <Panel defaultSize={50} minSize={10} className="bg-[#525659] flex flex-col relative z-10 shadow-none">
                  <PDFViewerPanel />
               </Panel>
             </PanelGroup>

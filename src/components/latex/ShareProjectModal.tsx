@@ -16,6 +16,7 @@ import {
   Eye,
   Edit3,
 } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 export interface ProjectShareMember {
   email: string;
@@ -83,8 +84,17 @@ export default function ShareProjectModal({
   onClose,
   docId,
   docTitle,
-  currentUserEmail = 'ban@mathaio.edu.vn',
+  currentUserEmail: propUserEmail,
 }: ShareProjectModalProps) {
+  const { user } = useAuth();
+  const ownerEmail =
+    propUserEmail ||
+    user?.email ||
+    (typeof window !== 'undefined'
+      ? localStorage.getItem('user_email') || localStorage.getItem('auth_user_email')
+      : null) ||
+    'Tài khoản hiện tại';
+
   const [settings, setSettings] = useState<ProjectShareSettings>(() =>
     loadShareSettings(docId)
   );
@@ -126,7 +136,11 @@ export default function ShareProjectModal({
       return;
     }
 
-    if (cleanEmail === currentUserEmail.toLowerCase()) {
+    if (
+      ownerEmail &&
+      ownerEmail !== 'Tài khoản hiện tại' &&
+      cleanEmail === ownerEmail.toLowerCase()
+    ) {
       setEmailError('Bạn đã là chủ sở hữu của dự án này.');
       return;
     }
@@ -268,7 +282,7 @@ export default function ShareProjectModal({
                   </div>
                   <div className="truncate">
                     <p className="font-semibold text-slate-800 dark:text-slate-200 truncate">
-                      {currentUserEmail}
+                      {ownerEmail}
                     </p>
                     <p className="text-[10px] text-slate-400">Chủ sở hữu dự án</p>
                   </div>

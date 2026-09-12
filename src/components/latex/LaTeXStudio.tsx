@@ -2004,85 +2004,65 @@ export default function LaTeXStudio({
               </button>
 
               {isProjectMenuOpen && (
-                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 w-64 bg-white dark:bg-[#1e2124] border border-slate-200 dark:border-[#3e444b] rounded-xl shadow-2xl py-1.5 z-50 text-xs animate-in fade-in zoom-in-95 duration-100 select-none text-slate-700 dark:text-slate-200">
-                  <div className="px-3 py-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                    Tải về & Đóng gói
-                  </div>
+                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 w-52 py-1 bg-white dark:bg-slate-900 rounded-md shadow-lg border border-slate-200 dark:border-slate-800 text-sm text-slate-700 dark:text-slate-200 z-50 animate-in fade-in zoom-in-95 duration-100 select-none">
                   <button
                     type="button"
                     onClick={handleDownloadPDF}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-[#2a2e33] hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
+                    className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer select-none transition-colors"
                   >
-                    <Download className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-xs">Tải xuống PDF</div>
-                      <div className="text-[10px] text-slate-400">Tài liệu đã biên dịch</div>
-                    </div>
+                    Tải xuống PDF
                   </button>
 
                   <button
                     type="button"
                     onClick={handleDownloadZip}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-[#2a2e33] hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
+                    className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer select-none transition-colors"
                   >
-                    <FileArchive className="w-4 h-4 text-cyan-600 dark:text-cyan-400 shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-xs">Tải mã nguồn (.zip)</div>
-                      <div className="text-[10px] text-slate-400">Đóng gói toàn bộ tệp dự án</div>
-                    </div>
+                    Tải mã nguồn (.zip)
                   </button>
 
-                  <div className="my-1 border-t border-slate-100 dark:border-white/10" />
-
-                  <div className="px-3 py-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                    Xuất định dạng khác
-                  </div>
+                  <div className="border-t border-slate-200 dark:border-slate-800 my-1" />
 
                   <button
                     type="button"
                     onClick={() => handleExportFormat('docx')}
-                    className="w-full flex items-center gap-2.5 px-3 py-1.5 text-left hover:bg-slate-100 dark:hover:bg-[#2a2e33] hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
+                    className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer select-none transition-colors"
                   >
-                    <FileText className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
-                    <span className="font-medium text-xs">Xuất sang Word (.docx)</span>
+                    Xuất sang Word (.docx)
                   </button>
 
                   <button
                     type="button"
                     onClick={() => handleExportFormat('md')}
-                    className="w-full flex items-center gap-2.5 px-3 py-1.5 text-left hover:bg-slate-100 dark:hover:bg-[#2a2e33] hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
+                    className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer select-none transition-colors"
                   >
-                    <FileCode className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
-                    <span className="font-medium text-xs">Xuất sang Markdown (.md)</span>
+                    Xuất sang Markdown (.md)
                   </button>
 
                   <button
                     type="button"
                     onClick={() => handleExportFormat('html')}
-                    className="w-full flex items-center gap-2.5 px-3 py-1.5 text-left hover:bg-slate-100 dark:hover:bg-[#2a2e33] hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
+                    className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer select-none transition-colors"
                   >
-                    <Code2 className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400 shrink-0" />
-                    <span className="font-medium text-xs">Xuất sang HTML (.html)</span>
+                    Xuất sang HTML (.html)
                   </button>
 
-                  <div className="my-1 border-t border-slate-100 dark:border-white/10" />
+                  <div className="border-t border-slate-200 dark:border-slate-800 my-1" />
 
                   <button
                     type="button"
                     onClick={handleDuplicateProject}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-[#2a2e33] hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
+                    className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer select-none transition-colors"
                   >
-                    <Copy className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
-                    <span className="font-medium text-xs">Tạo bản sao (Make a copy)</span>
+                    Tạo bản sao
                   </button>
 
                   <button
                     type="button"
                     onClick={handleStartRename}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-[#2a2e33] hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
+                    className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer select-none transition-colors"
                   >
-                    <Edit2 className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
-                    <span className="font-medium text-xs">Đổi tên dự án</span>
+                    Đổi tên
                   </button>
                 </div>
               )}

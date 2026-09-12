@@ -10,6 +10,9 @@ export interface ProjectSettings {
   mainDocument: string;
   compiler: 'xelatex' | 'pdflatex' | 'lualatex';
   autoCompile: boolean;
+  draftMode?: boolean;
+  stopOnError?: boolean;
+  texLiveVersion?: string;
   // Appearance
   theme: 'light' | 'dark'; // Overall Theme
   overallTheme?: 'light' | 'dark';
@@ -30,6 +33,9 @@ export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
   mainDocument: 'main.tex',
   compiler: 'xelatex',
   autoCompile: false,
+  draftMode: false,
+  stopOnError: false,
+  texLiveVersion: '2024',
   theme: 'dark',
   overallTheme: 'dark',
   editorTheme: 'one-dark',

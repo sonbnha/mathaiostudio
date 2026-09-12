@@ -223,6 +223,8 @@ export default function LaTeXStudio({
   const workspaceRef = useRef<HTMLDivElement>(null);
   const pdfSectionRef = useRef<HTMLElement>(null);
   const [pdfWidth, setPdfWidth] = useState<number>(600);
+  const compileAbortControllerRef = useRef<AbortController | null>(null);
+  const compileRevisionRef = useRef<number>(0);
 
   // Search & Replace within Primary Sidebar
   const [searchQuery, setSearchQuery] = useState('');
@@ -689,6 +691,14 @@ export default function LaTeXStudio({
   // Compile LaTeX to PDF
   const compile = useCallback(
     async (sourceToCompile?: string) => {
+      // Abort previous in-flight compilation request
+      if (compileAbortControllerRef.current) {
+        compileAbortControllerRef.current.abort();
+      }
+      const controller = new AbortController();
+      compileAbortControllerRef.current = controller;
+      const currentRevision = ++compileRevisionRef.current;
+
       const currentActiveText = editorViewRef.current?.state?.doc?.toString() ?? source;
       const targetMain = projectSettings.mainDocument || 'main.tex';
 
@@ -742,17 +752,24 @@ export default function LaTeXStudio({
         const res = await fetch('/api/latex/compile', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
           body: JSON.stringify({
             source: mainContent,
             code: mainContent,
             compiler: engine,
             engine,
             mainDocument: mainFile?.name || targetMain,
+            draftMode: projectSettings.draftMode,
+            stopOnError: projectSettings.stopOnError,
             resources,
             files: filesSnapshot,
             projectId: currentDocId || docId || 'default',
           }),
         });
+
+        if (compileRevisionRef.current !== currentRevision) {
+          return;
+        }
 
         if (!res.ok) {
           let errData: any = {};
@@ -766,6 +783,8 @@ export default function LaTeXStudio({
         }
 
         const blob = await res.blob();
+        if (compileRevisionRef.current !== currentRevision) return;
+
         if (pdf) URL.revokeObjectURL(pdf);
         const url = URL.createObjectURL(blob);
         setPdf(url);
@@ -785,13 +804,30 @@ export default function LaTeXStudio({
           { at: Date.now(), source: mainContent, label: 'Biên dịch thành công' },
         ]);
       } catch (err: any) {
+        if (err?.name === 'AbortError' || controller.signal.aborted) {
+          return;
+        }
+        if (compileRevisionRef.current !== currentRevision) return;
         setStatus('error');
-        const rawLog = err.message || 'Lỗi không xác định khi biên dịch.';
+        const rawLog = err?.message || 'Lỗi không xác định khi biên dịch.';
         setErrorLog(rawLog);
         setOutputView('console');
       }
     },
-    [source, files, images, activeFileName, pdf, engine, projectSettings.mainDocument, currentDocId, docId, user?.email]
+    [
+      source,
+      files,
+      images,
+      activeFileName,
+      pdf,
+      engine,
+      projectSettings.mainDocument,
+      projectSettings.draftMode,
+      projectSettings.stopOnError,
+      currentDocId,
+      docId,
+      user?.email,
+    ]
   );
 
   // Auto-recompile immediately on project load or document switch (Client-side Navigation)
@@ -815,6 +851,15 @@ export default function LaTeXStudio({
 
     return () => clearTimeout(timer);
   }, [currentDocId, docId, isProjectLoaded, source, files, activeFileName, compile]);
+
+  // Clean up any pending compilation request on unmount
+  useEffect(() => {
+    return () => {
+      if (compileAbortControllerRef.current) {
+        compileAbortControllerRef.current.abort();
+      }
+    };
+  }, []);
 
   // Periodic Auto-Snapshot (every 5 minutes if content changed)
   const lastSnapshotSourceRef = useRef<string>(source);
@@ -3613,6 +3658,9 @@ export default function LaTeXStudio({
                   {pdfWidth >= 380 && (
                     <span className="text-[11px]">{status === 'compiling' ? 'Đang dịch…' : 'Recompile'}</span>
                   )}
+                  {projectSettings.draftMode && (
+                    <span className="text-[9px] font-semibold bg-emerald-900/60 text-emerald-200 px-1 py-0.2 rounded">Draft</span>
+                  )}
                 </button>
 
                 {/* Engine Dropdown */}
@@ -3647,32 +3695,40 @@ export default function LaTeXStudio({
               <button
                 type="button"
                 onClick={() => setOutputView(outputView === 'console' ? 'pdf' : 'console')}
-                className={`h-6 inline-flex items-center gap-1 px-2 rounded-sm text-[11px] font-medium transition cursor-pointer border shrink-0 ${
+                className={`h-6 inline-flex items-center gap-1.5 px-2 rounded-sm text-[11px] font-medium transition cursor-pointer border shrink-0 ${
                   errors.length > 0 || status === 'error'
                     ? 'bg-rose-500/15 border-rose-500/40 text-rose-600 dark:text-rose-300 hover:bg-rose-500/25'
+                    : warnings.length > 0
+                    ? 'bg-amber-500/15 border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/25'
                     : 'bg-emerald-500/15 border-emerald-500/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/25'
                 }`}
                 title={outputView === 'console' ? 'Quay lại xem PDF' : 'Mở bảng nhật ký & lỗi biên dịch'}
               >
                 {errors.length > 0 || status === 'error' ? (
                   <AlertCircle className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400 shrink-0" />
+                ) : warnings.length > 0 ? (
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400 shrink-0" />
                 ) : (
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 )}
                 {pdfWidth >= 400 && <span>Logs</span>}
-                <span
-                  className={`px-1 py-0.1 rounded-full text-[9px] font-bold ${
-                    errors.length > 0 || status === 'error'
-                      ? 'bg-rose-500 text-white'
-                      : 'bg-emerald-600 text-white'
-                  }`}
-                >
-                  {errors.length > 0
-                    ? (pdfWidth < 460 ? `${errors.length}` : `${errors.length} Errors`)
-                    : status === 'error'
-                    ? (pdfWidth < 460 ? '1' : '1 Error')
-                    : (pdfWidth < 460 ? '0' : '0 Errors')}
-                </span>
+                <div className="flex items-center gap-1">
+                  {(errors.length > 0 || status === 'error') && (
+                    <span className="px-1 py-0.1 rounded-full text-[9px] font-bold bg-rose-500 text-white">
+                      {errors.length > 0 ? errors.length : 1}
+                    </span>
+                  )}
+                  {warnings.length > 0 && (
+                    <span className="px-1 py-0.1 rounded-full text-[9px] font-bold bg-amber-500 text-slate-950 dark:text-slate-900">
+                      {warnings.length}
+                    </span>
+                  )}
+                  {errors.length === 0 && status !== 'error' && warnings.length === 0 && (
+                    <span className="px-1 py-0.1 rounded-full text-[9px] font-bold bg-emerald-600 text-white">
+                      0
+                    </span>
+                  )}
+                </div>
               </button>
 
               {outputView === 'console' && (
@@ -3843,7 +3899,15 @@ export default function LaTeXStudio({
             ) : (
               <ErrorConsole
                 log={errorLog}
-                onJumpToLine={(line) => setTargetLine(line)}
+                onJumpToLine={(line, file) => {
+                  if (file && file !== activeFileName && files.some((f) => f.name === file)) {
+                    handleSelectFile(file);
+                  }
+                  setTargetLine(line);
+                  if (layoutMode === 'pdf') {
+                    setLayoutMode('split');
+                  }
+                }}
                 onAIFix={handleAIFix}
                 fixBusy={fixBusy}
                 onClose={() => setOutputView('pdf')}

@@ -39,12 +39,17 @@ export async function POST(request: Request) {
       engine,
       compiler,
       mainDocument,
+      draftMode,
+      stopOnError,
+      haltOnError,
       resources,
       files,
     } = rawBody as any;
 
     const compilerEngine = compiler || engine || 'xelatex';
     const primaryMainDoc = mainDocument || 'main.tex';
+    const isDraft = Boolean(draftMode);
+    const isStopOnError = Boolean(stopOnError || haltOnError);
 
     let compileInput: CompileOptions | string;
 
@@ -52,6 +57,8 @@ export async function POST(request: Request) {
       compileInput = {
         compiler: compilerEngine,
         mainDocument: primaryMainDoc,
+        draftMode: isDraft,
+        stopOnError: isStopOnError,
         resources: resources as CompileResource[],
       };
     } else if (Array.isArray(files) && files.length > 0) {
@@ -63,6 +70,8 @@ export async function POST(request: Request) {
       compileInput = {
         compiler: compilerEngine,
         mainDocument: primaryMainDoc,
+        draftMode: isDraft,
+        stopOnError: isStopOnError,
         resources: resList,
       };
     } else {
@@ -76,6 +85,8 @@ export async function POST(request: Request) {
       compileInput = {
         compiler: compilerEngine,
         mainDocument: 'document.tex',
+        draftMode: isDraft,
+        stopOnError: isStopOnError,
         resources: [{ path: 'document.tex', content: singleSource, main: true }],
       };
     }

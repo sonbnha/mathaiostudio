@@ -284,6 +284,32 @@ export default function ProjectSettingsModal({
                     </select>
                   </div>
 
+                  {/* TeX Live Version */}
+                  <div className="pt-4 flex items-center justify-between gap-4">
+                    <div>
+                      <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                        Phiên bản TeX Live (TeX Live version)
+                      </div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        Môi trường gói TeX Live tiêu chuẩn cho quá trình render.
+                      </div>
+                    </div>
+                    <select
+                      aria-label="Chọn phiên bản TeX Live"
+                      value={settings.texLiveVersion || '2024'}
+                      onChange={(e) =>
+                        onUpdateSettings({
+                          texLiveVersion: e.target.value,
+                        })
+                      }
+                      className="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-slate-200 outline-none cursor-pointer hover:border-slate-300 dark:hover:border-slate-600 min-w-[140px]"
+                    >
+                      <option value="2024">TeX Live 2024 (Mới nhất)</option>
+                      <option value="2023">TeX Live 2023</option>
+                      <option value="2022">TeX Live 2022</option>
+                    </select>
+                  </div>
+
                   {/* Auto-compile */}
                   <div className="pt-4 flex items-center justify-between gap-4">
                     <div>
@@ -306,6 +332,60 @@ export default function ProjectSettingsModal({
                       <span
                         className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
                           settings.autoCompile ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Draft Mode */}
+                  <div className="pt-4 flex items-center justify-between gap-4">
+                    <div>
+                      <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                        Chế độ bản nháp (Draft mode)
+                      </div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        Tăng tốc độ biên dịch tối đa bằng cách thay thế hình ảnh bằng khung viền giữ chỗ.
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={Boolean(settings.draftMode)}
+                      onClick={() => onUpdateSettings({ draftMode: !settings.draftMode })}
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        settings.draftMode ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-700'
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                          settings.draftMode ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Stop on First Error */}
+                  <div className="pt-4 flex items-center justify-between gap-4">
+                    <div>
+                      <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                        Dừng ở lỗi đầu tiên (Stop on first error)
+                      </div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        Dừng ngay quá trình biên dịch khi phát hiện lỗi cú pháp TeX đầu tiên (halt on error).
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={Boolean(settings.stopOnError)}
+                      onClick={() => onUpdateSettings({ stopOnError: !settings.stopOnError })}
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        settings.stopOnError ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-700'
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                          settings.stopOnError ? 'translate-x-5' : 'translate-x-0'
                         }`}
                       />
                     </button>

@@ -147,7 +147,7 @@ export function parseTeXLog(
 
 export interface ErrorConsoleProps {
   log: string;
-  onJumpToLine: (line: number) => void;
+  onJumpToLine: (line: number, file?: string) => void;
   onAIFix: () => void;
   fixBusy: boolean;
   onClose?: () => void;
@@ -264,7 +264,7 @@ export default function ErrorConsole({
             errors.map((err) => (
               <div
                 key={err.id}
-                onClick={() => err.line && onJumpToLine(err.line)}
+                onClick={() => err.line && onJumpToLine(err.line, err.file)}
                 className={`p-3 rounded-xl border border-rose-300/80 dark:border-rose-900/80 bg-rose-50/70 dark:bg-rose-950/40 text-rose-900 dark:text-rose-200 transition ${
                   err.line ? 'cursor-pointer hover:border-rose-400 dark:hover:border-rose-700 hover:shadow-xs' : ''
                 }`}
@@ -311,7 +311,7 @@ export default function ErrorConsole({
             warnings.map((warn) => (
               <div
                 key={warn.id}
-                onClick={() => warn.line && onJumpToLine(warn.line)}
+                onClick={() => warn.line && onJumpToLine(warn.line, warn.file)}
                 className={`p-3 rounded-xl border border-amber-300/80 dark:border-amber-900/80 bg-amber-50/70 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 transition ${
                   warn.line ? 'cursor-pointer hover:border-amber-400 dark:hover:border-amber-700' : ''
                 }`}

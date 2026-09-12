@@ -12,6 +12,8 @@ export interface CompileResource {
 export interface CompileOptions {
   compiler?: 'xelatex' | 'pdflatex' | 'lualatex' | string;
   mainDocument?: string;
+  draftMode?: boolean;
+  stopOnError?: boolean;
   resources: CompileResource[];
 }
 
@@ -49,12 +51,17 @@ export async function compileLatex(
   if (process.env.LATEX_COMPILER_TOKEN) headers.Authorization = `Bearer ${process.env.LATEX_COMPILER_TOKEN}`;
 
   let compilerName = 'xelatex';
+  let stopOnError = false;
+  let draftMode = false;
   let resourcesPayload: Array<{ main?: boolean; path: string; content?: string; data?: string }> = [];
 
   if (typeof input === 'string') {
     resourcesPayload = [{ main: true, path: 'document.tex', content: input }];
   } else {
     compilerName = input.compiler?.toLowerCase() || 'xelatex';
+    stopOnError = Boolean(input.stopOnError);
+    draftMode = Boolean(input.draftMode);
+
     // Validate engine name
     if (!['xelatex', 'pdflatex', 'lualatex'].includes(compilerName)) {
       compilerName = 'xelatex';
@@ -66,11 +73,20 @@ export async function compileLatex(
 
       resourcesPayload = input.resources.map((r) => {
         const isMain = hasMain ? Boolean(r.main) : r.path === targetMain || r.path === 'document.tex';
+        let fileContent = r.content;
+
+        // Apply draft mode to main TeX document if enabled
+        if (draftMode && isMain && typeof fileContent === 'string') {
+          if (!fileContent.includes('PassOptionsToPackage{draft}{graphicx}')) {
+            fileContent = `\\PassOptionsToPackage{draft}{graphicx}\n${fileContent}`;
+          }
+        }
+
         const res: { main?: boolean; path: string; content?: string; data?: string } = {
           path: r.path,
         };
         if (isMain) res.main = true;
-        if (r.content !== undefined) res.content = r.content;
+        if (fileContent !== undefined) res.content = fileContent;
         if (r.data !== undefined) res.data = r.data;
         return res;
       });
@@ -98,7 +114,7 @@ export async function compileLatex(
         compiler: compilerName,
         options: {
           compiler: {
-            halt_on_error: false,
+            halt_on_error: stopOnError,
             force: false,
           },
           response: {

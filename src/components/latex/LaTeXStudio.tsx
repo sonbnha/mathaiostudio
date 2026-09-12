@@ -84,6 +84,8 @@ import IntegrationsModal from '@/components/latex/IntegrationsModal';
 import InsertDialogs, { type InsertDialogType } from '@/components/latex/InsertDialogs';
 import ProjectSearchPanel from '@/components/latex/ProjectSearchPanel';
 import { WordCountModal } from '@/components/latex/WordCountModal';
+import { createProjectSyncTeXMap } from '@/lib/synctexParser';
+import type { PDFHighlightTarget } from '@/components/latex/PDFPreview';
 import { LATEX_TEMPLATES, DEFAULT_TEMPLATE_ID, getTemplateById } from '@/components/latex/LaTeXTemplates';
 import {
   EDITOR_COMMANDS,
@@ -210,6 +212,7 @@ export default function LaTeXStudio({
   const [isIntegrationsOpen, setIsIntegrationsOpen] = useState<boolean>(false);
   const [insertDialogType, setInsertDialogType] = useState<InsertDialogType>(null);
   const [isWordCountOpen, setIsWordCountOpen] = useState<boolean>(false);
+  const [highlightTarget, setHighlightTarget] = useState<PDFHighlightTarget | null>(null);
   const [trackChangesEnabled, setTrackChangesEnabled] = useState<boolean>(false);
   const [comments, setComments] = useState<CommentItem[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -1467,26 +1470,40 @@ export default function LaTeXStudio({
     [editorCtx]
   );
 
-  // SyncTeX Handlers
-  const handleSyncPDFToCode = (page: number, ratio: number) => {
-    const lines = source.split('\n');
-    const estimatedTotalPages = Math.max(1, pdfTotalPages || Math.ceil(lines.length / 45));
-    const linesPerPage = Math.ceil(lines.length / estimatedTotalPages);
-    const line = Math.min(lines.length, Math.max(1, Math.round((page - 1) * linesPerPage + ratio * linesPerPage)));
-    setTargetLine(line);
-    setCursorLine(line);
-  };
+  // Real SyncTeX Map
+  const synctexMap = useMemo(
+    () => createProjectSyncTeXMap(files, projectSettings.mainDocument || 'main.tex', pdfTotalPages || 1),
+    [files, projectSettings.mainDocument, pdfTotalPages]
+  );
 
-  const handleSyncCodeToPDF = (lineNumber: number) => {
-    setCursorLine(lineNumber);
-    const lines = source.split('\n');
-    const estimatedTotalPages = Math.max(1, pdfTotalPages || Math.ceil(lines.length / 45));
-    const linesPerPage = Math.ceil(lines.length / estimatedTotalPages);
-    const page = Math.min(estimatedTotalPages, Math.max(1, Math.ceil(lineNumber / linesPerPage)));
-    setHighlightPage(page);
-    setPdfCurrentPage(page);
-    setJumpToPage(page);
-  };
+  // SyncTeX Handlers
+  const handleSyncPDFToCode = useCallback(
+    (page: number, ratio: number) => {
+      const res = synctexMap.reverse(page, ratio);
+      if (res) {
+        if (res.file && res.file !== activeFileName && files.some((f) => f.name === res.file)) {
+          handleSelectFile(res.file);
+        }
+        setTargetLine(res.line);
+        setCursorLine(res.line);
+      }
+    },
+    [synctexMap, activeFileName, files, handleSelectFile]
+  );
+
+  const handleSyncCodeToPDF = useCallback(
+    (lineNumber: number, explicit = false) => {
+      setCursorLine(lineNumber);
+      if (!explicit) return; // Only perform forward scroll and target ping when user explicitly clicks Sync button
+      const res = synctexMap.forward(activeFileName || 'main.tex', lineNumber);
+      if (res) {
+        setHighlightTarget({ page: res.page, yRatio: res.yRatio, id: Date.now() });
+        setPdfCurrentPage(res.page);
+        setJumpToPage(res.page);
+      }
+    },
+    [synctexMap, activeFileName]
+  );
 
   // Resizer 1: Left Sidebar Divider (60px - 450px, offset by Activity Bar 44px, Snap below 20px)
   const handleMouseDownSidebarDivider = (e: React.MouseEvent) => {
@@ -3673,7 +3690,7 @@ export default function LaTeXStudio({
                     onMouseDown={(e) => e.stopPropagation()}
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleSyncCodeToPDF(cursorLine || targetLine || 1);
+                      handleSyncCodeToPDF(cursorLine || targetLine || 1, true);
                     }}
                     className="w-5 h-5 bg-white dark:bg-[#20262b] border border-slate-200 dark:border-white/10 rounded-[3px] text-slate-600 dark:text-neutral-400 flex items-center justify-center cursor-pointer pointer-events-auto shadow-xs transition-all duration-150 hover:bg-emerald-500/20 hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-300"
                     title="Nhảy đến vị trí trong PDF"
@@ -3985,6 +4002,8 @@ export default function LaTeXStudio({
                     zoom={zoom}
                     setZoom={setZoom}
                     onSync={handleSyncPDFToCode}
+                    onReverseSync={handleSyncPDFToCode}
+                    highlightTarget={highlightTarget}
                     highlightPage={highlightPage}
                     jumpToPage={jumpToPage}
                     onTotalPagesChange={(total) => setPdfTotalPages(total)}
@@ -3992,6 +4011,8 @@ export default function LaTeXStudio({
                     isPresentation={isPresentation}
                     onClosePresentation={() => setIsPresentation(false)}
                     invertColors={projectSettings.pdfInvertColors}
+                    isOutOfSync={Boolean(pdf && compiledSource && source !== compiledSource)}
+                    onRecompile={() => void compile()}
                   />
                 </div>
               ) : status === 'compiling' ? (

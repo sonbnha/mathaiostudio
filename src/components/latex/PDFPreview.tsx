@@ -12,6 +12,8 @@ import {
   Image as ImageIcon,
   Minimize2,
   Tv,
+  AlertTriangle,
+  RefreshCw,
 } from 'lucide-react';
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -19,22 +21,31 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url
 ).toString();
 
+export interface PDFHighlightTarget {
+  page: number;
+  yRatio: number; // 0.0 to 1.0
+  id: number;
+}
+
 const PDFSinglePage = memo(function PDFSinglePage({
   number,
   width,
   onPageClick,
-  isHighlighted,
+  onPageDoubleClick,
+  highlightYRatio,
   invertColors = false,
 }: {
   number: number;
   width: number;
   onPageClick?: (page: number, ratio: number) => void;
-  isHighlighted?: boolean;
+  onPageDoubleClick?: (page: number, ratio: number) => void;
+  highlightYRatio?: number;
   invertColors?: boolean;
 }) {
   const element = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
   const [ratio, setRatio] = useState(841.89 / 595.28);
+  const [highlightVisible, setHighlightVisible] = useState(false);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -49,6 +60,19 @@ const PDFSinglePage = memo(function PDFSinglePage({
     return () => observer.disconnect();
   }, []);
 
+  // Animate target highlight indicator on forward sync
+  useEffect(() => {
+    if (highlightYRatio !== undefined) {
+      setHighlightVisible(true);
+      const timer = setTimeout(() => {
+        setHighlightVisible(false);
+      }, 3500);
+      return () => clearTimeout(timer);
+    } else {
+      setHighlightVisible(false);
+    }
+  }, [highlightYRatio]);
+
   const pageHeight = Math.round(width * ratio);
 
   return (
@@ -58,11 +82,18 @@ const PDFSinglePage = memo(function PDFSinglePage({
       onClick={(e) => {
         const rect = e.currentTarget.getBoundingClientRect();
         const yRatio = (e.clientY - rect.top) / Math.max(1, rect.height);
-        onPageClick?.(number, yRatio);
+        if (e.ctrlKey || e.metaKey) {
+          onPageDoubleClick?.(number, yRatio);
+        } else {
+          onPageClick?.(number, yRatio);
+        }
       }}
-      className={`mb-6 shadow-[0_4px_16px_rgba(0,0,0,0.35)] bg-white rounded-xs overflow-hidden cursor-crosshair relative shrink-0 transition-all duration-150 ${
-        isHighlighted ? 'ring-4 ring-cyan-500/80' : ''
-      }`}
+      onDoubleClick={(e) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const yRatio = (e.clientY - rect.top) / Math.max(1, rect.height);
+        onPageDoubleClick?.(number, yRatio);
+      }}
+      className="mb-6 shadow-[0_4px_16px_rgba(0,0,0,0.35)] bg-white rounded-xs overflow-hidden cursor-crosshair relative shrink-0 transition-all duration-150"
       style={{
         width: `${width}px`,
         maxWidth: `${width}px`,
@@ -70,8 +101,26 @@ const PDFSinglePage = memo(function PDFSinglePage({
         aspectRatio: '1 / 1.414',
         filter: invertColors ? 'invert(0.9) hue-rotate(180deg)' : undefined,
       }}
-      aria-label={`Trang ${number}`}
+      aria-label={`Trang ${number} - Nhấp đúp để nhảy tới mã nguồn (Reverse Sync)`}
+      title="Nhấp đúp hoặc Ctrl+Click để nhảy tới đúng dòng trong mã nguồn (SyncTeX)"
     >
+      {/* Overleaf-Style Target Line / Highlight Box */}
+      {highlightVisible && highlightYRatio !== undefined && (
+        <div
+          className="absolute left-0 right-0 pointer-events-none z-20 flex items-center transition-all duration-300"
+          style={{
+            top: `${Math.max(0, Math.min(0.96, highlightYRatio)) * 100}%`,
+            transform: 'translateY(-50%)',
+          }}
+        >
+          <div className="w-full h-7 bg-amber-400/40 dark:bg-amber-300/40 border-y-2 border-amber-500 shadow-md flex items-center px-2 animate-pulse">
+            <span className="text-[10px] font-mono font-bold bg-amber-500 text-white px-1.5 py-0.5 rounded shadow-xs">
+              SyncTeX
+            </span>
+          </div>
+        </div>
+      )}
+
       {visible ? (
         <Page
           pageNumber={number}
@@ -112,6 +161,8 @@ export default function PDFPreview({
   zoom,
   setZoom,
   onSync,
+  onReverseSync,
+  highlightTarget,
   highlightPage,
   jumpToPage,
   onTotalPagesChange,
@@ -120,11 +171,15 @@ export default function PDFPreview({
   onClosePresentation,
   showSubToolbar = false,
   invertColors = false,
+  isOutOfSync = false,
+  onRecompile,
 }: {
   url: string;
   zoom: number | 'page-width';
   setZoom: (z: number | 'page-width' | ((prev: number | 'page-width') => number | 'page-width')) => void;
   onSync?: (page: number, ratio: number) => void;
+  onReverseSync?: (page: number, ratio: number) => void;
+  highlightTarget?: PDFHighlightTarget | null;
   highlightPage?: number;
   jumpToPage?: number;
   onTotalPagesChange?: (total: number) => void;
@@ -133,6 +188,8 @@ export default function PDFPreview({
   onClosePresentation?: () => void;
   showSubToolbar?: boolean;
   invertColors?: boolean;
+  isOutOfSync?: boolean;
+  onRecompile?: () => void;
 }) {
   const host = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(500);
@@ -151,7 +208,6 @@ export default function PDFPreview({
       if (timeoutId) clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
         setContainerWidth((prev) => {
-          // Threshold of 2px to eliminate sub-pixel / scrollbar fluctuation loops
           if (Math.abs(prev - newWidth) > 2) {
             return newWidth;
           }
@@ -167,9 +223,23 @@ export default function PDFPreview({
     };
   }, [isPresentation]);
 
-  // Scroll to highlighted page when sync from code editor occurs
+  // Scroll to forward sync target position
   useEffect(() => {
-    if (highlightPage && highlightPage <= numPages) {
+    if (highlightTarget && highlightTarget.page <= numPages) {
+      const pageEl = document.getElementById(`pdf-page-${highlightTarget.page}`);
+      const hostEl = host.current;
+      if (pageEl && hostEl) {
+        const pageRect = pageEl.getBoundingClientRect();
+        const hostRect = hostEl.getBoundingClientRect();
+        const targetOffsetInPage = pageRect.height * Math.max(0, Math.min(1, highlightTarget.yRatio));
+        const targetGlobalY = hostEl.scrollTop + (pageRect.top - hostRect.top) + targetOffsetInPage;
+        const scrollToY = Math.max(0, targetGlobalY - hostRect.height / 2);
+
+        hostEl.scrollTo({ top: scrollToY, behavior: 'smooth' });
+        setActivePage(highlightTarget.page);
+        onActivePageChange?.(highlightTarget.page);
+      }
+    } else if (highlightPage && highlightPage <= numPages) {
       const el = document.getElementById(`pdf-page-${highlightPage}`);
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -177,7 +247,7 @@ export default function PDFPreview({
         onActivePageChange?.(highlightPage);
       }
     }
-  }, [highlightPage, numPages, onActivePageChange]);
+  }, [highlightTarget, highlightPage, numPages, onActivePageChange]);
 
   // Jump to specific page requested by horizontal page navigator
   useEffect(() => {
@@ -322,6 +392,7 @@ export default function PDFPreview({
                 number={activePage}
                 width={Math.min(containerWidth * 1.1, 900)}
                 onPageClick={onSync}
+                onPageDoubleClick={onReverseSync}
                 invertColors={invertColors}
               />
             )}
@@ -336,8 +407,28 @@ export default function PDFPreview({
   }
 
   return (
-    <div className="flex-1 min-h-0 w-full h-full flex flex-col overflow-hidden">
-      {/* Sub-toolbar for preview options (optional) */}
+    <div className="flex-1 min-h-0 w-full h-full flex flex-col overflow-hidden relative">
+      {/* Out of Sync Warning Ribbon */}
+      {isOutOfSync && (
+        <div className="w-full px-3 py-1 bg-amber-500/90 dark:bg-amber-600/90 text-slate-950 dark:text-slate-900 text-[11px] font-medium flex items-center justify-between shadow-xs shrink-0 z-20">
+          <div className="flex items-center gap-1.5">
+            <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+            <span>Mã nguồn đã thay đổi kể từ lần biên dịch trước.</span>
+          </div>
+          {onRecompile && (
+            <button
+              type="button"
+              onClick={onRecompile}
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-950 text-white hover:bg-slate-800 text-[10px] font-semibold transition cursor-pointer"
+            >
+              <RefreshCw className="w-2.5 h-2.5" />
+              <span>Biên dịch lại</span>
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Sub-toolbar for preview options */}
       {showSubToolbar && (
         <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2 border-b border-slate-200 dark:border-slate-800 text-xs bg-slate-50/80 dark:bg-slate-900/50 shrink-0">
           <div className="flex items-center gap-1">
@@ -393,7 +484,7 @@ export default function PDFPreview({
         </div>
       )}
 
-      {/* Main PDF Scroll Container with Fixed Vertical Scrollbar & Scroll Anchoring Disabled */}
+      {/* Main PDF Scroll Container */}
       <div
         ref={host}
         className={`flex-1 min-h-0 w-full h-full p-4 flex flex-col items-center transition-colors ${
@@ -429,7 +520,12 @@ export default function PDFPreview({
               number={i + 1}
               width={computedWidth}
               onPageClick={onSync}
-              isHighlighted={highlightPage === i + 1}
+              onPageDoubleClick={onReverseSync}
+              highlightYRatio={
+                highlightTarget && highlightTarget.page === i + 1
+                  ? highlightTarget.yRatio
+                  : undefined
+              }
               invertColors={invertColors}
             />
           ))}

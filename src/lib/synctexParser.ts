@@ -372,6 +372,14 @@ export function findSnippetInCode(
   return null;
 }
 
+const LATEX_STOPWORDS = new Set([
+  'begin', 'end', 'documentclass', 'usepackage', 'section', 'subsection', 'subsubsection',
+  'item', 'vspace', 'hspace', 'centering', 'linewidth', 'textwidth', 'caption', 'label',
+  'ref', 'cite', 'input', 'include', 'author', 'title', 'date', 'maketitle', 'newpage',
+  'clearpage', 'pagebreak', 'paragraph', 'textbf', 'textit', 'emph', 'underline', 'frac',
+  'sqrt', 'left', 'right', 'the', 'and', 'for', 'with', 'from', 'that', 'this', 'are', 'was'
+]);
+
 /**
  * Search for a text snippet in the rendered PDF DOM text layer.
  * Returns the page number and vertical yRatio (0.0 to 1.0) on that page.
@@ -387,13 +395,15 @@ export function findSnippetInPDF(
     .replace(/\\[a-zA-Z]+/g, ' ')
     .replace(/[{}\\$%&#^_~]/g, '')
     .trim();
-  if (cleanSnippet.length < 2) return null;
+  if (cleanSnippet.length < 3) return null;
 
   const cleanLower = cleanSnippet.toLowerCase();
   const words = cleanLower
     .replace(/[^\p{L}\p{N}\s]/gu, ' ')
     .split(/\s+/)
-    .filter((w) => w.length >= 2);
+    .filter((w) => w.length >= 2 && !LATEX_STOPWORDS.has(w));
+
+  if (words.length === 0) return null;
 
   const pageElements = document.querySelectorAll('[id^="pdf-page-"]');
   for (let i = 0; i < pageElements.length; i++) {
@@ -403,14 +413,17 @@ export function findSnippetInPDF(
     if (!textLayer) continue;
 
     const spans = textLayer.querySelectorAll('span');
-    const searchPhrase = words.slice(0, Math.min(3, words.length)).join(' ');
+    const searchPhrase = words.length >= 2 ? words.slice(0, Math.min(4, words.length)).join(' ') : '';
+    const singleKey = words.length === 1 && words[0].length >= 5 ? words[0] : '';
+
+    if (!searchPhrase && !singleKey) continue;
 
     for (let s = 0; s < spans.length; s++) {
       const span = spans[s];
-      const spanText = (span.textContent || '').toLowerCase();
+      const spanText = (span.textContent || '').toLowerCase().replace(/\s+/g, ' ');
       if (
         (searchPhrase && spanText.includes(searchPhrase)) ||
-        (words.length > 0 && spanText.includes(words[0]) && words[0].length >= 3)
+        (singleKey && spanText.includes(singleKey))
       ) {
         const pageRect = pageEl.getBoundingClientRect();
         const spanRect = span.getBoundingClientRect();

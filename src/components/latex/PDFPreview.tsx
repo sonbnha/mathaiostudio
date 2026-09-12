@@ -68,23 +68,13 @@ const PDFSinglePage = memo(function PDFSinglePage({
       ref={element}
       id={`pdf-page-${number}`}
       onClick={(e) => {
-        const rect = e.currentTarget.getBoundingClientRect();
-        const yRatio = (e.clientY - rect.top) / Math.max(1, rect.height);
         if (e.ctrlKey || e.metaKey) {
+          const rect = e.currentTarget.getBoundingClientRect();
+          const yRatio = (e.clientY - rect.top) / Math.max(1, rect.height);
           const sel = window.getSelection()?.toString()?.trim();
           const targetEl = e.target as HTMLElement;
           const snippet = sel || targetEl?.textContent?.trim() || '';
           onPageDoubleClick?.(number, yRatio, snippet);
-        } else {
-          onPageClick?.(number, yRatio);
-        }
-      }}
-      onMouseUp={(e) => {
-        const sel = window.getSelection()?.toString()?.trim();
-        if (sel && sel.length >= 2) {
-          const rect = e.currentTarget.getBoundingClientRect();
-          const yRatio = (e.clientY - rect.top) / Math.max(1, rect.height);
-          onPageDoubleClick?.(number, yRatio, sel);
         }
       }}
       onDoubleClick={(e) => {

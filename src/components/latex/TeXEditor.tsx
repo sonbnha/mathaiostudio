@@ -486,17 +486,6 @@ export default function TeXEditor({
         }
         return false;
       },
-      mouseup: (_event, view) => {
-        const range = view.state.selection.main;
-        if (!range.empty) {
-          const selText = view.state.sliceDoc(range.from, range.to).trim();
-          if (selText.length >= 2) {
-            const line = view.state.doc.lineAt(range.head).number;
-            onCursorLineRef.current?.(line, true, selText);
-          }
-        }
-        return false;
-      },
     });
 
     const updateListener = EditorView.updateListener.of((update: ViewUpdate) => {

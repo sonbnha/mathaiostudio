@@ -1524,7 +1524,10 @@ export default function LaTeXStudio({
         }
         if (!textSnippet && targetLineNum && targetLineNum <= view.state.doc.lines) {
           const lText = view.state.doc.line(targetLineNum).text.trim();
-          if (lText.length >= 3) textSnippet = lText;
+          const isBoilerplate = /^\s*\\(begin|end|documentclass|usepackage|vspace|hspace|centering|newpage|clearpage|pagebreak|noindent|label|ref|bibliographystyle|bibliography)\b/.test(lText);
+          if (!isBoilerplate && lText.length >= 4) {
+            textSnippet = lText;
+          }
         }
       }
 
@@ -4076,7 +4079,6 @@ export default function LaTeXStudio({
                     url={pdf}
                     zoom={zoom}
                     setZoom={setZoom}
-                    onSync={handleSyncPDFToCode}
                     onReverseSync={handleSyncPDFToCode}
                     highlightTarget={highlightTarget}
                     highlightPage={highlightPage}

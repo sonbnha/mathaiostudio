@@ -9,7 +9,7 @@ import { bracketMatching, syntaxHighlighting, defaultHighlightStyle, foldGutter 
 import { stex } from '@codemirror/legacy-modes/mode/stex';
 import { StreamLanguage } from '@codemirror/language';
 import { oneDark } from '@codemirror/theme-one-dark';
-import { Bold, Italic, Type, Image as ImageIcon, Link2, Search, Eye, Code, X, Undo2, Redo2, Omega, List, AlignLeft, MoreHorizontal } from 'lucide-react';
+import { Bold, Italic, Type, Image as ImageIcon, Link2, Search, Eye, Code, X, Undo2, Redo2, Omega, List, AlignLeft, MoreHorizontal, FileText } from 'lucide-react';
 
 export default function EditorPanel() {
   const { files, activeFileId, openTabs, setActiveFile, closeTab, updateFileContent, editorMode, setEditorMode, setCursorLine, setPdfTargetLine } = useLaTeXStore();

@@ -17,41 +17,41 @@ export default function LaTeXStudioRoot() {
     <div className="w-full h-screen flex flex-col bg-[#142333] text-slate-200 overflow-hidden font-sans text-[13px]">
       
       {/* 1. TOP NAVBAR (EXACT OVERLEAF MATCH) */}
-      <header className="h-[40px] border-b border-[#2d2d2d] flex items-center justify-between px-3 shrink-0 bg-[#1a1a1b] z-50">
+      <header className="h-[40px] border-b border-[#141a22] flex items-center justify-between px-3 shrink-0 bg-[#182029] z-50">
         <div className="flex items-center gap-1">
           {/* Overleaf Leaf Logo */}
-          <div className="w-8 h-8 flex items-center justify-center mr-2 cursor-pointer hover:bg-[#2d2d2d] rounded">
+          <div className="w-8 h-8 flex items-center justify-center mr-2 cursor-pointer hover:bg-[#232c37] rounded">
             <svg viewBox="0 0 24 24" width="22" height="22" fill="#128a42">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
             </svg>
           </div>
           
           <div className="flex items-center text-[#b3b3b3] text-[13px] font-normal">
-            <button className="hover:bg-[#2d2d2d] hover:text-white px-2 py-1 rounded transition-colors">File</button>
-            <button className="hover:bg-[#2d2d2d] hover:text-white px-2 py-1 rounded transition-colors">Edit</button>
-            <button className="hover:bg-[#2d2d2d] hover:text-white px-2 py-1 rounded transition-colors">Insert</button>
-            <button className="hover:bg-[#2d2d2d] hover:text-white px-2 py-1 rounded transition-colors">View</button>
-            <button className="hover:bg-[#2d2d2d] hover:text-white px-2 py-1 rounded transition-colors">Format</button>
-            <button className="hover:bg-[#2d2d2d] hover:text-white px-2 py-1 rounded transition-colors">Help</button>
-            <button className="ml-2 bg-[#202e3b] text-[#6eb6ff] hover:bg-[#2a3c4d] px-3 py-1.5 rounded-full font-semibold transition-colors">
+            <button className="hover:bg-[#232c37] hover:text-white px-2 py-1 rounded transition-colors">File</button>
+            <button className="hover:bg-[#232c37] hover:text-white px-2 py-1 rounded transition-colors">Edit</button>
+            <button className="hover:bg-[#232c37] hover:text-white px-2 py-1 rounded transition-colors">Insert</button>
+            <button className="hover:bg-[#232c37] hover:text-white px-2 py-1 rounded transition-colors">View</button>
+            <button className="hover:bg-[#232c37] hover:text-white px-2 py-1 rounded transition-colors">Format</button>
+            <button className="hover:bg-[#232c37] hover:text-white px-2 py-1 rounded transition-colors">Help</button>
+            <button className="ml-2 bg-[#1e2e3d] text-[#60a5fa] hover:bg-[#25394d] px-3 py-1 rounded-full font-semibold transition-colors">
               Upgrade
             </button>
           </div>
         </div>
 
         {/* Center: Project Title */}
-        <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1 cursor-pointer hover:bg-[#2d2d2d] px-3 py-1 rounded">
+        <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1 cursor-pointer hover:bg-[#232c37] px-3 py-1 rounded">
           <span className="font-semibold text-white">MathAIO Studio Project</span>
           <ChevronDown className="w-4 h-4 text-slate-400" />
         </div>
 
         {/* Right side icons */}
         <div className="flex items-center gap-2">
-          <button className="text-slate-300 hover:bg-[#2d2d2d] hover:text-white px-3 py-1.5 rounded transition-colors flex items-center gap-1.5">
+          <button className="text-slate-300 hover:bg-[#232c37] hover:text-white px-3 py-1.5 rounded transition-colors flex items-center gap-1.5">
             <History className="w-4 h-4" />
             <span>History</span>
           </button>
-          <button className="text-slate-300 hover:bg-[#2d2d2d] hover:text-white px-3 py-1.5 rounded transition-colors flex items-center gap-1.5">
+          <button className="text-slate-300 hover:bg-[#232c37] hover:text-white px-3 py-1.5 rounded transition-colors flex items-center gap-1.5">
             <Layout className="w-4 h-4" />
             <span>Layout</span>
           </button>
@@ -66,36 +66,36 @@ export default function LaTeXStudioRoot() {
       <div className="flex-1 min-h-0 w-full flex relative z-10">
         
         {/* LEFTMOST ICON BAR */}
-        <div className="w-[40px] bg-[#1a1a1b] border-r border-[#1a1a1b] flex flex-col items-center py-2 shrink-0 z-30">
+        <div className="w-[40px] bg-[#141a22] border-r border-[#10151c] flex flex-col items-center py-2 shrink-0 z-30">
           <div className="flex flex-col gap-3 w-full items-center">
-            <button className="p-1.5 text-[#128a42] bg-[#2d2d2d] rounded shadow-sm" title="Files"><FileText className="w-[18px] h-[18px]" /></button>
-            <button className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-[#2d2d2d]" title="Search"><Search className="w-[18px] h-[18px]" /></button>
-            <button className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-[#2d2d2d]" title="Review"><MessageSquarePlus className="w-[18px] h-[18px]" /></button>
+            <button className="p-1.5 text-[#128a42] bg-[#202936] rounded shadow-sm" title="Files"><FileText className="w-[18px] h-[18px]" /></button>
+            <button className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-[#1e2632]" title="Search"><Search className="w-[18px] h-[18px]" /></button>
+            <button className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-[#1e2632]" title="Review"><MessageSquarePlus className="w-[18px] h-[18px]" /></button>
           </div>
           <div className="mt-auto flex flex-col gap-3 w-full items-center mb-1">
-            <button className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-[#2d2d2d]" title="Help"><HelpCircle className="w-[18px] h-[18px]" /></button>
-            <button className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-[#2d2d2d]" title="Settings"><Settings className="w-[18px] h-[18px]" /></button>
+            <button className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-[#1e2632]" title="Help"><HelpCircle className="w-[18px] h-[18px]" /></button>
+            <button className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-[#1e2632]" title="Settings"><Settings className="w-[18px] h-[18px]" /></button>
           </div>
         </div>
 
         <PanelGroup orientation="horizontal">
           
           {/* COLUMN 1: SIDEBAR (FILE TREE + OUTLINE) */}
-          <Panel defaultSize={15} minSize={10} className="bg-[#1a1a1b] flex flex-col z-20">
+          <Panel defaultSize={15} minSize={10} className="bg-[#1b222c] flex flex-col z-20">
             <PanelGroup orientation="vertical">
               
               {/* FILE TREE */}
               <Panel defaultSize={60} minSize={20} className="flex flex-col">
                 <div className="px-3 py-2 flex items-center justify-between group">
-                  <div className="flex items-center gap-1.5 cursor-pointer font-semibold text-slate-300 hover:text-white">
+                  <div className="flex items-center gap-1.5 cursor-pointer font-semibold text-[#cbd5e1] hover:text-white">
                     <span className="text-[9px]">v</span>
                     <span>File tree</span>
                   </div>
                   <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button className="p-1 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded"><FilePlus className="w-[14px] h-[14px]" /></button>
-                    <button className="p-1 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded"><FolderPlus className="w-[14px] h-[14px]" /></button>
-                    <button className="p-1 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded"><FileUp className="w-[14px] h-[14px]" /></button>
-                    <button className="p-1 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded"><Edit3 className="w-[14px] h-[14px]" /></button>
+                    <button className="p-1 text-slate-400 hover:text-white hover:bg-[#28323e] rounded"><FilePlus className="w-[14px] h-[14px]" /></button>
+                    <button className="p-1 text-slate-400 hover:text-white hover:bg-[#28323e] rounded"><FolderPlus className="w-[14px] h-[14px]" /></button>
+                    <button className="p-1 text-slate-400 hover:text-white hover:bg-[#28323e] rounded"><FileUp className="w-[14px] h-[14px]" /></button>
+                    <button className="p-1 text-slate-400 hover:text-white hover:bg-[#28323e] rounded"><Edit3 className="w-[14px] h-[14px]" /></button>
                   </div>
                 </div>
                 <div className="flex-1 overflow-y-auto pb-2 custom-scrollbar">
@@ -104,7 +104,7 @@ export default function LaTeXStudioRoot() {
                     return (
                       <div 
                         key={f.id} 
-                        className={`group flex items-center justify-between pl-6 pr-2 py-1.5 cursor-pointer border-l-2 ${isActive ? 'bg-[#1b3223] border-[#128a42] text-white' : 'border-transparent text-slate-400 hover:bg-[#2d2d2d] hover:text-slate-300'}`}
+                        className={`group flex items-center justify-between pl-6 pr-2 py-1.5 cursor-pointer border-l-2 ${isActive ? 'bg-[#152e22] border-[#128a42] text-white' : 'border-transparent text-slate-400 hover:bg-[#222b37] hover:text-slate-300'}`}
                         onClick={() => setActiveFile(f.id)}
                       >
                         <div className="flex items-center gap-2">
@@ -112,7 +112,7 @@ export default function LaTeXStudioRoot() {
                           <span className="truncate">{f.name}</span>
                         </div>
                         {isActive && (
-                          <button className="p-0.5 text-slate-300 hover:text-white hover:bg-[#294a34] rounded transition-colors opacity-100">
+                          <button className="p-0.5 text-slate-300 hover:text-white hover:bg-[#1d4130] rounded transition-colors opacity-100">
                             <MoreVertical className="w-3.5 h-3.5" />
                           </button>
                         )}
@@ -134,8 +134,8 @@ export default function LaTeXStudioRoot() {
               </PanelResizeHandle>
 
               {/* OUTLINE */}
-              <Panel defaultSize={40} minSize={10} className="flex flex-col bg-[#1a1a1b]">
-                <div className="px-3 py-2 flex items-center gap-1.5 cursor-pointer font-semibold text-slate-300 hover:text-white">
+              <Panel defaultSize={40} minSize={10} className="flex flex-col bg-[#1b222c]">
+                <div className="px-3 py-2 flex items-center gap-1.5 cursor-pointer font-semibold text-[#cbd5e1] hover:text-white">
                   <span className="text-[9px]">v</span>
                   <span>File outline</span>
                 </div>

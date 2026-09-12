@@ -214,6 +214,7 @@ export default function LaTeXStudio({
   const isResizing = Boolean(resizingTarget);
   const resizingTargetRef = useRef<'sidebar' | 'editor-pdf' | null>(null);
   const editorViewRef = useRef<any>(null);
+  const [isProjectLoaded, setIsProjectLoaded] = useState<boolean>(false);
   const mainContainerRef = useRef<HTMLElement>(null);
   const workspaceRef = useRef<HTMLDivElement>(null);
   const pdfSectionRef = useRef<HTMLElement>(null);
@@ -514,6 +515,7 @@ export default function LaTeXStudio({
         window.history.replaceState(null, '', `/latex?id=${encodeURIComponent(newDoc.id)}`);
       }
     }
+    setIsProjectLoaded(true);
   }, [docId]);
 
 
@@ -586,9 +588,10 @@ export default function LaTeXStudio({
     async (sourceToCompile?: string) => {
       let code = sourceToCompile;
       if (!code) {
+        const editorText = editorViewRef.current?.state?.doc?.toString();
         const targetMain = projectSettings.mainDocument || 'main.tex';
         const mainFile = files.find((f) => f.name === targetMain) || files.find((f) => f.name === 'main.tex');
-        code = activeFileName === (mainFile?.name || 'main.tex') ? source : mainFile?.content || source;
+        code = editorText || (activeFileName === (mainFile?.name || 'main.tex') ? source : mainFile?.content || source);
       }
 
       if (!code?.trim()) return;
@@ -601,7 +604,13 @@ export default function LaTeXStudio({
         const res = await fetch('/api/latex/compile', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ source: code, compiler: engine }),
+          body: JSON.stringify({
+            source: code,
+            code,
+            compiler: engine,
+            engine,
+            projectId: currentDocId || docId || 'default',
+          }),
         });
 
         if (!res.ok) {
@@ -646,16 +655,29 @@ export default function LaTeXStudio({
     [source, files, activeFileName, pdf, engine, projectSettings.mainDocument, currentDocId, docId, user?.email]
   );
 
-  // Auto-recompile immediately on project load (Initial Load Trigger)
+  // Auto-recompile immediately on project load (Initial Load Trigger with hydration check)
   const hasInitialCompiledRef = useRef<string | null>(null);
   useEffect(() => {
     const activeId = currentDocId || docId;
     if (!activeId) return;
-    if (source && source.trim().length > 0 && hasInitialCompiledRef.current !== activeId && !pdf) {
-      hasInitialCompiledRef.current = activeId;
-      void compile();
-    }
-  }, [currentDocId, docId, source, pdf, compile]);
+
+    // 1. Kiểm tra dự án đã tải xong và có nội dung mã TeX hợp lệ (> 10 ký tự)
+    const content = (activeFileName === 'main.tex' ? source : files.find((f) => f.name === 'main.tex')?.content) || source || '';
+    if (!content.trim() || content.trim().length <= 10 || hasInitialCompiledRef.current === activeId || pdf) return;
+
+    // 2. Đảm bảo trạng thái không đang trong quá trình nạp dự án
+    if (!isProjectLoaded) return;
+
+    // 3. Đánh dấu đã kích hoạt
+    hasInitialCompiledRef.current = activeId;
+
+    // 4. Delay nhẹ 200-300ms để đảm bảo worker/state của CodeMirror và server endpoint đã đồng bộ
+    const timer = setTimeout(() => {
+      void compile(content);
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [currentDocId, docId, isProjectLoaded, source, files, activeFileName, pdf, compile]);
 
   // Periodic Auto-Snapshot (every 5 minutes if content changed)
   const lastSnapshotSourceRef = useRef<string>(source);

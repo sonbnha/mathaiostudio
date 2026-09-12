@@ -86,7 +86,6 @@ import ProjectSearchPanel from '@/components/latex/ProjectSearchPanel';
 import { WordCountModal } from '@/components/latex/WordCountModal';
 import * as pako from 'pako';
 import { SyncTeXParser, type SyncTeXBox } from '@/lib/synctexParser';
-import type { PDFHighlightTarget } from '@/components/latex/PDFPreview';
 import { LATEX_TEMPLATES, DEFAULT_TEMPLATE_ID, getTemplateById } from '@/components/latex/LaTeXTemplates';
 import {
   EDITOR_COMMANDS,
@@ -121,10 +120,12 @@ const TeXEditor = dynamic(() => import('@/components/latex/TeXEditor'), {
   ),
 });
 
-const PDFPreview = dynamic(() => import('@/components/latex/PDFPreview'), {
+const CustomPDFViewer = dynamic(() => import('@/components/latex/CustomPDFViewer'), {
   ssr: false,
   loading: () => (
-    <div className="p-6 text-center text-xs text-slate-500">Đang tải trình xem PDF…</div>
+    <div className="flex items-center justify-center h-full text-slate-500">
+      Đang tải trình xem PDF...
+    </div>
   ),
 });
 
@@ -215,7 +216,7 @@ export default function LaTeXStudio({
   const [isIntegrationsOpen, setIsIntegrationsOpen] = useState<boolean>(false);
   const [insertDialogType, setInsertDialogType] = useState<InsertDialogType>(null);
   const [isWordCountOpen, setIsWordCountOpen] = useState<boolean>(false);
-  const [highlightTarget, setHighlightTarget] = useState<PDFHighlightTarget | null>(null);
+  const [highlightTarget, setHighlightTarget] = useState<{ boxes: SyncTeXBox[], id: number } | null>(null);
   const [trackChangesEnabled, setTrackChangesEnabled] = useState<boolean>(false);
   const [comments, setComments] = useState<CommentItem[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -4099,22 +4100,11 @@ export default function LaTeXStudio({
                       </button>
                     </div>
                   )}
-                  <PDFPreview
+                  <CustomPDFViewer
                     url={pdf}
-                    synctexBase64={synctexBase64}
                     zoom={zoom}
-                    setZoom={setZoom}
-                    onReverseSync={handleSyncPDFToCode}
-                    highlightTarget={highlightTarget}
-                    highlightPage={highlightPage}
-                    jumpToPage={jumpToPage}
-                    onTotalPagesChange={(total) => setPdfTotalPages(total)}
-                    onActivePageChange={(page) => setPdfCurrentPage(page)}
-                    isPresentation={isPresentation}
-                    onClosePresentation={() => setIsPresentation(false)}
-                    invertColors={projectSettings.pdfInvertColors}
-                    isOutOfSync={Boolean(pdf && compiledSource && source !== compiledSource)}
-                    onRecompile={() => void compile()}
+                    highlightBoxes={highlightTarget?.boxes}
+                    onDoubleClick={handleSyncPDFToCode}
                   />
                 </div>
               ) : status === 'compiling' ? (

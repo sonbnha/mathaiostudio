@@ -42,8 +42,8 @@ export class SyncTeXParser {
         continue;
       }
 
-      // Record with tag and line: [ ( x k g $
-      const match = line.match(/^[\[\(xkg\$](\d+),(\d+),([\d.-]+),([\d.-]+)(?:,([\d.-]+))?(?:,([\d.-]+))?(?:,([\d.-]+))?/);
+      // Record with tag and line: [ ( x k g $ h
+      const match = line.match(/^[\[\(xkg\$h](\d+),(\d+):([\d.-]+),([\d.-]+)(?::([\d.-]+),([\d.-]+),([\d.-]+))?/);
       if (match) {
         const tag = match[1];
         const lineNum = parseInt(match[2], 10);
@@ -92,11 +92,11 @@ export class SyncTeXParser {
    */
   public getByLine(file: string, line: number): SyncTeXBox[] {
     // Filter boxes for this file and exact line
-    let matches = this.boxes.filter(b => b.file === file && b.line === line && b.width > 0 && b.height > 0);
+    let matches = this.boxes.filter(b => b.file === file && b.line === line && b.width > 0);
     
     // If no exact match, try finding the closest line (within 5 lines)
     if (matches.length === 0) {
-      const fileBoxes = this.boxes.filter(b => b.file === file && b.width > 0 && b.height > 0);
+      const fileBoxes = this.boxes.filter(b => b.file === file && b.width > 0);
       let closestLine = -1;
       let minDiff = Infinity;
       

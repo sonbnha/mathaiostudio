@@ -98,6 +98,7 @@ import ShareProjectModal from '@/components/latex/ShareProjectModal';
 import ProjectHistoryView from '@/components/latex/ProjectHistoryView';
 import { createSnapshot, type ProjectSnapshot } from '@/lib/projectHistory';
 import { useAuth } from '@/context/AuthContext';
+import MathAIOLogo from '@/components/common/MathAIOLogo';
 
 const TeXEditor = dynamic(() => import('@/components/latex/TeXEditor'), {
   ssr: false,
@@ -1161,13 +1162,13 @@ export default function LaTeXStudio({
         <div className="flex items-center gap-1 min-w-0" ref={desktopMenuRef}>
           <Link
             href="/"
-            className="flex items-center gap-1.5 text-slate-900 dark:text-white hover:text-emerald-600 dark:hover:text-emerald-400 font-bold text-xs tracking-tight transition shrink-0 mr-1.5"
+            className="flex items-center gap-2 text-slate-900 dark:text-white hover:text-emerald-600 dark:hover:text-emerald-400 font-bold text-xs tracking-tight transition shrink-0 mr-1.5 group"
             title="Về trang chủ MathAIO Studio"
           >
-            <div className="w-5 h-5 rounded bg-emerald-600 flex items-center justify-center text-white font-serif font-black text-xs shadow-xs">
-              T
+            <div className="w-6 h-6 rounded-md overflow-hidden flex items-center justify-center shrink-0 shadow-xs">
+              <MathAIOLogo className="w-full h-full" />
             </div>
-            <span className="hidden lg:inline font-semibold">LaTeX Studio</span>
+            <span className="hidden sm:inline font-bold tracking-tight text-[13px] text-slate-800 dark:text-slate-100">MathAIO</span>
           </Link>
 
           {/* Desktop Dropdown Menus: File, Edit, Insert, View, Format, Help */}

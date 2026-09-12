@@ -15,6 +15,9 @@ export const metadata: Metadata = {
     description: "MathAIO Studio - Nền tảng Toán học All-in-One: Mô hình hóa hình học & lượng giác AI, soạn giáo án chuẩn 5512",
     siteName: "MathAIO",
   },
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({
@@ -25,6 +28,7 @@ export default function RootLayout({
   return (
     <html lang="vi" className="h-full antialiased" suppressHydrationWarning>
       <head>
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <link
           rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"

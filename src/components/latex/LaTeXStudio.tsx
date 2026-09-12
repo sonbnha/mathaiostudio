@@ -95,6 +95,9 @@ import {
 } from '@/components/latex/projectSettings';
 import ProjectSettingsModal from '@/components/latex/ProjectSettingsModal';
 import ShareProjectModal from '@/components/latex/ShareProjectModal';
+import ProjectHistoryView from '@/components/latex/ProjectHistoryView';
+import { createSnapshot, type ProjectSnapshot } from '@/lib/projectHistory';
+import { useAuth } from '@/context/AuthContext';
 
 const TeXEditor = dynamic(() => import('@/components/latex/TeXEditor'), {
   ssr: false,
@@ -160,10 +163,13 @@ export default function LaTeXStudio({
   const [jumpToPage, setJumpToPage] = useState<number | undefined>(undefined);
   const [pdfCurrentPage, setPdfCurrentPage] = useState<number>(1);
   const [pdfTotalPages, setPdfTotalPages] = useState<number>(1);
+  const { user } = useAuth();
   const [insertRequest, setInsertRequest] = useState<{ id: number; text: string } | undefined>(undefined);
   const [editorActionRequest, setEditorActionRequest] = useState<{ id: number; action: string } | undefined>(undefined);
   const [isPresentation, setIsPresentation] = useState<boolean>(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState<boolean>(false);
+  const [isHistoryView, setIsHistoryView] = useState<boolean>(false);
+  const [historyToast, setHistoryToast] = useState<string | null>(null);
   const [storageNotice, setStorageNotice] = useState<string>('Tự động lưu');
 
   // Overleaf Layout & Ribbon Modes
@@ -616,6 +622,13 @@ export default function LaTeXStudio({
         setStatus('success');
         setOutputView('pdf');
 
+        // Create LocalStorage project snapshot on compile success
+        const filesMap: Record<string, string> = {};
+        files.forEach((f) => {
+          filesMap[f.name] = f.name === activeFileName ? (code || source) : f.content;
+        });
+        createSnapshot(currentDocId || docId || 'default', filesMap, user?.email || 'Bạn', 'Biên dịch thành công');
+
         setHistory((prev) => [
           ...prev,
           { at: Date.now(), source: code!, label: 'Biên dịch thành công' },
@@ -628,7 +641,49 @@ export default function LaTeXStudio({
         setOutputView('console');
       }
     },
-    [source, files, activeFileName, pdf, engine, projectSettings.mainDocument]
+    [source, files, activeFileName, pdf, engine, projectSettings.mainDocument, currentDocId, docId, user?.email]
+  );
+
+  // Periodic Auto-Snapshot (every 5 minutes if content changed)
+  const lastSnapshotSourceRef = useRef<string>(source);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (source !== lastSnapshotSourceRef.current) {
+        const filesMap: Record<string, string> = {};
+        files.forEach((f) => {
+          filesMap[f.name] = f.name === activeFileName ? source : f.content;
+        });
+        createSnapshot(currentDocId || docId || 'default', filesMap, user?.email || 'Bạn', 'Tự động lưu');
+        lastSnapshotSourceRef.current = source;
+      }
+    }, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [source, files, activeFileName, currentDocId, docId, user?.email]);
+
+  // Handle snapshot restore
+  const handleRestoreSnapshot = useCallback(
+    (snapshot: ProjectSnapshot) => {
+      if (!snapshot.files) return;
+      const restoredFiles: StudioFile[] = Object.entries(snapshot.files).map(([name, content]) => ({
+        name,
+        content,
+      }));
+      setFiles(restoredFiles);
+      const targetName = restoredFiles.some((f) => f.name === activeFileName)
+        ? activeFileName
+        : restoredFiles[0]?.name || 'main.tex';
+      setActiveFileName(targetName);
+      const mainContent =
+        snapshot.files[targetName] ||
+        snapshot.files['main.tex'] ||
+        Object.values(snapshot.files)[0] ||
+        '';
+      setSource(mainContent);
+      setIsHistoryView(false);
+      setHistoryToast(`Đã khôi phục thành công phiên bản ${snapshot.dateFormatted}`);
+      setTimeout(() => setHistoryToast(null), 4000);
+    },
+    [activeFileName]
   );
 
   // Debounced Auto-compile (2.5 seconds after stopping typing)
@@ -1085,6 +1140,19 @@ export default function LaTeXStudio({
 
   const { errors, warnings } = parseTeXLog(errorLog);
 
+  if (isHistoryView) {
+    return (
+      <ProjectHistoryView
+        projectId={currentDocId || docId || 'default'}
+        docTitle={docTitle}
+        files={files}
+        onBackToEditor={() => setIsHistoryView(false)}
+        onRestoreSnapshot={handleRestoreSnapshot}
+        currentUserEmail={user?.email}
+      />
+    );
+  }
+
   return (
     <div className="h-screen overflow-hidden bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors duration-200">
       {/* 1. Overleaf Single Desktop Topbar (h-10) */}
@@ -1224,7 +1292,7 @@ export default function LaTeXStudio({
                     type="button"
                     onClick={() => {
                       setActiveDesktopMenu(null);
-                      setIsHistoryOpen(true);
+                      setIsHistoryView(true);
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-slate-700 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-[#2c3238] hover:text-slate-900 dark:hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
@@ -2087,7 +2155,7 @@ export default function LaTeXStudio({
           {/* History Button */}
           <button
             type="button"
-            onClick={() => setIsHistoryOpen(true)}
+            onClick={() => setIsHistoryView(true)}
             className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium text-slate-700 dark:text-neutral-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#2a2e33] transition cursor-pointer"
             title="Lịch sử phiên bản (History)"
           >
@@ -3530,56 +3598,11 @@ export default function LaTeXStudio({
       </div>
       </main>
 
-      {/* 4. History Modal */}
-      {isHistoryOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 w-full max-w-md p-4 flex flex-col max-h-[80vh]">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
-              <div className="flex items-center gap-2 font-bold text-sm text-slate-800 dark:text-slate-100">
-                <History className="w-4 h-4 text-cyan-500" />
-                <span>Lịch sử phiên bản (Restore Points)</span>
-              </div>
-              <button
-                onClick={() => setIsHistoryOpen(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto py-3 space-y-2">
-              {history.length > 0 ? (
-                history.slice().reverse().map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex items-center justify-between gap-2"
-                  >
-                    <div>
-                      <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">{item.label || 'Bản lưu tự động'}</p>
-                      <p className="text-[10px] text-slate-400 font-mono mt-0.5">
-                        {new Date(item.at).toLocaleString('vi-VN')}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSource(item.source);
-                        setFiles((prev) =>
-                          prev.map((f) => (f.name === activeFileName ? { ...f, content: item.source } : f))
-                        );
-                        setIsHistoryOpen(false);
-                      }}
-                      className="px-2.5 py-1 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-700 dark:text-cyan-300 text-xs font-bold transition cursor-pointer"
-                    >
-                      Khôi phục
-                    </button>
-                  </div>
-                ))
-              ) : (
-                <p className="text-xs text-slate-400 text-center py-6">Chưa có điểm khôi phục nào.</p>
-              )}
-            </div>
-          </div>
+      {/* Toast Notification */}
+      {historyToast && (
+        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 bg-emerald-700 text-white px-4 py-2 rounded-lg shadow-xl text-xs font-semibold flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <CheckCircle2 className="w-4 h-4 text-emerald-200" />
+          <span>{historyToast}</span>
         </div>
       )}
 

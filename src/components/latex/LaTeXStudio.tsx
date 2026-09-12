@@ -84,7 +84,8 @@ import IntegrationsModal from '@/components/latex/IntegrationsModal';
 import InsertDialogs, { type InsertDialogType } from '@/components/latex/InsertDialogs';
 import ProjectSearchPanel from '@/components/latex/ProjectSearchPanel';
 import { WordCountModal } from '@/components/latex/WordCountModal';
-import { createProjectSyncTeXMap, findSnippetInCode, findSnippetInPDF } from '@/lib/synctexParser';
+import * as pako from 'pako';
+import { SyncTeXParser, type SyncTeXBox } from '@/lib/synctexParser';
 import type { PDFHighlightTarget } from '@/components/latex/PDFPreview';
 import { LATEX_TEMPLATES, DEFAULT_TEMPLATE_ID, getTemplateById } from '@/components/latex/LaTeXTemplates';
 import {
@@ -163,6 +164,7 @@ export default function LaTeXStudio({
   const [status, setStatus] = useState<'ready' | 'compiling' | 'success' | 'error'>('ready');
   const [errorLog, setErrorLog] = useState<string>('');
   const [pdf, setPdf] = useState<string | null>(null);
+  const [synctexBase64, setSynctexBase64] = useState<string | undefined>(undefined);
   const [compiledSource, setCompiledSource] = useState<string>('');
   const [zoom, setZoom] = useState<number | 'page-width'>('page-width');
   const [fontSize, setFontSize] = useState<number>(14);
@@ -882,7 +884,10 @@ export default function LaTeXStudio({
 
         const res = await fetch('/api/latex/compile', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json, application/pdf'
+          },
           signal: controller.signal,
           body: JSON.stringify({
             source: mainContent,
@@ -913,12 +918,41 @@ export default function LaTeXStudio({
           throw new Error(errorLogMessage);
         }
 
-        const blob = await res.blob();
+        const contentType = res.headers.get('content-type') || '';
+        let pdfBlob: Blob;
+        let synctexData: string | undefined;
+
+        if (contentType.includes('application/json')) {
+          const data = await res.json();
+          // Decode Base64 PDF
+          const byteCharacters = atob(data.pdf);
+          const byteNumbers = new Array(byteCharacters.length);
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+          }
+          const byteArray = new Uint8Array(byteNumbers);
+          pdfBlob = new Blob([byteArray], { type: 'application/pdf' });
+          
+          if (data.synctex) {
+            synctexData = data.synctex;
+          }
+        } else {
+          pdfBlob = await res.blob();
+        }
+
         if (compileRevisionRef.current !== currentRevision) return;
 
         if (pdf) URL.revokeObjectURL(pdf);
-        const url = URL.createObjectURL(blob);
+        const url = URL.createObjectURL(pdfBlob);
         setPdf(url);
+        
+        // Save synctex Base64 string for the PDF preview parser
+        if (synctexData) {
+          setSynctexBase64(synctexData);
+        } else {
+          setSynctexBase64(undefined);
+        }
+
         setCompiledSource(mainContent);
         setStatus('success');
         setOutputView('pdf');
@@ -1471,18 +1505,26 @@ export default function LaTeXStudio({
     [editorCtx]
   );
 
-  // Real SyncTeX Map
-  const synctexMap = useMemo(
-    () => createProjectSyncTeXMap(files, projectSettings.mainDocument || 'main.tex', pdfTotalPages || 1),
-    [files, projectSettings.mainDocument, pdfTotalPages]
-  );
+
+
+  const syncTexParser = useMemo(() => {
+    if (!synctexBase64) return null;
+    try {
+      const gzipped = Uint8Array.from(atob(synctexBase64), c => c.charCodeAt(0));
+      const decompressed = pako.inflate(gzipped);
+      const str = new TextDecoder().decode(decompressed);
+      return new SyncTeXParser(str);
+    } catch (e) {
+      console.error("Failed to parse SyncTeX", e);
+      return null;
+    }
+  }, [synctexBase64]);
 
   // SyncTeX Handlers
   const handleSyncPDFToCode = useCallback(
-    (page: number, ratio: number, snippet?: string) => {
-      // 1. Precise text matching: if user selected text or clicked a word on PDF
-      if (snippet && snippet.trim().length >= 2) {
-        const match = findSnippetInCode(files, snippet.trim());
+    (page: number, xPt: number, yPt: number) => {
+      if (syncTexParser) {
+        const match = syncTexParser.getByPosition(page, xPt, yPt);
         if (match) {
           if (match.file && match.file !== activeFileName && files.some((f) => f.name === match.file)) {
             handleSelectFile(match.file);
@@ -1490,22 +1532,10 @@ export default function LaTeXStudio({
           setTargetLine(match.line);
           setCursorLine(match.line);
           setTargetLineJump({ line: match.line, id: Date.now() });
-          return;
         }
-      }
-
-      // 2. Structural SyncTeX reverse map
-      const res = synctexMap.reverse(page, ratio);
-      if (res) {
-        if (res.file && res.file !== activeFileName && files.some((f) => f.name === res.file)) {
-          handleSelectFile(res.file);
-        }
-        setTargetLine(res.line);
-        setCursorLine(res.line);
-        setTargetLineJump({ line: res.line, id: Date.now() });
       }
     },
-    [synctexMap, activeFileName, files, handleSelectFile]
+    [syncTexParser, activeFileName, files, handleSelectFile]
   );
 
   const handleSyncCodeToPDF = useCallback(
@@ -1537,24 +1567,18 @@ export default function LaTeXStudio({
       setCursorLine(targetLineNum);
       if (!explicit) return; // Only perform forward scroll and target ping when user explicitly clicks Sync button or presses shortcut
 
-      // 1. Precise text matching in PDF DOM textLayer
-      if (textSnippet) {
-        const pdfMatch = findSnippetInPDF(textSnippet);
-        if (pdfMatch) {
-          setHighlightTarget({ page: pdfMatch.page, yRatio: pdfMatch.yRatio, id: Date.now() });
-          setPdfCurrentPage(pdfMatch.page);
-          return;
+      // 1. Structural SyncTeX forward map
+      if (syncTexParser) {
+        const fileToSync = activeFileName || 'main.tex';
+        const boxes = syncTexParser.getByLine(fileToSync, targetLineNum);
+        
+        if (boxes && boxes.length > 0) {
+          setHighlightTarget({ boxes, id: Date.now() });
+          setPdfCurrentPage(boxes[0].page);
         }
       }
-
-      // 2. Structural SyncTeX forward map
-      const res = synctexMap.forward(activeFileName || 'main.tex', targetLineNum);
-      if (res) {
-        setHighlightTarget({ page: res.page, yRatio: res.yRatio, id: Date.now() });
-        setPdfCurrentPage(res.page);
-      }
     },
-    [synctexMap, activeFileName, cursorLine, targetLine]
+    [syncTexParser, activeFileName, cursorLine, targetLine]
   );
 
   // Resizer 1: Left Sidebar Divider (60px - 450px, offset by Activity Bar 44px, Snap below 20px)
@@ -3774,7 +3798,7 @@ export default function LaTeXStudio({
                     onMouseDown={(e) => e.stopPropagation()}
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleSyncPDFToCode(pdfCurrentPage || 1, 0.25);
+                      handleSyncPDFToCode(pdfCurrentPage || 1, 50, 50);
                     }}
                     className="w-6 h-6 bg-white dark:bg-[#20262b] border border-emerald-400 dark:border-emerald-600 rounded-[4px] text-emerald-700 dark:text-emerald-300 flex items-center justify-center cursor-pointer pointer-events-auto shadow-md transition-all duration-150 hover:bg-emerald-500 hover:text-white"
                     title="Đồng bộ PDF sang Code (SyncTeX: Bôi đen chữ hoặc nhấp đúp vào trang PDF)"
@@ -4046,7 +4070,7 @@ export default function LaTeXStudio({
               <button
                 type="button"
                 disabled={!pdf}
-                onClick={() => handleSyncPDFToCode(pdfCurrentPage || 1, 0.25)}
+                onClick={() => handleSyncPDFToCode(pdfCurrentPage || 1, 50, 50)}
                 className="h-6 px-2 flex items-center gap-1 rounded text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 transition cursor-pointer disabled:opacity-40"
                 title="Nhảy đến dòng mã nguồn tương ứng (SyncTeX: Nhấp đúp vào trang PDF hoặc bấm nút này)"
               >
@@ -4077,6 +4101,7 @@ export default function LaTeXStudio({
                   )}
                   <PDFPreview
                     url={pdf}
+                    synctexBase64={synctexBase64}
                     zoom={zoom}
                     setZoom={setZoom}
                     onReverseSync={handleSyncPDFToCode}

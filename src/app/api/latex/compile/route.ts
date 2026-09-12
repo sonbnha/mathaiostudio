@@ -1,4 +1,4 @@
-import { compileLatex, CompileError, SOURCE_LIMIT, type CompileResource, type CompileOptions } from '@/lib/latexCompiler';
+import { compileLatex, compileLatexArtifacts, CompileError, SOURCE_LIMIT, type CompileResource, type CompileOptions } from '@/lib/latexCompiler';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -91,8 +91,21 @@ export async function POST(request: Request) {
       };
     }
 
-    const pdf = await compileLatex(compileInput, request.signal);
-    return new Response(new Blob([pdf as Uint8Array<ArrayBuffer>], { type: 'application/pdf' }), {
+    const artifacts = await compileLatexArtifacts(compileInput, request.signal);
+    
+    // Check if the client requested JSON artifacts (including SyncTeX)
+    const acceptHeader = request.headers.get('accept') || '';
+    if (acceptHeader.includes('application/json')) {
+      return Response.json({
+        pdf: artifacts.pdf,
+        synctex: artifacts.synctex,
+        log: artifacts.log
+      }, { headers: privateHeaders });
+    }
+
+    // Default to raw PDF blob
+    const pdfBytes = Buffer.from(artifacts.pdf, 'base64');
+    return new Response(new Blob([pdfBytes], { type: 'application/pdf' }), {
       headers: {
         ...privateHeaders,
         'Content-Type': 'application/pdf',

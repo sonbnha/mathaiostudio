@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback, memo } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/TextLayer.css';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
+import type { SyncTeXBox } from '@/lib/synctexParser';
 import {
   ZoomIn,
   ZoomOut,
@@ -22,69 +23,69 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
 ).toString();
 
 export interface PDFHighlightTarget {
-  page: number;
-  yRatio: number; // 0.0 to 1.0
+  boxes: SyncTeXBox[];
   id: number;
 }
 
 const PDFSinglePage = memo(function PDFSinglePage({
   number,
   width,
-  onPageClick,
   onPageDoubleClick,
-  highlightYRatio,
+  highlightBoxes,
   highlightId,
   invertColors = false,
 }: {
   number: number;
   width: number;
-  onPageClick?: (page: number, ratio: number) => void;
-  onPageDoubleClick?: (page: number, ratio: number, snippet?: string) => void;
-  highlightYRatio?: number;
+  onPageDoubleClick?: (page: number, xPt: number, yPt: number) => void;
+  highlightBoxes?: SyncTeXBox[];
   highlightId?: number;
   invertColors?: boolean;
 }) {
   const element = useRef<HTMLDivElement>(null);
   const [ratio, setRatio] = useState(841.89 / 595.28);
+  const [originalWidth, setOriginalWidth] = useState(595.28);
   const [highlightVisible, setHighlightVisible] = useState(false);
 
   // Animate target highlight indicator on forward sync
   useEffect(() => {
-    if (highlightYRatio !== undefined && highlightId) {
+    if (highlightBoxes && highlightBoxes.length > 0 && highlightId) {
       setHighlightVisible(true);
       const timer = setTimeout(() => {
         setHighlightVisible(false);
-      }, 5000);
+      }, 3000); // 3s fade out
       return () => clearTimeout(timer);
     } else {
       setHighlightVisible(false);
     }
-  }, [highlightYRatio, highlightId]);
+  }, [highlightBoxes, highlightId]);
 
   const pageHeight = Math.round(width * ratio);
+  const scale = width / originalWidth;
+
+  const handlePointerAction = (e: React.MouseEvent) => {
+    if (!onPageDoubleClick) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const xPx = e.clientX - rect.left;
+    const yPx = e.clientY - rect.top;
+    
+    // Convert pixels back to points
+    const xPt = xPx / scale;
+    const yPt = yPx / scale;
+    
+    onPageDoubleClick(number, xPt, yPt);
+  };
 
   return (
     <div
       ref={element}
       id={`pdf-page-${number}`}
       onClick={(e) => {
-        if (e.ctrlKey || e.metaKey) {
-          const rect = e.currentTarget.getBoundingClientRect();
-          const yRatio = (e.clientY - rect.top) / Math.max(1, rect.height);
-          const sel = window.getSelection()?.toString()?.trim();
-          const targetEl = e.target as HTMLElement;
-          const snippet = sel || targetEl?.textContent?.trim() || '';
-          onPageDoubleClick?.(number, yRatio, snippet);
+        if (e.ctrlKey || e.metaKey || e.altKey) {
+          handlePointerAction(e);
         }
       }}
-      onDoubleClick={(e) => {
-        const rect = e.currentTarget.getBoundingClientRect();
-        const yRatio = (e.clientY - rect.top) / Math.max(1, rect.height);
-        const sel = window.getSelection()?.toString()?.trim();
-        const targetEl = e.target as HTMLElement;
-        const snippet = sel || targetEl?.textContent?.trim() || '';
-        onPageDoubleClick?.(number, yRatio, snippet);
-      }}
+      onDoubleClick={handlePointerAction}
       className="mb-6 shadow-[0_4px_16px_rgba(0,0,0,0.35)] bg-white rounded-xs relative shrink-0 transition-all duration-150"
       style={{
         width: `${width}px`,
@@ -103,6 +104,7 @@ const PDFSinglePage = memo(function PDFSinglePage({
           const view = page.getViewport({ scale: 1 });
           if (view.width > 0 && view.height > 0) {
             setRatio(view.height / view.width);
+            setOriginalWidth(view.width);
           }
         }}
         loading={
@@ -115,38 +117,23 @@ const PDFSinglePage = memo(function PDFSinglePage({
         }
       />
 
-      {/* Overleaf-Style Target Line / Highlight Box on top of Canvas */}
-      {highlightVisible && highlightYRatio !== undefined && (
+      {/* Overleaf-Style Target Highlight Boxes on top of Canvas */}
+      {highlightVisible && highlightBoxes && highlightBoxes.map((box, idx) => (
         <div
-          className="absolute left-0 right-0 pointer-events-none z-30 transition-all duration-300 ease-out"
+          key={idx}
+          className="absolute pointer-events-none z-30 transition-opacity duration-[2000ms] ease-out"
           style={{
-            top: `${Math.max(0.04, Math.min(0.96, highlightYRatio)) * 100}%`,
-            transform: 'translateY(-50%)',
+            left: `${box.x * scale}px`,
+            top: `${box.y * scale}px`,
+            width: `${Math.max(box.width * scale, 5)}px`,
+            height: `${Math.max(box.height * scale, 10)}px`,
+            backgroundColor: 'rgba(254, 240, 138, 0.5)', // bg-yellow-200/50
+            border: '1px solid #ca8a04', // border-yellow-600
+            opacity: highlightVisible ? 1 : 0,
             filter: invertColors ? 'invert(1) hue-rotate(180deg)' : undefined,
           }}
-        >
-          <div
-            className="w-full h-11 flex items-center justify-between px-3.5 shadow-2xl"
-            style={{
-              backgroundColor: 'rgba(254, 240, 138, 0.95)',
-              borderTop: '2.5px solid #ca8a04',
-              borderBottom: '2.5px solid #ca8a04',
-              boxShadow: '0 0 25px 6px rgba(234, 179, 8, 0.85)',
-            }}
-          >
-            <div className="flex items-center gap-1.5 bg-amber-500 text-slate-950 font-bold text-xs font-mono px-2.5 py-1 rounded shadow-md">
-              <span>SyncTeX</span>
-              <span>➔</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-mono text-amber-950 font-bold tracking-tight">
-                Vị trí tương ứng (Line Sync)
-              </span>
-              <div className="h-3 w-3 rounded-full bg-amber-600 animate-ping" />
-            </div>
-          </div>
-        </div>
-      )}
+        />
+      ))}
 
       <span className="absolute bottom-1 right-2 text-[10px] text-slate-400 font-mono select-none pointer-events-none z-10">
         Trang {number}
@@ -157,9 +144,9 @@ const PDFSinglePage = memo(function PDFSinglePage({
 
 export default function PDFPreview({
   url,
+  synctexBase64,
   zoom,
   setZoom,
-  onSync,
   onReverseSync,
   highlightTarget,
   highlightPage,
@@ -174,10 +161,10 @@ export default function PDFPreview({
   onRecompile,
 }: {
   url: string;
+  synctexBase64?: string;
   zoom: number | 'page-width';
   setZoom: (z: number | 'page-width' | ((prev: number | 'page-width') => number | 'page-width')) => void;
-  onSync?: (page: number, ratio: number) => void;
-  onReverseSync?: (page: number, ratio: number, snippet?: string) => void;
+  onReverseSync?: (page: number, xPt: number, yPt: number) => void;
   highlightTarget?: PDFHighlightTarget | null;
   highlightPage?: number;
   jumpToPage?: number;
@@ -224,9 +211,11 @@ export default function PDFPreview({
 
   // Scroll to forward sync target position
   useEffect(() => {
-    if (!highlightTarget) return;
-    const targetPage = Math.max(1, Math.min(highlightTarget.page, numPages || 1));
-    const targetY = highlightTarget.yRatio;
+    if (!highlightTarget || !highlightTarget.boxes.length) return;
+    const targetPage = Math.max(1, Math.min(highlightTarget.boxes[0].page, numPages || 1));
+    const targetYPt = highlightTarget.boxes[0].y;
+    // Estimate yRatio (assuming A4 default height ~842 pt)
+    const targetYRatio = targetYPt / 842;
 
     const performScroll = () => {
       const pageEl = document.getElementById(`pdf-page-${targetPage}`);
@@ -234,20 +223,30 @@ export default function PDFPreview({
       if (pageEl && hostEl) {
         const hostRect = hostEl.getBoundingClientRect();
         const pageRect = pageEl.getBoundingClientRect();
-        const pageTopRelativeToHost = hostEl.scrollTop + (pageRect.top - hostRect.top);
-        const targetOffsetInPage = pageRect.height * Math.max(0.04, Math.min(0.96, targetY));
-        const scrollToY = Math.max(0, pageTopRelativeToHost + targetOffsetInPage - hostEl.clientHeight / 2);
 
-        hostEl.scrollTo({ top: scrollToY, behavior: 'smooth' });
-        setActivePage(targetPage);
+        // Calculate absolute top position of the page relative to the scroll container's content
+        const pageTop = pageEl.offsetTop;
+
+        // Calculate where the target point is within the page
+        const pointYInPage = pageEl.offsetHeight * targetYRatio;
+
+        // Target scroll position puts the point in the middle of the viewport (if possible)
+        const idealScrollTop = pageTop + pointYInPage - hostRect.height / 2;
+
+        hostEl.scrollTo({
+          top: Math.max(0, idealScrollTop),
+          behavior: 'smooth',
+        });
+        
         onActivePageChange?.(targetPage);
       }
     };
 
     performScroll();
     const t1 = setTimeout(performScroll, 50);
-    const t2 = setTimeout(performScroll, 180);
-    const t3 = setTimeout(performScroll, 400);
+    const t2 = setTimeout(performScroll, 200);
+    const t3 = setTimeout(performScroll, 500);
+
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
@@ -397,7 +396,6 @@ export default function PDFPreview({
               <PDFSinglePage
                 number={activePage}
                 width={Math.min(containerWidth * 1.1, 900)}
-                onPageClick={onSync}
                 onPageDoubleClick={onReverseSync}
                 invertColors={invertColors}
               />
@@ -522,15 +520,14 @@ export default function PDFPreview({
         >
           {Array.from({ length: numPages }, (_, i) => {
             const pageNum = i + 1;
-            const isTarget = Boolean(highlightTarget && highlightTarget.page === pageNum);
+            const isTarget = Boolean(highlightTarget && highlightTarget.boxes.length > 0 && highlightTarget.boxes[0].page === pageNum);
             return (
               <PDFSinglePage
                 key={pageNum}
                 number={pageNum}
                 width={computedWidth}
-                onPageClick={onSync}
                 onPageDoubleClick={onReverseSync}
-                highlightYRatio={isTarget && highlightTarget ? highlightTarget.yRatio : undefined}
+                highlightBoxes={isTarget && highlightTarget ? highlightTarget.boxes.filter(b => b.page === pageNum) : undefined}
                 highlightId={isTarget && highlightTarget ? highlightTarget.id : undefined}
                 invertColors={invertColors}
               />

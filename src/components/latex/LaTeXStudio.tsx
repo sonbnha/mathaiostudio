@@ -516,6 +516,7 @@ export default function LaTeXStudio({
     }
   }, [docId]);
 
+
   // Debounced Auto-save (2 seconds)
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   useEffect(() => {
@@ -644,6 +645,17 @@ export default function LaTeXStudio({
     },
     [source, files, activeFileName, pdf, engine, projectSettings.mainDocument, currentDocId, docId, user?.email]
   );
+
+  // Auto-recompile immediately on project load (Initial Load Trigger)
+  const hasInitialCompiledRef = useRef<string | null>(null);
+  useEffect(() => {
+    const activeId = currentDocId || docId;
+    if (!activeId) return;
+    if (source && source.trim().length > 0 && hasInitialCompiledRef.current !== activeId && !pdf) {
+      hasInitialCompiledRef.current = activeId;
+      void compile();
+    }
+  }, [currentDocId, docId, source, pdf, compile]);
 
   // Periodic Auto-Snapshot (every 5 minutes if content changed)
   const lastSnapshotSourceRef = useRef<string>(source);
@@ -3560,6 +3572,22 @@ export default function LaTeXStudio({
                     onClosePresentation={() => setIsPresentation(false)}
                     invertColors={projectSettings.pdfInvertColors}
                   />
+                </div>
+              ) : status === 'compiling' ? (
+                <div className="flex-1 min-h-0 w-full h-full flex flex-col justify-center items-center p-6 text-center text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-900">
+                  <div className="w-full max-w-sm flex flex-col items-center p-8 text-center bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm space-y-3 animate-in fade-in duration-200">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-xs shrink-0">
+                      <RefreshCw className="w-6 h-6 animate-spin" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-1">
+                        Đang biên dịch tài liệu…
+                      </p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Hệ thống đang xử lý mã LaTeX và tạo trang PDF xem trước.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <div className="flex-1 min-h-0 w-full h-full overflow-y-auto flex flex-col justify-center items-center p-4 text-center text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-900">

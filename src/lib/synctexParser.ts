@@ -325,3 +325,102 @@ export function createProjectSyncTeXMap(
     },
   };
 }
+
+/**
+ * Search for a text snippet in LaTeX source files.
+ * Returns the matching file and 1-indexed line number.
+ */
+export function findSnippetInCode(
+  files: StudioFile[],
+  snippet: string
+): { file: string; line: number } | null {
+  if (!snippet || snippet.trim().length < 2) return null;
+  const rawSnippet = snippet.trim();
+  const rawLower = rawSnippet.toLowerCase();
+
+  for (const file of files) {
+    if (typeof file.content !== 'string') continue;
+    const lines = file.content.split('\n');
+
+    // 1. Exact case-insensitive full snippet search
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].toLowerCase().includes(rawLower)) {
+        return { file: file.name, line: i + 1 };
+      }
+    }
+
+    // 2. Cleaned multi-word phrase search (strip punctuation and symbols)
+    const words = rawLower
+      .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+      .split(/\s+/)
+      .filter((w) => w.length >= 2);
+
+    if (words.length >= 1) {
+      const phrase = words.slice(0, Math.min(4, words.length)).join(' ');
+      for (let i = 0; i < lines.length; i++) {
+        const lineClean = lines[i]
+          .toLowerCase()
+          .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+          .replace(/\s+/g, ' ');
+        if (lineClean.includes(phrase)) {
+          return { file: file.name, line: i + 1 };
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Search for a text snippet in the rendered PDF DOM text layer.
+ * Returns the page number and vertical yRatio (0.0 to 1.0) on that page.
+ */
+export function findSnippetInPDF(
+  snippet: string
+): { page: number; yRatio: number } | null {
+  if (typeof document === 'undefined' || !snippet || snippet.trim().length < 2) return null;
+
+  // Clean snippet: remove LaTeX macros like \textbf{...}, \math{...}, etc.
+  const cleanSnippet = snippet
+    .replace(/\\[a-zA-Z]+(\*?)\{([^}]*)\}/g, '$2')
+    .replace(/\\[a-zA-Z]+/g, ' ')
+    .replace(/[{}\\$%&#^_~]/g, '')
+    .trim();
+  if (cleanSnippet.length < 2) return null;
+
+  const cleanLower = cleanSnippet.toLowerCase();
+  const words = cleanLower
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .split(/\s+/)
+    .filter((w) => w.length >= 2);
+
+  const pageElements = document.querySelectorAll('[id^="pdf-page-"]');
+  for (let i = 0; i < pageElements.length; i++) {
+    const pageEl = pageElements[i] as HTMLElement;
+    const pageNum = parseInt(pageEl.id.replace('pdf-page-', ''), 10) || (i + 1);
+    const textLayer = pageEl.querySelector('.react-pdf__Page__textContent, .textLayer');
+    if (!textLayer) continue;
+
+    const spans = textLayer.querySelectorAll('span');
+    const searchPhrase = words.slice(0, Math.min(3, words.length)).join(' ');
+
+    for (let s = 0; s < spans.length; s++) {
+      const span = spans[s];
+      const spanText = (span.textContent || '').toLowerCase();
+      if (
+        (searchPhrase && spanText.includes(searchPhrase)) ||
+        (words.length > 0 && spanText.includes(words[0]) && words[0].length >= 3)
+      ) {
+        const pageRect = pageEl.getBoundingClientRect();
+        const spanRect = span.getBoundingClientRect();
+        if (pageRect.height > 0) {
+          const yRatio = (spanRect.top - pageRect.top + spanRect.height / 2) / pageRect.height;
+          return { page: pageNum, yRatio: Math.max(0.04, Math.min(0.96, yRatio)) };
+        }
+      }
+    }
+  }
+
+  return null;
+}

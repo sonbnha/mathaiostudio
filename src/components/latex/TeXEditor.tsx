@@ -66,7 +66,7 @@ export interface TeXEditorProps {
   onCompile: () => void;
   insertRequest?: { id: number; text: string };
   editorActionRequest?: { id: number; action: string };
-  onCursorLine?: (line: number, explicit?: boolean) => void;
+  onCursorLine?: (line: number, explicit?: boolean, snippet?: string) => void;
   targetLine?: number;
   targetLineJump?: { line: number; id: number };
   errors?: ParsedTeXIssue[];
@@ -469,7 +469,11 @@ export default function TeXEditor({
         const pos = view.posAtCoords({ x: event.clientX, y: event.clientY });
         const head = pos !== null ? pos : view.state.selection.main.head;
         const line = view.state.doc.lineAt(head).number;
-        onCursorLineRef.current?.(line, true);
+        const range = view.state.selection.main;
+        const text = !range.empty
+          ? view.state.sliceDoc(range.from, range.to).trim()
+          : view.state.doc.line(line).text.trim();
+        onCursorLineRef.current?.(line, true, text);
         return false;
       },
       click: (event, view) => {
@@ -477,7 +481,19 @@ export default function TeXEditor({
           const pos = view.posAtCoords({ x: event.clientX, y: event.clientY });
           const head = pos !== null ? pos : view.state.selection.main.head;
           const line = view.state.doc.lineAt(head).number;
-          onCursorLineRef.current?.(line, true);
+          const lineText = view.state.doc.line(line).text.trim();
+          onCursorLineRef.current?.(line, true, lineText);
+        }
+        return false;
+      },
+      mouseup: (_event, view) => {
+        const range = view.state.selection.main;
+        if (!range.empty) {
+          const selText = view.state.sliceDoc(range.from, range.to).trim();
+          if (selText.length >= 2) {
+            const line = view.state.doc.lineAt(range.head).number;
+            onCursorLineRef.current?.(line, true, selText);
+          }
         }
         return false;
       },

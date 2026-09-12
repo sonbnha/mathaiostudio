@@ -84,7 +84,7 @@ import IntegrationsModal from '@/components/latex/IntegrationsModal';
 import InsertDialogs, { type InsertDialogType } from '@/components/latex/InsertDialogs';
 import ProjectSearchPanel from '@/components/latex/ProjectSearchPanel';
 import { WordCountModal } from '@/components/latex/WordCountModal';
-import { createProjectSyncTeXMap } from '@/lib/synctexParser';
+import { createProjectSyncTeXMap, findSnippetInCode, findSnippetInPDF } from '@/lib/synctexParser';
 import type { PDFHighlightTarget } from '@/components/latex/PDFPreview';
 import { LATEX_TEMPLATES, DEFAULT_TEMPLATE_ID, getTemplateById } from '@/components/latex/LaTeXTemplates';
 import {
@@ -1479,7 +1479,22 @@ export default function LaTeXStudio({
 
   // SyncTeX Handlers
   const handleSyncPDFToCode = useCallback(
-    (page: number, ratio: number) => {
+    (page: number, ratio: number, snippet?: string) => {
+      // 1. Precise text matching: if user selected text or clicked a word on PDF
+      if (snippet && snippet.trim().length >= 2) {
+        const match = findSnippetInCode(files, snippet.trim());
+        if (match) {
+          if (match.file && match.file !== activeFileName && files.some((f) => f.name === match.file)) {
+            handleSelectFile(match.file);
+          }
+          setTargetLine(match.line);
+          setCursorLine(match.line);
+          setTargetLineJump({ line: match.line, id: Date.now() });
+          return;
+        }
+      }
+
+      // 2. Structural SyncTeX reverse map
       const res = synctexMap.reverse(page, ratio);
       if (res) {
         if (res.file && res.file !== activeFileName && files.some((f) => f.name === res.file)) {
@@ -1494,17 +1509,42 @@ export default function LaTeXStudio({
   );
 
   const handleSyncCodeToPDF = useCallback(
-    (lineNumber?: number, explicit = false) => {
+    (lineNumber?: number, explicit = false, snippet?: string) => {
       let targetLineNum = lineNumber;
-      if (!targetLineNum && editorViewRef.current) {
-        const head = editorViewRef.current.state.selection.main.head;
-        targetLineNum = editorViewRef.current.state.doc.lineAt(head).number;
+      let textSnippet = snippet;
+
+      if (editorViewRef.current) {
+        const view = editorViewRef.current;
+        const sel = view.state.selection.main;
+        if (!targetLineNum) {
+          targetLineNum = view.state.doc.lineAt(sel.head).number;
+        }
+        if (!textSnippet && !sel.empty) {
+          textSnippet = view.state.sliceDoc(sel.from, sel.to).trim();
+        }
+        if (!textSnippet && targetLineNum && targetLineNum <= view.state.doc.lines) {
+          const lText = view.state.doc.line(targetLineNum).text.trim();
+          if (lText.length >= 3) textSnippet = lText;
+        }
       }
+
       if (!targetLineNum) {
         targetLineNum = cursorLine || targetLine || 1;
       }
       setCursorLine(targetLineNum);
       if (!explicit) return; // Only perform forward scroll and target ping when user explicitly clicks Sync button or presses shortcut
+
+      // 1. Precise text matching in PDF DOM textLayer
+      if (textSnippet) {
+        const pdfMatch = findSnippetInPDF(textSnippet);
+        if (pdfMatch) {
+          setHighlightTarget({ page: pdfMatch.page, yRatio: pdfMatch.yRatio, id: Date.now() });
+          setPdfCurrentPage(pdfMatch.page);
+          return;
+        }
+      }
+
+      // 2. Structural SyncTeX forward map
       const res = synctexMap.forward(activeFileName || 'main.tex', targetLineNum);
       if (res) {
         setHighlightTarget({ page: res.page, yRatio: res.yRatio, id: Date.now() });
@@ -3713,13 +3753,14 @@ export default function LaTeXStudio({
                       e.stopPropagation();
                       handleSyncCodeToPDF(undefined, true);
                     }}
-                    className="w-5 h-5 bg-white dark:bg-[#20262b] border border-slate-200 dark:border-white/10 rounded-[3px] text-slate-600 dark:text-neutral-400 flex items-center justify-center cursor-pointer pointer-events-auto shadow-xs transition-all duration-150 hover:bg-emerald-500/20 hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-300"
-                    title="Nhảy đến vị trí trong PDF (SyncTeX)"
+                    className="w-6 h-6 bg-white dark:bg-[#20262b] border border-emerald-400 dark:border-emerald-600 rounded-[4px] text-emerald-700 dark:text-emerald-300 flex items-center justify-center cursor-pointer pointer-events-auto shadow-md transition-all duration-150 hover:bg-emerald-500 hover:text-white"
+                    title="Đồng bộ Code sang PDF (SyncTeX: Bôi đen chữ, bấm Ctrl+\ hoặc nhấp đúp mã nguồn)"
                   >
-                    <ArrowRight className="w-3 h-3 text-slate-500 dark:text-neutral-400 group-hover/synctop:text-emerald-600 dark:group-hover/synctop:text-emerald-300 transition-colors" />
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </button>
-                  <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-slate-900 dark:bg-[#111315] border border-slate-700 dark:border-white/10 rounded text-[11px] text-white whitespace-nowrap shadow-lg pointer-events-none opacity-0 group-hover/synctop:opacity-100 transition-opacity duration-150 z-50">
-                    Nhảy đến vị trí trong PDF
+                  <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2.5 py-1.5 bg-slate-950 dark:bg-black border border-emerald-500/40 rounded-md text-[11px] text-white whitespace-nowrap shadow-xl pointer-events-none opacity-0 group-hover/synctop:opacity-100 transition-opacity duration-150 z-50">
+                    <div className="font-bold text-emerald-400">Code ➔ PDF (SyncTeX)</div>
+                    <div className="text-[10px] text-slate-300">Nhảy đến vị trí trong PDF (Ctrl+\)</div>
                   </div>
                 </div>
 
@@ -3732,13 +3773,14 @@ export default function LaTeXStudio({
                       e.stopPropagation();
                       handleSyncPDFToCode(pdfCurrentPage || 1, 0.25);
                     }}
-                    className="w-5 h-5 bg-white dark:bg-[#20262b] border border-slate-200 dark:border-white/10 rounded-[3px] text-slate-600 dark:text-neutral-400 flex items-center justify-center cursor-pointer pointer-events-auto shadow-xs transition-all duration-150 hover:bg-emerald-500/20 hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-300"
-                    title="Nhảy đến dòng mã nguồn (SyncTeX)"
+                    className="w-6 h-6 bg-white dark:bg-[#20262b] border border-emerald-400 dark:border-emerald-600 rounded-[4px] text-emerald-700 dark:text-emerald-300 flex items-center justify-center cursor-pointer pointer-events-auto shadow-md transition-all duration-150 hover:bg-emerald-500 hover:text-white"
+                    title="Đồng bộ PDF sang Code (SyncTeX: Bôi đen chữ hoặc nhấp đúp vào trang PDF)"
                   >
-                    <ArrowLeft className="w-3 h-3 text-slate-500 dark:text-neutral-400 group-hover/syncbot:text-emerald-600 dark:group-hover/syncbot:text-emerald-300 transition-colors" />
+                    <ArrowLeft className="w-3.5 h-3.5" />
                   </button>
-                  <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-slate-900 dark:bg-[#111315] border border-slate-700 dark:border-white/10 rounded text-[11px] text-white whitespace-nowrap shadow-lg pointer-events-none opacity-0 group-hover/syncbot:opacity-100 transition-opacity duration-150 z-50">
-                    Nhảy đến dòng mã nguồn
+                  <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2.5 py-1.5 bg-slate-950 dark:bg-black border border-emerald-500/40 rounded-md text-[11px] text-white whitespace-nowrap shadow-xl pointer-events-none opacity-0 group-hover/syncbot:opacity-100 transition-opacity duration-150 z-50">
+                    <div className="font-bold text-emerald-400">PDF ➔ Code (SyncTeX)</div>
+                    <div className="text-[10px] text-slate-300">Nhảy đến dòng mã nguồn</div>
                   </div>
                 </div>
               </div>

@@ -39,7 +39,7 @@ const PDFSinglePage = memo(function PDFSinglePage({
   number: number;
   width: number;
   onPageClick?: (page: number, ratio: number) => void;
-  onPageDoubleClick?: (page: number, ratio: number) => void;
+  onPageDoubleClick?: (page: number, ratio: number, snippet?: string) => void;
   highlightYRatio?: number;
   highlightId?: number;
   invertColors?: boolean;
@@ -71,15 +71,29 @@ const PDFSinglePage = memo(function PDFSinglePage({
         const rect = e.currentTarget.getBoundingClientRect();
         const yRatio = (e.clientY - rect.top) / Math.max(1, rect.height);
         if (e.ctrlKey || e.metaKey) {
-          onPageDoubleClick?.(number, yRatio);
+          const sel = window.getSelection()?.toString()?.trim();
+          const targetEl = e.target as HTMLElement;
+          const snippet = sel || targetEl?.textContent?.trim() || '';
+          onPageDoubleClick?.(number, yRatio, snippet);
         } else {
           onPageClick?.(number, yRatio);
+        }
+      }}
+      onMouseUp={(e) => {
+        const sel = window.getSelection()?.toString()?.trim();
+        if (sel && sel.length >= 2) {
+          const rect = e.currentTarget.getBoundingClientRect();
+          const yRatio = (e.clientY - rect.top) / Math.max(1, rect.height);
+          onPageDoubleClick?.(number, yRatio, sel);
         }
       }}
       onDoubleClick={(e) => {
         const rect = e.currentTarget.getBoundingClientRect();
         const yRatio = (e.clientY - rect.top) / Math.max(1, rect.height);
-        onPageDoubleClick?.(number, yRatio);
+        const sel = window.getSelection()?.toString()?.trim();
+        const targetEl = e.target as HTMLElement;
+        const snippet = sel || targetEl?.textContent?.trim() || '';
+        onPageDoubleClick?.(number, yRatio, snippet);
       }}
       className="mb-6 shadow-[0_4px_16px_rgba(0,0,0,0.35)] bg-white rounded-xs relative shrink-0 transition-all duration-150"
       style={{
@@ -173,7 +187,7 @@ export default function PDFPreview({
   zoom: number | 'page-width';
   setZoom: (z: number | 'page-width' | ((prev: number | 'page-width') => number | 'page-width')) => void;
   onSync?: (page: number, ratio: number) => void;
-  onReverseSync?: (page: number, ratio: number) => void;
+  onReverseSync?: (page: number, ratio: number, snippet?: string) => void;
   highlightTarget?: PDFHighlightTarget | null;
   highlightPage?: number;
   jumpToPage?: number;

@@ -3,84 +3,181 @@ import React from 'react';
 import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from 'react-resizable-panels';
 import { useLaTeXStore } from '@/store/useLaTeXStore';
 import EditorPanel from './EditorPanel';
-
-// We will build Sidebar and PDFViewerPanel next
-// import Sidebar from './Sidebar';
-// import PDFViewerPanel from './PDFViewerPanel';
+import { 
+  Menu, FileText, Upload, FolderPlus, FilePlus, Trash2, Settings, HelpCircle, 
+  ChevronDown, ChevronRight, Layout, History, FileUp
+} from 'lucide-react';
 
 export default function LaTeXStudioRoot() {
-  const { files, activeFileId } = useLaTeXStore();
+  const { files, activeFileId, setActiveFile } = useLaTeXStore();
 
   return (
-    <div className="w-full h-screen flex flex-col bg-slate-50 dark:bg-[#1e1e1e] text-slate-900 dark:text-slate-100 overflow-hidden font-sans">
+    <div className="w-full h-screen flex flex-col bg-[#1a1a1b] text-slate-200 overflow-hidden font-sans text-[13px]">
       
-      {/* 1. TOP NAVBAR */}
-      <header className="h-12 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 shrink-0 bg-white dark:bg-[#252526]">
-        <div className="flex items-center gap-4">
-          <div className="font-semibold text-lg tracking-tight text-blue-600 dark:text-blue-400 cursor-pointer">
-            Overleaf<span className="text-slate-800 dark:text-slate-200"> Clone</span>
+      {/* 1. TOP NAVBAR (EXACT OVERLEAF MATCH) */}
+      <header className="h-[46px] border-b border-[#2d2d2d] flex items-center justify-between px-3 shrink-0 bg-[#1a1a1b]">
+        <div className="flex items-center gap-1">
+          {/* Logo Placeholder */}
+          <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center mr-2 cursor-pointer hover:bg-slate-700">
+            <span className="font-bold text-white text-lg">O</span>
           </div>
-          <div className="hidden sm:flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
-            <button className="hover:bg-slate-100 dark:hover:bg-slate-800 px-2 py-1 rounded transition-colors">Menu</button>
-            <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-1" />
-            <button className="hover:bg-slate-100 dark:hover:bg-slate-800 px-2 py-1 rounded transition-colors">File</button>
-            <button className="hover:bg-slate-100 dark:hover:bg-slate-800 px-2 py-1 rounded transition-colors">Edit</button>
-            <button className="hover:bg-slate-100 dark:hover:bg-slate-800 px-2 py-1 rounded transition-colors">Insert</button>
-            <button className="hover:bg-slate-100 dark:hover:bg-slate-800 px-2 py-1 rounded transition-colors">View</button>
-            <button className="hover:bg-slate-100 dark:hover:bg-slate-800 px-2 py-1 rounded transition-colors">Format</button>
+          
+          <div className="flex items-center text-slate-300">
+            <button className="hover:bg-[#2d2d2d] hover:text-white px-2.5 py-1.5 rounded transition-colors">File</button>
+            <button className="hover:bg-[#2d2d2d] hover:text-white px-2.5 py-1.5 rounded transition-colors">Edit</button>
+            <button className="hover:bg-[#2d2d2d] hover:text-white px-2.5 py-1.5 rounded transition-colors">Insert</button>
+            <button className="hover:bg-[#2d2d2d] hover:text-white px-2.5 py-1.5 rounded transition-colors">View</button>
+            <button className="hover:bg-[#2d2d2d] hover:text-white px-2.5 py-1.5 rounded transition-colors">Format</button>
+            <button className="hover:bg-[#2d2d2d] hover:text-white px-2.5 py-1.5 rounded transition-colors">Help</button>
+            <button className="ml-2 bg-[#2d2d2d] text-blue-400 hover:bg-[#3d3d3d] px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide border border-[#3d3d3d]">
+              Upgrade
+            </button>
           </div>
         </div>
-        <div className="flex items-center gap-3 text-sm">
-          <button className="text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 px-2 py-1 rounded transition-colors">History</button>
-          <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded-md font-medium transition-colors shadow-sm">
+
+        {/* Center: Project Title */}
+        <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1 cursor-pointer hover:bg-[#2d2d2d] px-3 py-1 rounded">
+          <span className="font-semibold text-slate-200">MathAIO Studio Project</span>
+          <ChevronDown className="w-4 h-4 text-slate-400" />
+        </div>
+
+        {/* Right side icons */}
+        <div className="flex items-center gap-2">
+          <button className="text-slate-300 hover:bg-[#2d2d2d] hover:text-white px-3 py-1.5 rounded transition-colors flex items-center gap-1.5">
+            <History className="w-4 h-4" />
+            <span>History</span>
+          </button>
+          <button className="text-slate-300 hover:bg-[#2d2d2d] hover:text-white px-3 py-1.5 rounded transition-colors flex items-center gap-1.5">
+            <Layout className="w-4 h-4" />
+            <span>Layout</span>
+          </button>
+          <button className="bg-[#128a42] hover:bg-[#107c3b] text-white px-4 py-1.5 rounded font-semibold transition-colors flex items-center gap-1.5 ml-1">
+            <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M11.5 6h-7a.5.5 0 0 0-.5.5v7a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 .5-.5v-7a.5.5 0 0 0-.5-.5zm-3.5 6a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zM13 2H3a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h1.5v-1.5H3V3h10v1.5h1.5V3a1 1 0 0 0-1-1z"/></svg>
             Share
           </button>
         </div>
       </header>
 
-      {/* 2. MAIN 3-COLUMN WORKSPACE */}
+      {/* 2. WORKSPACE AREA */}
       <div className="flex-1 min-h-0 w-full flex">
+        
+        {/* LEFTMOST ICON BAR */}
+        <div className="w-[48px] bg-[#1a1a1b] border-r border-[#2d2d2d] flex flex-col items-center py-2 shrink-0 z-20">
+          <div className="flex flex-col gap-3 w-full items-center">
+            <button className="p-2 text-slate-400 hover:text-white rounded hover:bg-[#2d2d2d]" title="Menu"><Menu className="w-5 h-5" /></button>
+            <button className="p-2 text-white bg-[#2d2d2d] rounded" title="Files"><FileText className="w-5 h-5" /></button>
+            <button className="p-2 text-slate-400 hover:text-white rounded hover:bg-[#2d2d2d]" title="Search"><svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M15.7 14.3l-4.2-4.2c.8-1.2 1.3-2.6 1.3-4.1 0-3.9-3.1-7-7-7s-7 3.1-7 7 3.1 7 7 7c1.5 0 2.9-.5 4.1-1.3l4.2 4.2c.2.2.5.3.7.3s.5-.1.7-.3c.4-.4.4-1 0-1.4zM2 6c0-2.8 2.2-5 5-5s5 2.2 5 5-2.2 5-5 5-5-2.2-5-5z"/></svg></button>
+            <button className="p-2 text-slate-400 hover:text-white rounded hover:bg-[#2d2d2d]" title="Git"><svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M15.7 5.3l-5-5c-.4-.4-1-.4-1.4 0l-8 8c-.4.4-.4 1 0 1.4l5 5c.4.4 1 .4 1.4 0l8-8c.4-.4.4-1 0-1.4zM7 11.6L2.4 7 7 2.4l1.6 1.6L5.8 6.8c.2.4.4.9.4 1.4 0 .5-.2 1-.4 1.4l2.8 2.8L7 11.6zm6.6-3.2L10.8 11.2l-1.6-1.6 2.8-2.8c-.2-.4-.4-.9-.4-1.4 0-.5.2-1 .4-1.4L9.2 1.2 13.6 5.6c.4.4.4 1 0 1.4z"/></svg></button>
+          </div>
+          <div className="mt-auto flex flex-col gap-3 w-full items-center mb-2">
+            <button className="p-2 text-slate-400 hover:text-white rounded hover:bg-[#2d2d2d]" title="Settings"><Settings className="w-5 h-5" /></button>
+          </div>
+        </div>
+
         <PanelGroup orientation="horizontal">
           
-          {/* COLUMN 1: LEFT SIDEBAR */}
-          <Panel defaultSize={15} minSize={5} className="bg-slate-50 dark:bg-[#252526] flex flex-col z-30">
-            <div className="p-3 font-semibold text-xs tracking-wider uppercase text-slate-500 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-              <span>Files</span>
-            </div>
-            <div className="flex-1 overflow-y-auto py-2">
-              {files.map(f => (
-                <div 
-                  key={f.id} 
-                  className={`px-4 py-1.5 text-sm cursor-pointer ${activeFileId === f.id ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-medium border-l-2 border-blue-500' : 'hover:bg-slate-200 dark:hover:bg-slate-800 border-l-2 border-transparent text-slate-700 dark:text-slate-300'}`}
-                  onClick={() => useLaTeXStore.getState().setActiveFile(f.id)}
-                >
-                  {f.name}
+          {/* COLUMN 1: SIDEBAR (FILE TREE + OUTLINE) */}
+          <Panel defaultSize={15} minSize={10} className="bg-[#222223] flex flex-col border-r border-[#2d2d2d] z-30">
+            <PanelGroup orientation="vertical">
+              
+              {/* FILE TREE */}
+              <Panel defaultSize={60} minSize={20} className="flex flex-col">
+                <div className="px-3 py-2 flex items-center justify-between group">
+                  <div className="flex items-center gap-1 cursor-pointer font-semibold text-slate-300">
+                    <ChevronDown className="w-4 h-4" />
+                    <span>File tree</span>
+                  </div>
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button className="p-1 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded" title="New File"><FilePlus className="w-3.5 h-3.5" /></button>
+                    <button className="p-1 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded" title="New Folder"><FolderPlus className="w-3.5 h-3.5" /></button>
+                    <button className="p-1 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded" title="Upload"><FileUp className="w-3.5 h-3.5" /></button>
+                    <button className="p-1 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded" title="Delete"><Trash2 className="w-3.5 h-3.5" /></button>
+                  </div>
                 </div>
-              ))}
-            </div>
+                <div className="flex-1 overflow-y-auto pb-2">
+                  {files.map(f => (
+                    <div 
+                      key={f.id} 
+                      className={`flex items-center gap-2 pl-6 pr-3 py-1.5 cursor-pointer border-l-2 ${activeFileId === f.id ? 'bg-[#293d31] border-[#128a42] text-white' : 'border-transparent text-slate-400 hover:bg-[#2d2d2d] hover:text-slate-300'}`}
+                      onClick={() => setActiveFile(f.id)}
+                    >
+                      <FileText className="w-3.5 h-3.5 text-slate-500" />
+                      <span className="truncate">{f.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </Panel>
+
+              {/* HORIZONTAL RESIZER inside Sidebar */}
+              <PanelResizeHandle className="h-1.5 bg-[#1a1a1b] hover:bg-[#3d3d3d] transition-colors cursor-row-resize flex items-center justify-center">
+                <div className="w-6 h-[2px] bg-slate-600 rounded-full" />
+              </PanelResizeHandle>
+
+              {/* OUTLINE */}
+              <Panel defaultSize={40} minSize={10} className="flex flex-col bg-[#222223]">
+                <div className="px-3 py-2 flex items-center gap-1 cursor-pointer font-semibold text-slate-300">
+                  <ChevronDown className="w-4 h-4" />
+                  <span>File outline</span>
+                </div>
+                <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center justify-center text-center text-slate-400 text-xs">
+                  <p>We can't find any sections or subsections in this file.</p>
+                  <a href="#" className="text-blue-400 hover:underline mt-1">Find out more about the file outline</a>
+                </div>
+              </Panel>
+
+            </PanelGroup>
           </Panel>
 
-          <PanelResizeHandle className="w-1.5 bg-slate-200 dark:bg-slate-800 hover:bg-blue-500 transition-colors cursor-col-resize z-40" />
+          {/* VERTICAL RESIZER (Sidebar | Editor) */}
+          <PanelResizeHandle className="w-1.5 bg-[#1a1a1b] hover:bg-[#3d3d3d] transition-colors cursor-col-resize z-40 flex items-center justify-center relative">
+            {/* Grip dots */}
+            <div className="flex flex-col gap-[2px]">
+              <div className="w-1 h-1 rounded-full bg-slate-600" />
+              <div className="w-1 h-1 rounded-full bg-slate-600" />
+              <div className="w-1 h-1 rounded-full bg-slate-600" />
+            </div>
+          </PanelResizeHandle>
 
           {/* COLUMN 2 & 3: EDITOR + PDF VIEWER */}
           <Panel defaultSize={85} minSize={20} className="flex flex-col">
             <PanelGroup orientation="horizontal">
+              
               {/* COLUMN 2: EDITOR */}
-              <Panel defaultSize={50} minSize={10} className="bg-white dark:bg-[#1e1e1e] flex flex-col z-10 shadow-[0_0_15px_rgba(0,0,0,0.05)] dark:shadow-[0_0_15px_rgba(0,0,0,0.2)]">
+              <Panel defaultSize={50} minSize={10} className="bg-[#1e1e1e] flex flex-col z-10 shadow-[0_0_15px_rgba(0,0,0,0.2)]">
                  <EditorPanel />
               </Panel>
 
-              <PanelResizeHandle className="w-1.5 bg-slate-200 dark:bg-slate-800 hover:bg-blue-500 transition-colors cursor-col-resize z-20" />
+              {/* VERTICAL RESIZER (Editor | PDF) */}
+              <PanelResizeHandle className="w-1.5 bg-[#1a1a1b] hover:bg-[#3d3d3d] transition-colors cursor-col-resize z-20 flex items-center justify-center">
+                <div className="flex flex-col gap-[2px]">
+                  <div className="w-1 h-1 rounded-full bg-slate-600" />
+                  <div className="w-1 h-1 rounded-full bg-slate-600" />
+                  <div className="w-1 h-1 rounded-full bg-slate-600" />
+                </div>
+              </PanelResizeHandle>
 
               {/* COLUMN 3: PDF VIEWER */}
-              <Panel defaultSize={50} minSize={10} className="bg-slate-100 dark:bg-[#333333] flex flex-col relative z-10">
-                 <div className="absolute top-4 right-4 z-10 flex gap-2">
-                    <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded-md font-medium text-sm shadow-md transition-colors">
-                      Recompile
-                    </button>
+              <Panel defaultSize={50} minSize={10} className="bg-[#38393a] flex flex-col relative z-10">
+                 {/* PDF Toolbar Fake for now, will build in Phase 3 */}
+                 <div className="h-[40px] bg-[#222223] border-b border-[#2d2d2d] flex items-center justify-between px-3 shrink-0">
+                   <div className="flex items-center">
+                     <div className="flex">
+                       <button className="bg-[#128a42] hover:bg-[#107c3b] text-white px-3 py-1 rounded-l text-sm font-semibold transition-colors border-r border-[#107c3b]">
+                         Recompile
+                       </button>
+                       <button className="bg-[#128a42] hover:bg-[#107c3b] text-white px-1.5 py-1 rounded-r text-sm flex items-center justify-center transition-colors">
+                         <ChevronDown className="w-4 h-4" />
+                       </button>
+                     </div>
+                   </div>
+                   <div className="flex items-center text-slate-400 gap-3">
+                     <span className="text-xs">PDF Viewer Panel Coming Soon</span>
+                   </div>
                  </div>
-                 <div className="flex-1 flex items-center justify-center text-slate-400 text-sm">
-                   [PDF Viewer Panel Coming Soon]
+                 
+                 {/* Canvas container */}
+                 <div className="flex-1 flex items-center justify-center bg-[#38393a]">
+                    <div className="text-slate-500 text-sm">PDF Canvas</div>
                  </div>
               </Panel>
             </PanelGroup>

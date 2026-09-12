@@ -9,7 +9,7 @@ import { bracketMatching, syntaxHighlighting, defaultHighlightStyle, foldGutter 
 import { stex } from '@codemirror/legacy-modes/mode/stex';
 import { StreamLanguage } from '@codemirror/language';
 import { oneDark } from '@codemirror/theme-one-dark';
-import { Bold, Italic, Code, Eye, Search, Undo, Redo, Image as ImageIcon, Type, Link2 } from 'lucide-react';
+import { Bold, Italic, Type, Image as ImageIcon, Link2, Search, Eye, Code, X, Undo2, Redo2, Omega, List, AlignLeft, MoreHorizontal } from 'lucide-react';
 
 export default function EditorPanel() {
   const { files, activeFileId, openTabs, setActiveFile, closeTab, updateFileContent, editorMode, setEditorMode, setCursorLine, setPdfTargetLine } = useLaTeXStore();
@@ -28,14 +28,12 @@ export default function EditorPanel() {
       {
         key: 'Mod-Enter',
         run: () => {
-          // Trigger compile via store or event
           return true;
         }
       },
       {
         key: 'Mod-Click',
         run: () => {
-          // SyncTeX Forward
           if (viewRef.current) {
             const head = viewRef.current.state.selection.main.head;
             const line = viewRef.current.state.doc.lineAt(head).number;
@@ -79,6 +77,13 @@ export default function EditorPanel() {
             const line = update.state.doc.lineAt(head).number;
             setCursorLine(line);
           }
+        }),
+        EditorView.theme({
+          "&": { backgroundColor: "#142333" }, // Overleaf dark blue-ish background
+          ".cm-content": { caretColor: "#fff" },
+          ".cm-gutters": { backgroundColor: "#142333", color: "#4f6579", borderRight: "none" },
+          ".cm-activeLine": { backgroundColor: "rgba(255, 255, 255, 0.05)" },
+          ".cm-activeLineGutter": { backgroundColor: "rgba(255, 255, 255, 0.05)", color: "#a0aab5" },
         })
       ]
     });
@@ -95,7 +100,6 @@ export default function EditorPanel() {
     };
   }, []);
 
-  // Sync state -> editor when switching tabs or external changes
   useEffect(() => {
     if (viewRef.current && source !== viewRef.current.state.doc.toString()) {
       viewRef.current.dispatch({
@@ -105,10 +109,10 @@ export default function EditorPanel() {
   }, [source, activeFileId]);
 
   return (
-    <div className="w-full h-full flex flex-col bg-white dark:bg-[#1e1e1e]">
+    <div className="w-full h-full flex flex-col bg-[#142333]">
       
       {/* 1. TABS BAR */}
-      <div className="h-10 border-b border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-[#2d2d2d] flex items-center px-1 overflow-x-auto shrink-0 hide-scrollbar">
+      <div className="h-[40px] bg-[#1a1a1b] flex items-center shrink-0 border-b border-[#2d2d2d] overflow-x-auto hide-scrollbar">
         {openTabs.map(tabId => {
           const f = files.find(x => x.id === tabId);
           if (!f) return null;
@@ -116,65 +120,64 @@ export default function EditorPanel() {
           return (
             <div 
               key={tabId} 
-              className={`flex items-center gap-2 px-3 h-full text-xs cursor-pointer border-r border-slate-200 dark:border-slate-800 transition-colors ${isActive ? 'bg-white dark:bg-[#1e1e1e] border-t-2 border-t-blue-500 text-slate-900 dark:text-slate-100 font-medium' : 'bg-transparent text-slate-500 hover:bg-slate-200 dark:hover:bg-[#333] border-t-2 border-t-transparent'}`} 
+              className={`flex items-center gap-2 px-3 h-full text-[13px] cursor-pointer transition-colors border-r border-[#2d2d2d] ${isActive ? 'bg-[#222223] text-white' : 'bg-[#1a1a1b] text-slate-400 hover:bg-[#2d2d2d]'}`} 
               onClick={() => setActiveFile(tabId)}
             >
-              <span className="truncate max-w-[120px]">{f.name}</span>
+              <FileText className={`w-3.5 h-3.5 ${isActive ? 'text-[#128a42]' : 'text-slate-500'}`} />
+              <span className="truncate max-w-[150px]">{f.name}</span>
               <button 
-                className="text-slate-400 hover:text-red-500 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-sm p-0.5 transition-colors" 
+                className={`ml-1 rounded-sm p-0.5 transition-colors ${isActive ? 'text-slate-300 hover:bg-[#3d3d3d]' : 'text-slate-500 hover:bg-[#3d3d3d] hover:text-white'}`} 
                 onClick={(e) => { e.stopPropagation(); closeTab(tabId); }}
               >
-                ×
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
           );
         })}
       </div>
 
-      {/* 2. RICH TEXT TOOLBAR */}
-      <div className="h-10 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#252526] flex items-center justify-between px-3 shrink-0">
-        <div className="flex items-center gap-1">
-          <button className="p-1.5 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors" title="Undo">
-            <Undo className="w-4 h-4" />
-          </button>
-          <button className="p-1.5 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors" title="Redo">
-            <Redo className="w-4 h-4" />
-          </button>
-          <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-1" />
-          <button className="p-1.5 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors font-serif font-bold" title="Bold (\textbf{})">
-            B
-          </button>
-          <button className="p-1.5 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors font-serif italic" title="Italic (\textit{})">
-            I
-          </button>
-          <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-1" />
-          <button className="p-1.5 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors" title="Insert Math ($$)">
-            <Type className="w-4 h-4" />
-          </button>
-          <button className="p-1.5 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors" title="Insert Image (\includegraphics)">
-            <ImageIcon className="w-4 h-4" />
-          </button>
-          <button className="p-1.5 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors" title="Insert Link (\href)">
-            <Link2 className="w-4 h-4" />
+      {/* 2. RICH TEXT TOOLBAR (OVERLEAF EXACT) */}
+      <div className="h-[40px] border-b border-[#2d2d2d] bg-[#222223] flex items-center justify-between px-2 shrink-0">
+        <div className="flex items-center gap-0.5">
+          <button className="p-1.5 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded transition-colors" title="Undo"><Undo2 className="w-4 h-4" /></button>
+          <button className="p-1.5 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded transition-colors" title="Redo"><Redo2 className="w-4 h-4" /></button>
+          
+          <div className="w-px h-5 bg-[#3d3d3d] mx-1.5" />
+          
+          <button className="p-1.5 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded transition-colors font-serif font-bold" title="Bold"><Bold className="w-4 h-4" /></button>
+          <button className="p-1.5 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded transition-colors font-serif italic" title="Italic"><Italic className="w-4 h-4" /></button>
+          <button className="p-1.5 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded transition-colors font-serif" title="Text Size"><Type className="w-4 h-4" /></button>
+          
+          <div className="w-px h-5 bg-[#3d3d3d] mx-1.5" />
+          
+          <button className="p-1.5 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded transition-colors" title="Insert Math"><Omega className="w-4 h-4" /></button>
+          <button className="p-1.5 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded transition-colors" title="Insert Image"><ImageIcon className="w-4 h-4" /></button>
+          <button className="p-1.5 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded transition-colors" title="List"><List className="w-4 h-4" /></button>
+          <button className="p-1.5 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded transition-colors" title="Align"><AlignLeft className="w-4 h-4" /></button>
+          
+          <button className="p-1.5 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded transition-colors ml-1" title="More">
+            <MoreHorizontal className="w-4 h-4" />
           </button>
         </div>
         
-        <div className="flex items-center gap-2">
-          <button className="p-1.5 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors" title="Find & Replace">
+        <div className="flex items-center gap-3">
+          <button className="text-slate-400 hover:text-white p-1.5 rounded hover:bg-[#3d3d3d] transition-colors" title="Search">
             <Search className="w-4 h-4" />
           </button>
-          <div className="flex items-center bg-slate-100 dark:bg-[#1e1e1e] p-0.5 rounded-md border border-slate-200 dark:border-slate-800">
+          
+          {/* Pill Toggle */}
+          <div className="flex items-center bg-[#1a1a1b] rounded-full border border-[#3d3d3d] p-0.5 mr-1">
             <button 
-              className={`px-3 py-1 text-xs font-medium rounded-sm transition-colors ${editorMode === 'code' ? 'bg-white dark:bg-[#2d2d2d] text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-100'}`}
+              className={`px-3 py-1 text-[11px] font-semibold rounded-full transition-colors flex items-center gap-1 ${editorMode === 'code' ? 'bg-[#128a42] text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
               onClick={() => setEditorMode('code')}
             >
               Code
             </button>
             <button 
-              className={`px-3 py-1 text-xs font-medium rounded-sm transition-colors flex items-center gap-1 ${editorMode === 'visual' ? 'bg-white dark:bg-[#2d2d2d] text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-100'}`}
+              className={`px-3 py-1 text-[11px] font-semibold rounded-full transition-colors flex items-center gap-1 ${editorMode === 'visual' ? 'bg-[#128a42] text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
               onClick={() => setEditorMode('visual')}
             >
-              <Eye className="w-3 h-3" />
+              <Eye className="w-3.5 h-3.5" />
               Visual
             </button>
           </div>
@@ -182,13 +185,13 @@ export default function EditorPanel() {
       </div>
 
       {/* 3. CODEMIRROR EDITOR CONTAINER */}
-      <div className="flex-1 min-h-0 w-full relative">
+      <div className="flex-1 min-h-0 w-full relative bg-[#142333]">
         {!activeFile ? (
-          <div className="flex items-center justify-center w-full h-full text-slate-400 text-sm">
-            Select a file to edit
+          <div className="flex items-center justify-center w-full h-full text-slate-500 text-sm">
+            No file open
           </div>
         ) : (
-          <div ref={editorRef} className="w-full h-full overflow-hidden absolute inset-0 [&_.cm-editor]:h-full [&_.cm-scroller]:font-mono [&_.cm-scroller]:text-sm" />
+          <div ref={editorRef} className="w-full h-full overflow-hidden absolute inset-0 [&_.cm-editor]:h-full [&_.cm-scroller]:font-mono [&_.cm-scroller]:text-[13px]" />
         )}
       </div>
 

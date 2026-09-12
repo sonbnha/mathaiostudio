@@ -1,9 +1,24 @@
 /** LaTeX-on-HTTP adapter. Source is sent only to the configured server, never as a URL. */
-export const SOURCE_LIMIT = 200_000;
-const PDF_LIMIT = 4_000_000;
+export const SOURCE_LIMIT = 500_000;
+const PDF_LIMIT = 10_000_000;
+
+export interface CompileResource {
+  path: string;
+  content?: string;
+  data?: string; // Base64 encoded for binary assets
+  main?: boolean;
+}
+
+export interface CompileOptions {
+  compiler?: 'xelatex' | 'pdflatex' | 'lualatex' | string;
+  mainDocument?: string;
+  resources: CompileResource[];
+}
+
 export class CompileError extends Error {
   constructor(message: string, public status: number, public log = '') { super(message); }
 }
+
 async function boundedBody(response: Response, limit: number): Promise<Uint8Array> {
   const reader = response.body?.getReader();
   if (!reader) throw new CompileError('Engine trả về phản hồi rỗng.', 502);
@@ -20,7 +35,11 @@ async function boundedBody(response: Response, limit: number): Promise<Uint8Arra
   for (const chunk of chunks) { result.set(chunk, offset); offset += chunk.length; }
   return result;
 }
-export async function compileLatex(source: string, signal?: AbortSignal): Promise<Uint8Array> {
+
+export async function compileLatex(
+  input: string | CompileOptions,
+  signal?: AbortSignal
+): Promise<Uint8Array> {
   const endpoint = process.env.LATEX_COMPILER_URL || 'https://latex.ytotech.com/builds/sync';
   const url = new URL(endpoint);
   if (url.protocol !== 'https:' && !(process.env.NODE_ENV !== 'production' && ['localhost', '127.0.0.1'].includes(url.hostname))) {
@@ -28,6 +47,45 @@ export async function compileLatex(source: string, signal?: AbortSignal): Promis
   }
   const headers: Record<string, string> = {'Content-Type': 'application/json', 'Accept': 'application/pdf'};
   if (process.env.LATEX_COMPILER_TOKEN) headers.Authorization = `Bearer ${process.env.LATEX_COMPILER_TOKEN}`;
+
+  let compilerName = 'xelatex';
+  let resourcesPayload: Array<{ main?: boolean; path: string; content?: string; data?: string }> = [];
+
+  if (typeof input === 'string') {
+    resourcesPayload = [{ main: true, path: 'document.tex', content: input }];
+  } else {
+    compilerName = input.compiler?.toLowerCase() || 'xelatex';
+    // Validate engine name
+    if (!['xelatex', 'pdflatex', 'lualatex'].includes(compilerName)) {
+      compilerName = 'xelatex';
+    }
+
+    if (Array.isArray(input.resources) && input.resources.length > 0) {
+      const hasMain = input.resources.some((r) => r.main);
+      const targetMain = input.mainDocument || 'main.tex';
+
+      resourcesPayload = input.resources.map((r) => {
+        const isMain = hasMain ? Boolean(r.main) : r.path === targetMain || r.path === 'document.tex';
+        const res: { main?: boolean; path: string; content?: string; data?: string } = {
+          path: r.path,
+        };
+        if (isMain) res.main = true;
+        if (r.content !== undefined) res.content = r.content;
+        if (r.data !== undefined) res.data = r.data;
+        return res;
+      });
+
+      // If still no resource is marked as main, mark the first tex file or first resource as main
+      if (!resourcesPayload.some((r) => r.main)) {
+        const firstTex = resourcesPayload.find((r) => r.path.endsWith('.tex'));
+        if (firstTex) firstTex.main = true;
+        else if (resourcesPayload[0]) resourcesPayload[0].main = true;
+      }
+    } else {
+      throw new CompileError('Dự án không có tài nguyên nào để biên dịch.', 400);
+    }
+  }
+
   let response: Response;
   try {
     response = await fetch(url, {
@@ -37,7 +95,7 @@ export async function compileLatex(source: string, signal?: AbortSignal): Promis
       redirect: 'error',
       signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(45000)]) : AbortSignal.timeout(45000),
       body: JSON.stringify({
-        compiler: 'xelatex',
+        compiler: compilerName,
         options: {
           compiler: {
             halt_on_error: false,
@@ -47,11 +105,12 @@ export async function compileLatex(source: string, signal?: AbortSignal): Promis
             log_files_on_failure: true,
           },
         },
-        resources: [{ main: true, path: 'document.tex', content: source }],
+        resources: resourcesPayload,
       }),
     });
+
     if (!response.ok) {
-      const raw = new TextDecoder().decode(await boundedBody(response, 200_000));
+      const raw = new TextDecoder().decode(await boundedBody(response, 300_000));
       let log = raw;
       try {
         const detail = JSON.parse(raw);
@@ -78,12 +137,13 @@ export async function compileLatex(source: string, signal?: AbortSignal): Promis
         log.slice(-32000)
       );
     }
+
     const bytes = await boundedBody(response, PDF_LIMIT);
-    if (new TextDecoder().decode(bytes.slice(0,5)) !== '%PDF-') throw new CompileError('Engine không trả về PDF hợp lệ.', 502);
+    if (new TextDecoder().decode(bytes.slice(0, 5)) !== '%PDF-') throw new CompileError('Engine không trả về PDF hợp lệ.', 502);
     return bytes;
   } catch (error) {
     if (error instanceof CompileError) throw error;
-    if (error instanceof Error && ['TimeoutError','AbortError'].includes(error.name)) throw new CompileError('Biên dịch quá thời gian cho phép (45 giây).', 504);
+    if (error instanceof Error && ['TimeoutError', 'AbortError'].includes(error.name)) throw new CompileError('Biên dịch quá thời gian cho phép (45 giây).', 504);
     throw new CompileError('Không kết nối được dịch vụ biên dịch. Vui lòng thử lại sau.', 502);
   }
 }

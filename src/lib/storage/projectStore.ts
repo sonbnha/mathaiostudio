@@ -203,7 +203,12 @@ export function saveProject(item: ProjectItem): void {
           updatedAt: Date.now(),
           createdAt: item.createdAt,
           source: item.content || item.metadata?.source || '',
-          files: [{ name: 'main.tex', content: item.content || item.metadata?.source || '' }],
+          files:
+            item.files && item.files.length > 0
+              ? item.files
+              : item.metadata?.files && item.metadata.files.length > 0
+              ? item.metadata.files
+              : [{ name: item.metadata?.mainDocument || 'main.tex', content: item.content || item.metadata?.source || '' }],
         };
         if (lIdx >= 0) {
           latexList[lIdx] = latexDoc;

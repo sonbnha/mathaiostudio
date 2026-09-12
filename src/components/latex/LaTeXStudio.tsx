@@ -538,19 +538,26 @@ export default function LaTeXStudio({
 
     saveTimeoutRef.current = setTimeout(() => {
       try {
+        const existingProj = getProjectById(currentDocId);
+        const targetMain = projectSettings.mainDocument || 'main.tex';
+        const mainContent = files.find((f) => f.name === targetMain)?.content || source;
+
         const itemToSave: ProjectItem = {
           id: currentDocId,
           title: docTitle,
           type: 'latex',
           updatedAt: Date.now(),
-          createdAt: Date.now(),
-          isStarred: false,
+          createdAt: existingProj?.createdAt || Date.now(),
+          isStarred: existingProj?.isStarred || false,
           metadata: {
+            ...(existingProj?.metadata || {}),
             templateId: template,
             badge: getTemplateById(template)?.badge || 'XeLaTeX',
-            previewSnippet: source.slice(0, 120),
+            previewSnippet: mainContent.slice(0, 120),
+            mainDocument: targetMain,
+            files,
           },
-          content: source,
+          content: mainContent,
           files,
         };
         saveProject(itemToSave);
@@ -559,9 +566,9 @@ export default function LaTeXStudio({
           id: currentDocId,
           title: docTitle,
           templateId: template,
-          createdAt: Date.now(),
+          createdAt: existingProj?.createdAt || Date.now(),
           updatedAt: Date.now(),
-          source,
+          source: mainContent,
           files,
           images,
           history,
@@ -597,29 +604,67 @@ export default function LaTeXStudio({
   // Compile LaTeX to PDF
   const compile = useCallback(
     async (sourceToCompile?: string) => {
-      let code = sourceToCompile;
-      if (!code) {
-        const editorText = editorViewRef.current?.state?.doc?.toString();
-        const targetMain = projectSettings.mainDocument || 'main.tex';
-        const mainFile = files.find((f) => f.name === targetMain) || files.find((f) => f.name === 'main.tex');
-        code = editorText || (activeFileName === (mainFile?.name || 'main.tex') ? source : mainFile?.content || source);
-      }
+      const currentActiveText = editorViewRef.current?.state?.doc?.toString() ?? source;
+      const targetMain = projectSettings.mainDocument || 'main.tex';
 
-      if (!code?.trim()) return;
+      // Synchronize current editor state into files snapshot
+      const filesSnapshot = files.map((f) => ({
+        name: f.name,
+        content: f.name === activeFileName ? currentActiveText : f.content,
+      }));
 
-      console.log('=== PAYLOAD GUI DI ===', code);
+      // Always compile the designated main document
+      const mainFile =
+        filesSnapshot.find((f) => f.name === targetMain) ||
+        filesSnapshot.find((f) => f.name === 'main.tex') ||
+        filesSnapshot[0];
+
+      const mainContent = sourceToCompile || mainFile?.content || currentActiveText;
+      if (!mainContent?.trim()) return;
+
       setStatus('compiling');
       setErrorLog('');
 
       try {
+        // Build multi-file resources array including sub-files and images
+        const resources: Array<{ path: string; content?: string; data?: string; main?: boolean }> =
+          filesSnapshot.map((f) => ({
+            path: f.name,
+            content: f.name === (mainFile?.name || targetMain) ? mainContent : f.content,
+            main: f.name === (mainFile?.name || targetMain),
+          }));
+
+        // Include uploaded images as binary resources (base64)
+        images.forEach((img) => {
+          const dataUri = img.dataUrl || img.url || '';
+          if (dataUri.startsWith('data:')) {
+            const base64Data = dataUri.split(',')[1];
+            if (base64Data) {
+              resources.push({
+                path: img.name,
+                data: base64Data,
+              });
+              if (!img.name.startsWith('images/')) {
+                resources.push({
+                  path: `images/${img.name}`,
+                  data: base64Data,
+                });
+              }
+            }
+          }
+        });
+
         const res = await fetch('/api/latex/compile', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            source: code,
-            code,
+            source: mainContent,
+            code: mainContent,
             compiler: engine,
             engine,
+            mainDocument: mainFile?.name || targetMain,
+            resources,
+            files: filesSnapshot,
             projectId: currentDocId || docId || 'default',
           }),
         });
@@ -632,7 +677,6 @@ export default function LaTeXStudio({
             errData = { error: 'Lỗi máy chủ biên dịch.' };
           }
           const errorLogMessage = errData.log || errData.error || 'Biên dịch thất bại.';
-          console.log('=== RAW LATEX LOG ===', errorLogMessage);
           throw new Error(errorLogMessage);
         }
 
@@ -640,30 +684,29 @@ export default function LaTeXStudio({
         if (pdf) URL.revokeObjectURL(pdf);
         const url = URL.createObjectURL(blob);
         setPdf(url);
-        setCompiledSource(code);
+        setCompiledSource(mainContent);
         setStatus('success');
         setOutputView('pdf');
 
         // Create LocalStorage project snapshot on compile success
         const filesMap: Record<string, string> = {};
-        files.forEach((f) => {
-          filesMap[f.name] = f.name === activeFileName ? (code || source) : f.content;
+        filesSnapshot.forEach((f) => {
+          filesMap[f.name] = f.content;
         });
         createSnapshot(currentDocId || docId || 'default', filesMap, user?.email || 'Bạn', 'Biên dịch thành công');
 
         setHistory((prev) => [
           ...prev,
-          { at: Date.now(), source: code!, label: 'Biên dịch thành công' },
+          { at: Date.now(), source: mainContent, label: 'Biên dịch thành công' },
         ]);
       } catch (err: any) {
         setStatus('error');
         const rawLog = err.message || 'Lỗi không xác định khi biên dịch.';
-        console.log('=== RAW LATEX LOG ===', rawLog);
         setErrorLog(rawLog);
         setOutputView('console');
       }
     },
-    [source, files, activeFileName, pdf, engine, projectSettings.mainDocument, currentDocId, docId, user?.email]
+    [source, files, images, activeFileName, pdf, engine, projectSettings.mainDocument, currentDocId, docId, user?.email]
   );
 
   // Auto-recompile immediately on project load or document switch (Client-side Navigation)
@@ -889,14 +932,18 @@ export default function LaTeXStudio({
     setIsProjectMenuOpen(false);
     try {
       const zip = new JSZip();
+      const currentActiveText = editorViewRef.current?.state?.doc?.toString() ?? source;
       files.forEach((file) => {
-        zip.file(file.name, file.content);
+        const fileContent = file.name === activeFileName ? currentActiveText : file.content;
+        zip.file(file.name, fileContent);
       });
       images.forEach((img) => {
-        if (img.url && img.url.startsWith('data:')) {
-          const base64Data = img.url.split(',')[1];
+        const dataUri = img.dataUrl || img.url || '';
+        if (dataUri.startsWith('data:')) {
+          const base64Data = dataUri.split(',')[1];
           if (base64Data) {
-            zip.file(`images/${img.name}`, base64Data, { base64: true });
+            const imgPath = img.name.startsWith('images/') ? img.name : `images/${img.name}`;
+            zip.file(imgPath, base64Data, { base64: true });
           }
         }
       });
@@ -907,7 +954,7 @@ export default function LaTeXStudio({
       console.error('Lỗi khi nén tệp zip:', err);
       alert('Không thể tạo tệp nén ZIP.');
     }
-  }, [files, images, docTitle]);
+  }, [files, images, activeFileName, source, docTitle]);
 
   // Export document using format endpoint (docx, md, html)
   const handleExportFormat = useCallback(async (format: 'docx' | 'md' | 'html') => {

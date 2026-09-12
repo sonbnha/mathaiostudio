@@ -149,7 +149,7 @@ export default function LaTeXStudioRoot() {
           </Panel>
 
           {/* VERTICAL RESIZER 1 (Sidebar | Editor) */}
-          <PanelResizeHandle className="w-[11px] bg-[#222c38] border-x border-[#171f28] hover:bg-[#2b3746] transition-colors cursor-col-resize z-30 relative shrink-0">
+          <PanelResizeHandle className="w-[9px] bg-[#222c38] border-x border-[#171f28] hover:bg-[#2b3746] transition-colors cursor-col-resize z-30 relative shrink-0">
             {/* Upper 3-dot grip with wider spacing */}
             <div className="absolute top-[40%] left-1/2 -translate-x-1/2 flex flex-col gap-[5px] pointer-events-none">
               <div className="w-[2.5px] h-[2.5px] rounded-full bg-slate-400 opacity-80" />
@@ -159,10 +159,10 @@ export default function LaTeXStudioRoot() {
 
             {/* Collapse Tab (extra slender & longer, centered on splitter line) */}
             <div 
-              className="absolute top-[52%] left-1/2 -translate-x-1/2 w-[9px] h-[48px] bg-[#3a4656] hover:bg-[#4a586d] rounded-[2px] flex items-center justify-center cursor-pointer text-slate-200 border border-[#232c37] shadow-sm z-40 transition-colors"
+              className="absolute top-[52%] left-1/2 -translate-x-1/2 w-[8px] h-[44px] bg-[#3a4656] hover:bg-[#4a586d] rounded-[2px] flex items-center justify-center cursor-pointer text-slate-200 border border-[#232c37] shadow-sm z-40 transition-colors"
               title="Collapse file tree"
             >
-              <span className="text-[9px] font-bold leading-none select-none text-slate-200">{'<'}</span>
+              <span className="text-[8px] font-bold leading-none select-none text-slate-200">{'<'}</span>
             </div>
 
             {/* Lower 3-dot grip with wider spacing */}
@@ -183,10 +183,10 @@ export default function LaTeXStudioRoot() {
               </Panel>
 
               {/* VERTICAL RESIZER 2 (Editor | PDF) */}
-              <PanelResizeHandle className="w-[11px] bg-[#222c38] border-x border-[#171f28] hover:bg-[#2b3746] transition-colors cursor-col-resize z-30 relative shrink-0">
+              <PanelResizeHandle className="w-[9px] bg-[#222c38] border-x border-[#171f28] hover:bg-[#2b3746] transition-colors cursor-col-resize z-30 relative shrink-0">
                 {/* SyncTeX Pill (Larger & pushed higher up at ~20%) */}
                 <div 
-                  className="absolute top-[20%] left-1/2 -translate-x-1/2 w-[26px] h-[54px] bg-[#1a232f] hover:bg-[#243040] rounded-full flex flex-col items-center justify-center cursor-pointer border border-[#323f52] shadow-md z-40 transition-colors"
+                  className="absolute top-[20%] left-1/2 -translate-x-1/2 w-[25px] h-[52px] bg-[#1a232f] hover:bg-[#243040] rounded-full flex flex-col items-center justify-center cursor-pointer border border-[#323f52] shadow-md z-40 transition-colors"
                   title="SyncTeX (Code <-> PDF)"
                 >
                   <button 
@@ -213,10 +213,10 @@ export default function LaTeXStudioRoot() {
 
                 {/* Collapse PDF Tab (extra slender & longer, centered on splitter line) */}
                 <div 
-                  className="absolute top-[52%] left-1/2 -translate-x-1/2 w-[9px] h-[48px] bg-[#3a4656] hover:bg-[#4a586d] rounded-[2px] flex items-center justify-center cursor-pointer text-slate-200 border border-[#232c37] shadow-sm z-40 transition-colors"
+                  className="absolute top-[52%] left-1/2 -translate-x-1/2 w-[8px] h-[44px] bg-[#3a4656] hover:bg-[#4a586d] rounded-[2px] flex items-center justify-center cursor-pointer text-slate-200 border border-[#232c37] shadow-sm z-40 transition-colors"
                   title="Collapse PDF viewer"
                 >
-                  <span className="text-[9px] font-bold leading-none select-none text-slate-200">{'>'}</span>
+                  <span className="text-[8px] font-bold leading-none select-none text-slate-200">{'>'}</span>
                 </div>
 
                 {/* Lower 3-dot grip with wider spacing */}

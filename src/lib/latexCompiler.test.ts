@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {compileLatex, CompileError, SOURCE_LIMIT, PDF_LIMIT} from './latexCompiler';
+import {compileLatex, CompileError} from './latexCompiler';
 import {POST} from '../app/api/latex/compile/route';
 
 const request = (body: string, headers: Record<string,string> = {}) => new Request('https://studio.test/api/latex/compile', {method:'POST', headers:{'content-type':'application/json', ...headers}, body});
@@ -8,7 +8,7 @@ test('reject malformed, empty, oversized and cross-site requests before contacti
   assert.equal((await POST(request('{'))).status,400);
   assert.equal((await POST(request('{}'))).status,400);
   assert.equal((await POST(request(JSON.stringify({source:' '.repeat(2)})))).status,400);
-  assert.equal((await POST(request(JSON.stringify({source:'x'.repeat(SOURCE_LIMIT + 1)})))).status,413);
+  assert.equal((await POST(request(JSON.stringify({source:'x'.repeat(200001)})))).status,413);
   assert.equal((await POST(request('{}', {'origin':'https://elsewhere.test'}))).status,403);
   assert.equal((await POST(request('{}', {'content-type':'text/plain'}))).status,415);
   assert.equal((await POST(request('{}', {'host':'preview.test','origin':'https://preview.test'}))).status,400);
@@ -30,7 +30,7 @@ test('compile adapter validates PDF, preserves diagnostics and handles timeout/u
   await assert.rejects(compileLatex('sample'), (e: unknown) => e instanceof CompileError && e.status===422 && e.log.includes('l.3'));
   fetchMock.mock.mockImplementation(async () => new Response('<html>not PDF</html>'));
   await assert.rejects(compileLatex('sample'), (e: unknown) => e instanceof CompileError && e.status===502);
-  fetchMock.mock.mockImplementation(async () => new Response(new Uint8Array(PDF_LIMIT + 1)));
+  fetchMock.mock.mockImplementation(async () => new Response(new Uint8Array(4_000_001)));
   await assert.rejects(compileLatex('sample'), (e: unknown) => e instanceof CompileError && e.status===413);
   fetchMock.mock.mockImplementation(async () => {throw new DOMException('timeout','TimeoutError');});
   await assert.rejects(compileLatex('sample'), (e: unknown) => e instanceof CompileError && e.status===504);

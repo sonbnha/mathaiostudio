@@ -302,7 +302,7 @@ export default function AddFilesModal({
     <div
       onClick={onClose}
       onPaste={handlePaste}
-      className={`fixed inset-0 z-50 flex justify-center items-start pt-[10vh] sm:pt-[12vh] px-4 bg-black/50 transition-opacity duration-200 ease-out ${
+      className={`fixed inset-0 z-50 flex justify-center items-start pt-[10vh] sm:pt-[12vh] px-4 bg-black/60 backdrop-blur-[2px] transition-all duration-200 ease-out ${
         isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
       }`}
     >

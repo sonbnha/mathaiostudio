@@ -134,7 +134,7 @@ export default function LaTeXStudio({
   const [source, setSource] = useState<string>(defaultTpl.source);
 
   // Multi-file state
-  const [activeFileName, setActiveFileName] = useState<string>('main.tex');
+  const [activeFileName, setActiveFileName] = useState<string | null>('main.tex');
   const [openTabs, setOpenTabs] = useState<string[]>(['main.tex']);
   const [files, setFiles] = useState<StudioFile[]>([
     { name: 'main.tex', content: defaultTpl.source },
@@ -708,12 +708,12 @@ export default function LaTeXStudio({
         content,
       }));
       setFiles(restoredFiles);
-      const targetName = restoredFiles.some((f) => f.name === activeFileName)
+      const targetName = (activeFileName && restoredFiles.some((f) => f.name === activeFileName))
         ? activeFileName
         : restoredFiles[0]?.name || 'main.tex';
       setActiveFileName(targetName);
       const mainContent =
-        snapshot.files[targetName] ||
+        (targetName ? snapshot.files[targetName] : undefined) ||
         snapshot.files['main.tex'] ||
         Object.values(snapshot.files)[0] ||
         '';
@@ -953,9 +953,11 @@ export default function LaTeXStudio({
     const targetFile = files.find((f) => f.name === fileName);
     if (!targetFile) return;
 
-    setFiles((prev) =>
-      prev.map((f) => (f.name === activeFileName ? { ...f, content: source } : f))
-    );
+    if (activeFileName) {
+      setFiles((prev) =>
+        prev.map((f) => (f.name === activeFileName ? { ...f, content: source } : f))
+      );
+    }
 
     setActiveFileName(fileName);
     setSource(targetFile.content);
@@ -977,22 +979,30 @@ export default function LaTeXStudio({
   };
 
   const handleDeleteFile = (fileName: string) => {
-    if (fileName === 'main.tex') {
-      alert('Không thể xóa tệp chính main.tex');
-      return;
-    }
-    setFiles((prev) => prev.filter((f) => f.name !== fileName));
-    setOpenTabs((prev) => prev.filter((t) => t !== fileName));
+    const remainingFiles = files.filter((f) => f.name !== fileName);
+    setFiles(remainingFiles);
+    const nextTabs = openTabs.filter((t) => t !== fileName);
+    setOpenTabs(nextTabs);
+
     if (activeFileName === fileName) {
-      handleSelectFile('main.tex');
+      if (remainingFiles.length > 0) {
+        const nextFile = nextTabs.length > 0
+          ? remainingFiles.find((f) => f.name === nextTabs[nextTabs.length - 1]) || remainingFiles[0]
+          : remainingFiles[0];
+        setActiveFileName(nextFile.name);
+        setSource(nextFile.content);
+        if (!nextTabs.includes(nextFile.name)) {
+          setOpenTabs([...nextTabs, nextFile.name]);
+        }
+      } else {
+        setActiveFileName(null);
+        setSource('');
+        setOpenTabs([]);
+      }
     }
   };
 
   const handleRenameFile = (oldName: string, newName: string) => {
-    if (oldName === 'main.tex') {
-      alert('Không thể đổi tên tệp chính main.tex');
-      return;
-    }
     setFiles((prev) =>
       prev.map((f) => (f.name === oldName ? { ...f, name: newName } : f))
     );
@@ -1004,14 +1014,14 @@ export default function LaTeXStudio({
 
   const handleCloseTab = (tabName: string) => {
     const nextTabs = openTabs.filter((t) => t !== tabName);
-    if (nextTabs.length === 0) {
-      setOpenTabs(['main.tex']);
-      handleSelectFile('main.tex');
-      return;
-    }
     setOpenTabs(nextTabs);
     if (activeFileName === tabName) {
-      handleSelectFile(nextTabs[nextTabs.length - 1]);
+      if (nextTabs.length > 0) {
+        handleSelectFile(nextTabs[nextTabs.length - 1]);
+      } else {
+        setActiveFileName(null);
+        setSource('');
+      }
     }
   };
 
@@ -2728,8 +2738,19 @@ export default function LaTeXStudio({
               layoutMode === 'code' ? 'flex-1 min-w-0' : ''
             }`}
           >
-            {/* File Tabs Bar - ALWAYS VISIBLE OUTSIDE MASK */}
-            <div className="flex items-center justify-between px-2 bg-slate-100/90 dark:bg-slate-950/90 border-b border-slate-200 dark:border-slate-800 text-xs shrink-0 h-8 z-10">
+            {!activeFileName ? (
+              <div className="flex-1 w-full h-full flex flex-col items-center justify-start bg-[#0b0f19] dark:bg-[#090d16] select-none pt-24 overflow-hidden">
+                <p className="text-slate-400 text-base text-center select-none px-4">
+                  Hiện tại chưa có tệp nào được chọn. Vui lòng chọn một tệp từ cây thư mục.
+                </p>
+                <div className="w-64 h-64 opacity-10 select-none pointer-events-none mt-16 flex items-center justify-center">
+                  <MathAIOLogo className="w-full h-full" />
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* File Tabs Bar - ALWAYS VISIBLE OUTSIDE MASK */}
+                <div className="flex items-center justify-between px-2 bg-slate-100/90 dark:bg-slate-950/90 border-b border-slate-200 dark:border-slate-800 text-xs shrink-0 h-8 z-10">
               <div className="flex items-center gap-1 overflow-x-auto min-w-0 py-0.5">
                 {openTabs.map((tab) => {
                   const isActive = tab === activeFileName;
@@ -3280,7 +3301,9 @@ export default function LaTeXStudio({
           </div>
         </div>
       </div>
-    </section>
+    </>
+  )}
+</section>
 
         {/* RESIZER 2: SPLIT RESIZER & SYNCTEX ARROWS (Overleaf Split Gutter) */}
         {layoutMode !== 'pdf' && (

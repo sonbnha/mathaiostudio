@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import {
   FileCode,
   FileText,
@@ -25,7 +25,10 @@ import {
   Dot,
   FileSpreadsheet,
   X,
+  MoreVertical,
+  Download,
 } from 'lucide-react';
+import { saveAs } from 'file-saver';
 import type { StudioFile } from '@/components/latex/StudioTools';
 
 export interface OutlineItem {
@@ -171,7 +174,7 @@ export function parseTexOutline(source: string): OutlineItem[] {
 
 export interface FileTreeExplorerProps {
   files: StudioFile[];
-  activeFileName: string;
+  activeFileName: string | null;
   source: string;
   onSelectFile: (fileName: string) => void;
   onCreateFile: (fileName: string) => void;
@@ -202,7 +205,41 @@ export default function FileTreeExplorer({
   const [newFolderName, setNewFolderName] = useState('');
   const [editingFileName, setEditingFileName] = useState<string | null>(null);
   const [renameInput, setRenameInput] = useState('');
+  const [activeMenuFileName, setActiveMenuFileName] = useState<string | null>(null);
+  const [fileToDelete, setFileToDelete] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const menuContainerRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on click outside or Escape
+  useEffect(() => {
+    if (!activeMenuFileName) return;
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (menuContainerRef.current && !menuContainerRef.current.contains(e.target as Node)) {
+        setActiveMenuFileName(null);
+      }
+    };
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setActiveMenuFileName(null);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [activeMenuFileName]);
+
+  const handleDownloadFile = (file: StudioFile) => {
+    try {
+      const content = file.name === activeFileName ? (source || file.content || '') : (file.content || '');
+      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+      saveAs(blob, file.name);
+    } catch (err) {
+      console.error('Lỗi khi tải tệp:', err);
+    }
+  };
 
   // Parse document outline reactively
   const outlineItems = useMemo(() => parseTexOutline(source), [source]);
@@ -596,41 +633,114 @@ export default function FileTreeExplorer({
                     )}
                   </div>
 
-                  {/* Main Tag / Action icons */}
-                  {isMain ? (
-                    <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 font-mono shrink-0">
-                      main
-                    </span>
-                  ) : (
-                    !isEditing && (
-                      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition shrink-0">
+                  {/* Main Tag & 3-dot Action dropdown menu */}
+                  {!isEditing && (
+                    <div className="flex items-center gap-1 shrink-0">
+                      {isMain && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 font-mono shrink-0">
+                          main
+                        </span>
+                      )}
+
+                      <div
+                        className="relative shrink-0 flex items-center"
+                        ref={activeMenuFileName === file.name ? menuContainerRef : undefined}
+                      >
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            setEditingFileName(file.name);
-                            setRenameInput(file.name);
+                            setActiveMenuFileName((cur) => (cur === file.name ? null : file.name));
                           }}
-                          className="p-1 rounded hover:text-cyan-600 hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer"
-                          title="Đổi tên"
+                          className={`p-1 rounded hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-700/80 transition cursor-pointer ${
+                            isActive || activeMenuFileName === file.name
+                              ? 'opacity-100 text-cyan-700 dark:text-cyan-300'
+                              : 'opacity-0 group-hover:opacity-100 text-slate-400'
+                          }`}
+                          title="Tùy chọn tệp"
                         >
-                          <Edit2 className="w-3 h-3" />
+                          <MoreVertical className="w-3.5 h-3.5" />
                         </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (confirm(`Xóa tệp "${file.name}"?`)) {
-                              onDeleteFile(file.name);
-                            }
-                          }}
-                          className="p-1 rounded hover:text-rose-600 hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer"
-                          title="Xóa"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
+
+                        {activeMenuFileName === file.name && (
+                          <div
+                            onClick={(e) => e.stopPropagation()}
+                            className="absolute right-0 top-full mt-1 bg-[#181e29] border border-slate-700/60 rounded-md shadow-xl py-1.5 z-50 min-w-[160px] text-xs text-slate-200 animate-in fade-in duration-100"
+                          >
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveMenuFileName(null);
+                                setEditingFileName(file.name);
+                                setRenameInput(file.name);
+                              }}
+                              className="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200 hover:text-white transition-colors cursor-pointer text-xs"
+                            >
+                              Đổi tên
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveMenuFileName(null);
+                                handleDownloadFile(file);
+                              }}
+                              className="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200 hover:text-white transition-colors cursor-pointer text-xs"
+                            >
+                              Tải xuống
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveMenuFileName(null);
+                                setFileToDelete(file.name);
+                              }}
+                              className="w-full text-left px-3 py-1.5 hover:bg-red-500/10 text-red-400 hover:text-red-300 transition-colors cursor-pointer text-xs"
+                            >
+                              Xóa
+                            </button>
+
+                            <div className="border-t border-slate-700/60 my-1" />
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveMenuFileName(null);
+                                if (!isTreeExpanded) setIsTreeExpanded(true);
+                                setIsAddingFile(true);
+                                setIsAddingFolder(false);
+                                setNewFileName('');
+                              }}
+                              className="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200 hover:text-white transition-colors cursor-pointer text-xs"
+                            >
+                              Tệp mới
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveMenuFileName(null);
+                                if (!isTreeExpanded) setIsTreeExpanded(true);
+                                setIsAddingFolder(true);
+                                setIsAddingFile(false);
+                                setNewFolderName('');
+                              }}
+                              className="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200 hover:text-white transition-colors cursor-pointer text-xs"
+                            >
+                              Thư mục mới
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveMenuFileName(null);
+                                fileInputRef.current?.click();
+                              }}
+                              className="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200 hover:text-white transition-colors cursor-pointer text-xs"
+                            >
+                              Tải lên tệp
+                            </button>
+                          </div>
+                        )}
                       </div>
-                    )
+                    </div>
                   )}
                 </div>
               );
@@ -716,6 +826,60 @@ export default function FileTreeExplorer({
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal (Overleaf Vietnamese Style) */}
+      {fileToDelete && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+          <div className="bg-[#181e29] border border-slate-700/60 rounded-xl shadow-2xl w-full max-w-md p-6 text-slate-100 animate-in zoom-in-95 duration-150">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-700/60 mb-4">
+              <h3 className="font-bold text-base text-slate-100">Xóa tệp</h3>
+              <button
+                type="button"
+                onClick={() => setFileToDelete(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition cursor-pointer"
+                title="Đóng"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="space-y-3 mb-6">
+              <p className="text-sm text-slate-300">
+                Bạn có chắc chắn muốn xóa vĩnh viễn tệp sau đây không?
+              </p>
+              <div className="pl-1">
+                <p className="font-mono text-sm text-slate-300">
+                  • {fileToDelete}
+                </p>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setFileToDelete(null)}
+                className="border border-slate-600 px-4 py-2 rounded-lg text-slate-300 hover:bg-slate-800 transition text-sm font-medium cursor-pointer"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const target = fileToDelete;
+                  setFileToDelete(null);
+                  onDeleteFile(target);
+                }}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition text-sm cursor-pointer shadow-xs"
+              >
+                Xóa
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </aside>
   );
 }

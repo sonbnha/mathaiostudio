@@ -52,70 +52,6 @@ export interface AuthenticatedToolsDashboardProps {
   onLogout: () => Promise<void> | void;
 }
 
-// 1-Click Quick Template Presets
-const QUICK_TEMPLATES = [
-  {
-    id: 'tpl-thpt-2025',
-    title: 'Đề thi TN THPT Cấu trúc 2025',
-    type: 'latex' as ProjectType,
-    badge: 'GDPT 2018',
-    gradient: 'from-rose-500/10 via-pink-500/5 to-indigo-500/10',
-    border: 'hover:border-rose-500/50',
-    tagColor: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30',
-    description: '3 phần: Trắc nghiệm 4 đáp án, Đúng/Sai, Trả lời ngắn',
-    icon: <span className="font-serif font-bold text-xs">TeX</span>,
-    action: { templateId: 'thpt_2025', target: 'latex' },
-  },
-  {
-    id: 'tpl-geo-3d',
-    title: 'Hình không gian & Trục Oxyz',
-    type: 'geometry' as ProjectType,
-    badge: '3D Vector',
-    gradient: 'from-cyan-500/10 via-sky-500/5 to-blue-500/10',
-    border: 'hover:border-cyan-500/50',
-    tagColor: 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border-cyan-500/30',
-    description: 'Dựng hình chóp, khối lăng trụ, xuất mã TikZ & SVG',
-    icon: <Compass className="w-4 h-4 text-cyan-500" />,
-    action: { promptText: 'Cho hình chóp S.ABC có đáy ABC là tam giác vuông...', target: 'geometry' },
-  },
-  {
-    id: 'tpl-lp-5512',
-    title: 'Giáo án 4 hoạt động BGD&ĐT',
-    type: 'lesson-plan' as ProjectType,
-    badge: 'Công văn 5512',
-    gradient: 'from-emerald-500/10 via-teal-500/5 to-emerald-500/10',
-    border: 'hover:border-emerald-500/50',
-    tagColor: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30',
-    description: 'Khởi động, Khám phá, Luyện tập, Vận dụng chuẩn Bộ GD',
-    icon: <BookOpen className="w-4 h-4 text-emerald-500" />,
-    action: { grade: 'Toán 10', target: 'lesson-plan' },
-  },
-  {
-    id: 'tpl-analysis-plot',
-    title: 'Bảng biến thiên & Khảo sát hàm số',
-    type: 'latex' as ProjectType,
-    badge: 'Giải tích',
-    gradient: 'from-indigo-500/10 via-purple-500/5 to-indigo-500/10',
-    border: 'hover:border-indigo-500/50',
-    tagColor: 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-500/30',
-    description: 'Khảo sát cực trị, điểm uốn, đồ thị và bảng biến thiên',
-    icon: <span className="font-serif font-bold text-xs">f(x)</span>,
-    action: { templateId: 'topic_advanced', target: 'latex' },
-  },
-  {
-    id: 'tpl-geo-2d',
-    title: 'Hình học phẳng & Đường tròn (O)',
-    type: 'geometry' as ProjectType,
-    badge: 'Hình phẳng',
-    gradient: 'from-amber-500/10 via-orange-500/5 to-amber-500/10',
-    border: 'hover:border-amber-500/50',
-    tagColor: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30',
-    description: 'Tam giác nội/ngoại tiếp, đường cao, trung tuyến, phân giác',
-    icon: <Shapes className="w-4 h-4 text-amber-500" />,
-    action: { promptText: 'Cho tam giác ABC nhọn nội tiếp đường tròn (O)...', target: 'geometry' },
-  },
-];
-
 export default function AuthenticatedToolsDashboard({
   user,
   onLogout,
@@ -216,22 +152,6 @@ export default function AuthenticatedToolsDashboard({
     } else if (item.type === 'latex') {
       router.push(`/latex?id=${encodeURIComponent(item.id)}`);
     }
-  };
-
-  // Quick 1-click template starter
-  const handleQuickStartTemplate = (tpl: (typeof QUICK_TEMPLATES)[0]) => {
-    let metadata: Record<string, any> = {};
-    if (tpl.type === 'latex') {
-      metadata = { templateId: tpl.action.templateId, badge: tpl.badge };
-    } else if (tpl.type === 'geometry') {
-      metadata = { promptText: tpl.action.promptText, badge: tpl.badge };
-    } else if (tpl.type === 'lesson-plan') {
-      metadata = { grade: tpl.action.grade, badge: tpl.badge };
-    }
-
-    const created = createNewProject(tpl.type, tpl.title, metadata);
-    refreshProjects();
-    handleOpenProject(created);
   };
 
   // Handle modal submit
@@ -520,54 +440,8 @@ export default function AuthenticatedToolsDashboard({
         </aside>
 
         {/* RIGHT COLUMN: Main Workspace Area */}
-        <main className="flex-1 min-w-0 space-y-6">
-          {/* TẦNG 1: Quick Template Strip (Bắt đầu nhanh từ mẫu chuẩn) */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-2">
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                <span>Bắt đầu nhanh từ mẫu chuẩn</span>
-              </h2>
-              <span className="text-[11px] text-slate-400 font-mono hidden sm:inline">1-Click Launcher</span>
-            </div>
-
-            <div className="flex gap-3.5 overflow-x-auto pb-2 pr-1 no-scrollbar">
-              {QUICK_TEMPLATES.map((tpl) => (
-                <div
-                  key={tpl.id}
-                  onClick={() => handleQuickStartTemplate(tpl)}
-                  className={`shrink-0 w-64 p-4 rounded-2xl border border-slate-200/90 dark:border-slate-800/80 bg-gradient-to-br ${tpl.gradient} bg-white/70 dark:bg-slate-900/60 ${tpl.border} hover:shadow-lg hover:scale-[1.01] transition-all duration-200 cursor-pointer flex flex-col justify-between gap-3 group`}
-                >
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="w-7 h-7 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center shadow-2xs">
-                        {tpl.icon}
-                      </span>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${tpl.tagColor}`}>
-                        {tpl.badge}
-                      </span>
-                    </div>
-
-                    <div>
-                      <h3 className="font-bold text-xs text-slate-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors line-clamp-1">
-                        {tpl.title}
-                      </h3>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed mt-0.5">
-                        {tpl.description}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between text-[11px] font-bold text-cyan-600 dark:text-cyan-400 group-hover:translate-x-0.5 transition-transform">
-                    <span>Khởi tạo ngay</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* TẦNG 2: Recent Documents with Live Visual Preview */}
+        <main className="flex-1 min-w-0 space-y-4">
+          {/* Recent Documents with Live Visual Preview */}
           <div className="space-y-4">
             {/* Filter & Search Bar */}
             <div className="p-3 rounded-2xl bg-white/85 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 shadow-2xs flex flex-wrap items-center justify-between gap-3">

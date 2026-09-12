@@ -40,7 +40,7 @@ export default function LaTeXStudioRoot() {
 
       {/* 2. MAIN 3-COLUMN WORKSPACE */}
       <div className="flex-1 min-h-0 w-full flex">
-        <PanelGroup direction="horizontal">
+        <PanelGroup orientation="horizontal">
           
           {/* COLUMN 1: LEFT SIDEBAR */}
           <Panel defaultSize={15} minSize={10} maxSize={30} className="bg-slate-50 dark:bg-[#252526] flex flex-col">

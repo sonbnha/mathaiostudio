@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
+import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from 'react-resizable-panels';
 import { useLaTeXStore } from '@/store/useLaTeXStore';
 import EditorPanel from './EditorPanel';
 

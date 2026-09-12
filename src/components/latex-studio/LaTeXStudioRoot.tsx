@@ -123,13 +123,13 @@ export default function LaTeXStudioRoot() {
               </Panel>
 
               {/* HORIZONTAL RESIZER inside Sidebar */}
-              <PanelResizeHandle className="h-[5px] bg-transparent hover:bg-slate-700/20 transition-colors cursor-row-resize flex flex-col items-center justify-center relative">
-                <div className="w-full h-[1px] bg-[#2d2d2d]" />
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex gap-[2px]">
-                  <div className="w-[2px] h-[2px] rounded-full bg-slate-500" />
-                  <div className="w-[2px] h-[2px] rounded-full bg-slate-500" />
-                  <div className="w-[2px] h-[2px] rounded-full bg-slate-500" />
-                  <div className="w-[2px] h-[2px] rounded-full bg-slate-500" />
+              <PanelResizeHandle className="h-[10px] bg-[#222c38] border-y border-[#171f28] hover:bg-[#2b3746] transition-colors cursor-row-resize flex items-center justify-center shrink-0 z-30">
+                {/* 4 square dots arranged horizontally in the center */}
+                <div className="flex flex-row gap-[3px] pointer-events-none">
+                  <div className="w-[2.5px] h-[2.5px] bg-slate-400 opacity-80" />
+                  <div className="w-[2.5px] h-[2.5px] bg-slate-400 opacity-80" />
+                  <div className="w-[2.5px] h-[2.5px] bg-slate-400 opacity-80" />
+                  <div className="w-[2.5px] h-[2.5px] bg-slate-400 opacity-80" />
                 </div>
               </PanelResizeHandle>
 

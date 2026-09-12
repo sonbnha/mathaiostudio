@@ -43,7 +43,7 @@ export default function LaTeXStudioRoot() {
         <PanelGroup orientation="horizontal">
           
           {/* COLUMN 1: LEFT SIDEBAR */}
-          <Panel defaultSize={15} minSize={5} maxSize={50} className="bg-slate-50 dark:bg-[#252526] flex flex-col">
+          <Panel defaultSize={15} minSize={5} className="bg-slate-50 dark:bg-[#252526] flex flex-col">
             <div className="p-3 font-semibold text-xs tracking-wider uppercase text-slate-500 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
               <span>Files</span>
             </div>

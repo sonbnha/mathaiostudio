@@ -35,7 +35,7 @@ const cobaltTheme = createTheme({
     { tag: [t.definition(t.name), t.separator], color: '#ff66b2' },
     { tag: [t.brace, t.bracket], color: '#8599a6' },
     { tag: [t.annotation], color: '#ff66b2' },
-    { tag: [t.number, t.changed, t.annotation, t.modifier, t.self, t.val], color: '#3ad900' }, // Bright green
+    { tag: [t.number, t.changed, t.annotation, t.modifier, t.self], color: '#3ad900' }, // Bright green
     { tag: [t.string, t.special(t.brace)], color: '#3ad900' }, // Math strings green
     { tag: t.operator, color: '#ffffff' },
     { tag: t.comment, color: '#8599a6', fontStyle: 'italic' },

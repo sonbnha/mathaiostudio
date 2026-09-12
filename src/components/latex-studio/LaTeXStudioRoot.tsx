@@ -82,7 +82,7 @@ export default function LaTeXStudioRoot() {
         <PanelGroup orientation="horizontal">
           
           {/* COLUMN 1: SIDEBAR (FILE TREE + OUTLINE) */}
-          <Panel defaultSize={15} minSize={10} className="bg-[#1a1a1b] flex flex-col z-30" collapsible onCollapse={() => setLeftCollapsed(true)} onExpand={() => setLeftCollapsed(false)}>
+          <Panel defaultSize={15} minSize={10} className="bg-[#1a1a1b] flex flex-col z-30">
             <PanelGroup orientation="vertical">
               
               {/* FILE TREE */}

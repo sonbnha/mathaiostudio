@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useLaTeXStore } from '@/store/useLaTeXStore';
 import { 
   ChevronDown, Download, Maximize, FileText,
-  ChevronUp, ExternalLink, Minus, Plus, CircleHalf
+  ChevronUp, ExternalLink, Minus, Plus, Contrast
 } from 'lucide-react';
 import PDFViewerCore from './PDFViewerCore';
 
@@ -57,7 +57,7 @@ export default function PDFViewerPanel() {
           <div className="w-[1px] h-5 bg-[#4d4d4d] mx-2" />
           
           <button className="p-1.5 text-slate-300 hover:text-white rounded hover:bg-[#3d3d3d] transition-colors" title="Invert Colors">
-             <CircleHalf className="w-[15px] h-[15px]" />
+             <Contrast className="w-[15px] h-[15px]" />
           </button>
 
           <button className="p-1.5 text-slate-300 hover:text-white rounded hover:bg-[#3d3d3d] transition-colors ml-1">

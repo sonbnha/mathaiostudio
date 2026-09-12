@@ -175,11 +175,13 @@ export function parseTexOutline(source: string): OutlineItem[] {
 export interface FileTreeExplorerProps {
   files: StudioFile[];
   activeFileName: string | null;
+  mainDocument?: string;
   source: string;
   onSelectFile: (fileName: string) => void;
   onCreateFile: (fileName: string) => void;
   onDeleteFile: (fileName: string) => void;
   onRenameFile: (oldName: string, newName: string) => void;
+  onSetMainDocument?: (fileName: string) => void;
   onUploadAsset: (file: File) => void;
   onJumpToLine?: (line: number) => void;
   isCollapsed: boolean;
@@ -189,11 +191,13 @@ export interface FileTreeExplorerProps {
 export default function FileTreeExplorer({
   files,
   activeFileName,
+  mainDocument = 'main.tex',
   source,
   onSelectFile,
   onCreateFile,
   onDeleteFile,
   onRenameFile,
+  onSetMainDocument,
   onUploadAsset,
   onJumpToLine,
   isCollapsed,
@@ -595,7 +599,8 @@ export default function FileTreeExplorer({
             {/* Files */}
             {files.map((file) => {
               const isActive = file.name === activeFileName;
-              const isMain = file.name === 'main.tex';
+              const isMain = file.name === (mainDocument || 'main.tex');
+              const isTexFile = file.name.toLowerCase().endsWith('.tex');
               const isEditing = editingFileName === file.name;
 
               return (
@@ -653,9 +658,9 @@ export default function FileTreeExplorer({
                             setActiveMenuFileName((cur) => (cur === file.name ? null : file.name));
                           }}
                           className={`p-1 rounded hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-700/80 transition cursor-pointer ${
-                            isActive || activeMenuFileName === file.name
-                              ? 'opacity-100 text-cyan-700 dark:text-cyan-300'
-                              : 'opacity-0 group-hover:opacity-100 text-slate-400'
+                            isActive
+                              ? 'opacity-100 visible text-cyan-700 dark:text-cyan-300'
+                              : 'opacity-0 invisible pointer-events-none'
                           }`}
                           title="Tùy chọn tệp"
                         >
@@ -665,7 +670,7 @@ export default function FileTreeExplorer({
                         {activeMenuFileName === file.name && (
                           <div
                             onClick={(e) => e.stopPropagation()}
-                            className="absolute right-0 top-full mt-1 bg-[#181e29] border border-slate-700/60 rounded-md shadow-xl py-1.5 z-50 min-w-[160px] text-xs text-slate-200 animate-in fade-in duration-100"
+                            className="absolute right-0 top-full mt-1 bg-[#181e29] border border-slate-700/60 rounded-md shadow-xl py-1.5 z-50 min-w-[200px] text-xs text-slate-200 animate-in fade-in duration-100"
                           >
                             <button
                               type="button"
@@ -674,7 +679,7 @@ export default function FileTreeExplorer({
                                 setEditingFileName(file.name);
                                 setRenameInput(file.name);
                               }}
-                              className="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200 hover:text-white transition-colors cursor-pointer text-xs"
+                              className="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200 hover:text-white transition-colors cursor-pointer text-xs flex items-center justify-between"
                             >
                               Đổi tên
                             </button>
@@ -684,17 +689,31 @@ export default function FileTreeExplorer({
                                 setActiveMenuFileName(null);
                                 handleDownloadFile(file);
                               }}
-                              className="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200 hover:text-white transition-colors cursor-pointer text-xs"
+                              className="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200 hover:text-white transition-colors cursor-pointer text-xs flex items-center justify-between"
                             >
                               Tải xuống
                             </button>
+
+                            {isTexFile && !isMain && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setActiveMenuFileName(null);
+                                  onSetMainDocument?.(file.name);
+                                }}
+                                className="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200 hover:text-white transition-colors cursor-pointer text-xs flex items-center justify-between"
+                              >
+                                Đặt làm tài liệu chính
+                              </button>
+                            )}
+
                             <button
                               type="button"
                               onClick={() => {
                                 setActiveMenuFileName(null);
                                 setFileToDelete(file.name);
                               }}
-                              className="w-full text-left px-3 py-1.5 hover:bg-red-500/10 text-red-400 hover:text-red-300 transition-colors cursor-pointer text-xs"
+                              className="w-full text-left px-3 py-1.5 hover:bg-red-500/10 text-red-400 hover:text-red-300 transition-colors cursor-pointer text-xs flex items-center justify-between"
                             >
                               Xóa
                             </button>
@@ -710,7 +729,7 @@ export default function FileTreeExplorer({
                                 setIsAddingFolder(false);
                                 setNewFileName('');
                               }}
-                              className="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200 hover:text-white transition-colors cursor-pointer text-xs"
+                              className="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200 hover:text-white transition-colors cursor-pointer text-xs flex items-center justify-between"
                             >
                               Tệp mới
                             </button>
@@ -723,7 +742,7 @@ export default function FileTreeExplorer({
                                 setIsAddingFile(false);
                                 setNewFolderName('');
                               }}
-                              className="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200 hover:text-white transition-colors cursor-pointer text-xs"
+                              className="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200 hover:text-white transition-colors cursor-pointer text-xs flex items-center justify-between"
                             >
                               Thư mục mới
                             </button>
@@ -733,7 +752,7 @@ export default function FileTreeExplorer({
                                 setActiveMenuFileName(null);
                                 fileInputRef.current?.click();
                               }}
-                              className="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200 hover:text-white transition-colors cursor-pointer text-xs"
+                              className="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200 hover:text-white transition-colors cursor-pointer text-xs flex items-center justify-between"
                             >
                               Tải lên tệp
                             </button>

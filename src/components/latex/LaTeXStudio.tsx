@@ -1042,6 +1042,28 @@ export default function LaTeXStudio({
     }
   };
 
+  const handleSetMainDocument = useCallback(
+    (fileName: string) => {
+      setProjectSettings((prev) => {
+        const next = { ...prev, mainDocument: fileName };
+        saveProjectSettings(next, currentDocId || docId);
+        return next;
+      });
+      if (currentDocId) {
+        try {
+          const p = getProjectById(currentDocId);
+          if (p) {
+            p.metadata = { ...p.metadata, mainDocument: fileName };
+            saveProject(p);
+          }
+        } catch {}
+      }
+      setHistoryToast(`Đã đặt "${fileName}" làm tài liệu chính`);
+      setTimeout(() => setHistoryToast(null), 3000);
+    },
+    [currentDocId, docId]
+  );
+
   // Centralized Command Execution Context
   const editorCtx: EditorExecutionContext = useMemo(
     () => ({
@@ -2445,11 +2467,13 @@ export default function LaTeXStudio({
               <FileTreeExplorer
                 files={files}
                 activeFileName={activeFileName}
+                mainDocument={projectSettings.mainDocument || 'main.tex'}
                 source={source}
                 onSelectFile={handleSelectFile}
                 onCreateFile={handleCreateFile}
                 onDeleteFile={handleDeleteFile}
                 onRenameFile={handleRenameFile}
+                onSetMainDocument={handleSetMainDocument}
                 onUploadAsset={handleUploadAsset}
                 onJumpToLine={(line) => setTargetLine(line)}
                 isCollapsed={false}

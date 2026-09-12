@@ -26,6 +26,7 @@ export interface ProjectItem {
     files?: Array<{ name: string; content: string; path?: string }>;
     activities?: string[];
     previewType?: 'triangle' | 'pyramid' | 'circle' | 'exam' | 'lesson';
+    mainDocument?: string;
   };
   content?: any;
 }

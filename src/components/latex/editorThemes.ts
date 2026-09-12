@@ -85,6 +85,12 @@ export function getEditorThemeExtension(
     '.cm-latex-error-line': {
       backgroundColor: 'rgba(239, 68, 68, 0.12) !important',
     },
+    '.cm-synctex-highlight-line': {
+      backgroundColor: isDark ? 'rgba(234, 179, 8, 0.32) !important' : 'rgba(254, 240, 138, 0.65) !important',
+      borderLeft: '4px solid #eab308 !important',
+      boxShadow: isDark ? '0 0 12px rgba(234, 179, 8, 0.4)' : '0 0 10px rgba(234, 179, 8, 0.3)',
+      transition: 'background-color 0.3s ease',
+    },
   });
 
   // Map specific theme packages

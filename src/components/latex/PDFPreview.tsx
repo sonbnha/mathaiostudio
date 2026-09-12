@@ -45,22 +45,8 @@ const PDFSinglePage = memo(function PDFSinglePage({
   invertColors?: boolean;
 }) {
   const element = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
   const [ratio, setRatio] = useState(841.89 / 595.28);
   const [highlightVisible, setHighlightVisible] = useState(false);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]) {
-          setVisible(entries[0].isIntersecting);
-        }
-      },
-      { rootMargin: '600px' }
-    );
-    if (element.current) observer.observe(element.current);
-    return () => observer.disconnect();
-  }, []);
 
   // Animate target highlight indicator on forward sync
   useEffect(() => {
@@ -68,7 +54,7 @@ const PDFSinglePage = memo(function PDFSinglePage({
       setHighlightVisible(true);
       const timer = setTimeout(() => {
         setHighlightVisible(false);
-      }, 3500);
+      }, 5000);
       return () => clearTimeout(timer);
     } else {
       setHighlightVisible(false);
@@ -95,61 +81,65 @@ const PDFSinglePage = memo(function PDFSinglePage({
         const yRatio = (e.clientY - rect.top) / Math.max(1, rect.height);
         onPageDoubleClick?.(number, yRatio);
       }}
-      className="mb-6 shadow-[0_4px_16px_rgba(0,0,0,0.35)] bg-white rounded-xs overflow-hidden cursor-crosshair relative shrink-0 transition-all duration-150"
+      className="mb-6 shadow-[0_4px_16px_rgba(0,0,0,0.35)] bg-white rounded-xs relative shrink-0 transition-all duration-150"
       style={{
         width: `${width}px`,
         maxWidth: `${width}px`,
         minHeight: `${pageHeight}px`,
-        aspectRatio: '1 / 1.414',
         filter: invertColors ? 'invert(0.9) hue-rotate(180deg)' : undefined,
       }}
       aria-label={`Trang ${number} - Nhấp đúp để nhảy tới mã nguồn (Reverse Sync)`}
-      title="Nhấp đúp hoặc Ctrl+Click để nhảy tới đúng dòng trong mã nguồn (SyncTeX)"
+      title="Nhấp đúp vào trang PDF để nhảy tới đúng dòng trong mã nguồn (SyncTeX)"
     >
-      {visible ? (
-        <Page
-          pageNumber={number}
-          width={width}
-          devicePixelRatio={Math.min(typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1, 2)}
-          onLoadSuccess={(page) => {
-            const view = page.getViewport({ scale: 1 });
-            if (view.width > 0 && view.height > 0) {
-              setRatio(view.height / view.width);
-            }
-          }}
-          loading={
-            <div
-              className="w-full flex items-center justify-center bg-white text-xs text-slate-400 font-mono"
-              style={{ minHeight: `${pageHeight}px` }}
-            >
-              Đang kết xuất trang {number}…
-            </div>
+      <Page
+        pageNumber={number}
+        width={width}
+        devicePixelRatio={Math.min(typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1, 2)}
+        onLoadSuccess={(page) => {
+          const view = page.getViewport({ scale: 1 });
+          if (view.width > 0 && view.height > 0) {
+            setRatio(view.height / view.width);
           }
-        />
-      ) : (
-        <div
-          className="w-full bg-white flex items-center justify-center text-xs text-slate-400 font-mono"
-          style={{ minHeight: `${pageHeight}px` }}
-        >
-          Trang {number}
-        </div>
-      )}
+        }}
+        loading={
+          <div
+            className="w-full flex items-center justify-center bg-white text-xs text-slate-400 font-mono"
+            style={{ minHeight: `${pageHeight}px` }}
+          >
+            Đang kết xuất trang {number}…
+          </div>
+        }
+      />
 
       {/* Overleaf-Style Target Line / Highlight Box on top of Canvas */}
       {highlightVisible && highlightYRatio !== undefined && (
         <div
-          className="absolute left-0 right-0 pointer-events-none z-30 flex items-center transition-all duration-300"
+          className="absolute left-0 right-0 pointer-events-none z-30 transition-all duration-300 ease-out"
           style={{
             top: `${Math.max(0.04, Math.min(0.96, highlightYRatio)) * 100}%`,
             transform: 'translateY(-50%)',
+            filter: invertColors ? 'invert(1) hue-rotate(180deg)' : undefined,
           }}
         >
-          <div className="w-full h-8 bg-amber-400/40 dark:bg-amber-300/40 border-y-2 border-amber-500 shadow-[0_0_16px_rgba(245,158,11,0.6)] flex items-center justify-between px-3 animate-pulse">
-            <div className="flex items-center gap-1.5 bg-amber-500 text-slate-950 font-bold text-[10px] font-mono px-2 py-0.5 rounded shadow-xs">
+          <div
+            className="w-full h-11 flex items-center justify-between px-3.5 shadow-2xl"
+            style={{
+              backgroundColor: 'rgba(254, 240, 138, 0.95)',
+              borderTop: '2.5px solid #ca8a04',
+              borderBottom: '2.5px solid #ca8a04',
+              boxShadow: '0 0 25px 6px rgba(234, 179, 8, 0.85)',
+            }}
+          >
+            <div className="flex items-center gap-1.5 bg-amber-500 text-slate-950 font-bold text-xs font-mono px-2.5 py-1 rounded shadow-md">
               <span>SyncTeX</span>
-              <span>➜</span>
+              <span>➔</span>
             </div>
-            <div className="h-2 w-2 rounded-full bg-amber-600 animate-ping" />
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono text-amber-950 font-bold tracking-tight">
+                Vị trí tương ứng (Line Sync)
+              </span>
+              <div className="h-3 w-3 rounded-full bg-amber-600 animate-ping" />
+            </div>
           </div>
         </div>
       )}
@@ -230,37 +220,35 @@ export default function PDFPreview({
 
   // Scroll to forward sync target position
   useEffect(() => {
-    if (highlightTarget && highlightTarget.page <= numPages && numPages >= 1) {
-      const targetPage = highlightTarget.page;
-      const targetY = highlightTarget.yRatio;
+    if (!highlightTarget) return;
+    const targetPage = Math.max(1, Math.min(highlightTarget.page, numPages || 1));
+    const targetY = highlightTarget.yRatio;
 
-      const performScroll = () => {
-        const pageEl = document.getElementById(`pdf-page-${targetPage}`);
-        const hostEl = host.current;
-        if (pageEl && hostEl) {
-          const pageRect = pageEl.getBoundingClientRect();
-          const hostRect = hostEl.getBoundingClientRect();
-          const targetOffsetInPage = pageRect.height * Math.max(0.02, Math.min(0.98, targetY));
-          const targetGlobalY = hostEl.scrollTop + (pageRect.top - hostRect.top) + targetOffsetInPage;
-          const scrollToY = Math.max(0, targetGlobalY - hostRect.height / 2);
+    const performScroll = () => {
+      const pageEl = document.getElementById(`pdf-page-${targetPage}`);
+      const hostEl = host.current;
+      if (pageEl && hostEl) {
+        const hostRect = hostEl.getBoundingClientRect();
+        const pageRect = pageEl.getBoundingClientRect();
+        const pageTopRelativeToHost = hostEl.scrollTop + (pageRect.top - hostRect.top);
+        const targetOffsetInPage = pageRect.height * Math.max(0.04, Math.min(0.96, targetY));
+        const scrollToY = Math.max(0, pageTopRelativeToHost + targetOffsetInPage - hostEl.clientHeight / 2);
 
-          hostEl.scrollTo({ top: scrollToY, behavior: 'smooth' });
-          setActivePage(targetPage);
-          onActivePageChange?.(targetPage);
-        }
-      };
-
-      performScroll();
-      const frameId = requestAnimationFrame(performScroll);
-      return () => cancelAnimationFrame(frameId);
-    } else if (highlightPage && highlightPage <= numPages) {
-      const el = document.getElementById(`pdf-page-${highlightPage}`);
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        setActivePage(highlightPage);
-        onActivePageChange?.(highlightPage);
+        hostEl.scrollTo({ top: scrollToY, behavior: 'smooth' });
+        setActivePage(targetPage);
+        onActivePageChange?.(targetPage);
       }
-    }
+    };
+
+    performScroll();
+    const t1 = setTimeout(performScroll, 50);
+    const t2 = setTimeout(performScroll, 180);
+    const t3 = setTimeout(performScroll, 400);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
   }, [highlightTarget, highlightPage, numPages, onActivePageChange]);
 
   // Jump to specific page requested by horizontal page navigator

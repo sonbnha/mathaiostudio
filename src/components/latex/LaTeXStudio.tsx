@@ -172,6 +172,7 @@ export default function LaTeXStudio({
 
   // SyncTeX & Tools state
   const [targetLine, setTargetLine] = useState<number | undefined>(defaultTpl.id === 'blank' ? 9 : undefined);
+  const [targetLineJump, setTargetLineJump] = useState<{ line: number; id: number } | undefined>(undefined);
   const [cursorLine, setCursorLine] = useState<number>(9);
   const [highlightPage, setHighlightPage] = useState<number | undefined>(undefined);
   const [jumpToPage, setJumpToPage] = useState<number | undefined>(undefined);
@@ -1486,22 +1487,31 @@ export default function LaTeXStudio({
         }
         setTargetLine(res.line);
         setCursorLine(res.line);
+        setTargetLineJump({ line: res.line, id: Date.now() });
       }
     },
     [synctexMap, activeFileName, files, handleSelectFile]
   );
 
   const handleSyncCodeToPDF = useCallback(
-    (lineNumber: number, explicit = false) => {
-      setCursorLine(lineNumber);
+    (lineNumber?: number, explicit = false) => {
+      let targetLineNum = lineNumber;
+      if (!targetLineNum && editorViewRef.current) {
+        const head = editorViewRef.current.state.selection.main.head;
+        targetLineNum = editorViewRef.current.state.doc.lineAt(head).number;
+      }
+      if (!targetLineNum) {
+        targetLineNum = cursorLine || targetLine || 1;
+      }
+      setCursorLine(targetLineNum);
       if (!explicit) return; // Only perform forward scroll and target ping when user explicitly clicks Sync button or presses shortcut
-      const res = synctexMap.forward(activeFileName || 'main.tex', lineNumber);
+      const res = synctexMap.forward(activeFileName || 'main.tex', targetLineNum);
       if (res) {
         setHighlightTarget({ page: res.page, yRatio: res.yRatio, id: Date.now() });
         setPdfCurrentPage(res.page);
       }
     },
-    [synctexMap, activeFileName]
+    [synctexMap, activeFileName, cursorLine, targetLine]
   );
 
   // Resizer 1: Left Sidebar Divider (60px - 450px, offset by Activity Bar 44px, Snap below 20px)
@@ -3606,6 +3616,17 @@ export default function LaTeXStudio({
                     >
                       <Search className="w-3.5 h-3.5" />
                     </button>
+
+                    {/* SyncTeX Button: Code -> PDF */}
+                    <button
+                      type="button"
+                      onClick={() => handleSyncCodeToPDF(undefined, true)}
+                      className="px-2 h-6 flex items-center gap-1 rounded text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 transition cursor-pointer shadow-2xs"
+                      title="Nhảy đến vị trí trong PDF (SyncTeX: Ctrl+\ hoặc Mod-j, hoặc nhấp đúp mã nguồn)"
+                    >
+                      <ArrowRight className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                      <span className="hidden sm:inline">Sang PDF</span>
+                    </button>
                   </div>
                 </div>
 
@@ -3628,6 +3649,7 @@ export default function LaTeXStudio({
                 editorActionRequest={editorActionRequest}
                 onCursorLine={handleSyncCodeToPDF}
                 targetLine={targetLine}
+                targetLineJump={targetLineJump}
                 errors={errors}
                 projectFiles={files}
                 projectImages={images}
@@ -3689,10 +3711,10 @@ export default function LaTeXStudio({
                     onMouseDown={(e) => e.stopPropagation()}
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleSyncCodeToPDF(cursorLine || targetLine || 1, true);
+                      handleSyncCodeToPDF(undefined, true);
                     }}
                     className="w-5 h-5 bg-white dark:bg-[#20262b] border border-slate-200 dark:border-white/10 rounded-[3px] text-slate-600 dark:text-neutral-400 flex items-center justify-center cursor-pointer pointer-events-auto shadow-xs transition-all duration-150 hover:bg-emerald-500/20 hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-300"
-                    title="Nhảy đến vị trí trong PDF"
+                    title="Nhảy đến vị trí trong PDF (SyncTeX)"
                   >
                     <ArrowRight className="w-3 h-3 text-slate-500 dark:text-neutral-400 group-hover/synctop:text-emerald-600 dark:group-hover/synctop:text-emerald-300 transition-colors" />
                   </button>
@@ -3708,10 +3730,10 @@ export default function LaTeXStudio({
                     onMouseDown={(e) => e.stopPropagation()}
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleSyncPDFToCode(pdfCurrentPage || 1, 0.2);
+                      handleSyncPDFToCode(pdfCurrentPage || 1, 0.25);
                     }}
                     className="w-5 h-5 bg-white dark:bg-[#20262b] border border-slate-200 dark:border-white/10 rounded-[3px] text-slate-600 dark:text-neutral-400 flex items-center justify-center cursor-pointer pointer-events-auto shadow-xs transition-all duration-150 hover:bg-emerald-500/20 hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-300"
-                    title="Nhảy đến dòng mã nguồn"
+                    title="Nhảy đến dòng mã nguồn (SyncTeX)"
                   >
                     <ArrowLeft className="w-3 h-3 text-slate-500 dark:text-neutral-400 group-hover/syncbot:text-emerald-600 dark:group-hover/syncbot:text-emerald-300 transition-colors" />
                   </button>
@@ -3974,6 +3996,18 @@ export default function LaTeXStudio({
                   <ZoomIn className="w-3 h-3" />
                 </button>
               </div>
+
+              {/* SyncTeX Button: PDF -> Code */}
+              <button
+                type="button"
+                disabled={!pdf}
+                onClick={() => handleSyncPDFToCode(pdfCurrentPage || 1, 0.25)}
+                className="h-6 px-2 flex items-center gap-1 rounded text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 transition cursor-pointer disabled:opacity-40"
+                title="Nhảy đến dòng mã nguồn tương ứng (SyncTeX: Nhấp đúp vào trang PDF hoặc bấm nút này)"
+              >
+                <ArrowLeft className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                <span className="hidden sm:inline">Sang Code</span>
+              </button>
             </div>
           </div>
 

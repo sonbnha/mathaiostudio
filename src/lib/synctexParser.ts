@@ -84,7 +84,7 @@ interface BodyLineEntry {
   file: string;
   line: number;
   weight: number;
-  isHeading?: boolean;
+  isPageBreak?: boolean;
 }
 
 /**
@@ -100,11 +100,32 @@ export function createProjectSyncTeXMap(
   const fileMap = new Map<string, StudioFile>();
   files.forEach((f) => fileMap.set(f.name, f));
 
-  const bodyEntries: BodyLineEntry[] = [];
-  let preambleEndLineInMain = 1;
   const safePages = Math.max(1, totalPages);
+  const mainFile =
+    fileMap.get(mainDocument) ||
+    files.find((f) => f.name.endsWith('.tex')) ||
+    files[0];
+  const effectiveMainDoc = mainFile ? mainFile.name : mainDocument;
+  const mainContent = mainFile && typeof mainFile.content === 'string' ? mainFile.content : '';
+  const mainLines = mainContent.split('\n');
 
-  // 1. Process files in inclusion order starting with mainDocument
+  // Find \begin{document} and \end{document} in main document
+  let beginDocLine = -1;
+  let endDocLine = mainLines.length;
+
+  for (let i = 0; i < mainLines.length; i++) {
+    const trimmed = mainLines[i].trim();
+    if (beginDocLine === -1 && trimmed.includes('\\begin{document}')) {
+      beginDocLine = i + 1;
+    }
+    if (trimmed.includes('\\end{document}')) {
+      endDocLine = i + 1;
+      break;
+    }
+  }
+
+  // Ordered list of all body lines across files
+  const bodyEntries: BodyLineEntry[] = [];
   const visited = new Set<string>();
 
   const processFile = (fileName: string, isRoot: boolean) => {
@@ -115,26 +136,15 @@ export function createProjectSyncTeXMap(
     if (!file || typeof file.content !== 'string') return;
 
     const lines = file.content.split('\n');
-    let insideDocument = !isRoot; // Non-root subfiles are treated as body content
+    const startLine = isRoot && beginDocLine !== -1 ? beginDocLine : 1;
+    const stopLine = isRoot && endDocLine !== -1 ? endDocLine : lines.length;
 
-    for (let i = 0; i < lines.length; i++) {
+    for (let i = startLine - 1; i < stopLine; i++) {
       const lineNum = i + 1;
-      const rawLine = lines[i];
-      const trimmed = rawLine.trim();
+      const text = lines[i];
+      const trimmed = text.trim();
 
-      if (isRoot && !insideDocument) {
-        if (trimmed.includes('\\begin{document}')) {
-          insideDocument = true;
-          preambleEndLineInMain = lineNum;
-        }
-        continue;
-      }
-
-      if (trimmed.includes('\\end{document}')) {
-        break;
-      }
-
-      // Check for \input{child} or \include{child} or \subfile{child}
+      // Check subfile inclusion: \input{...}, \include{...}, \subfile{...}
       const inputMatch = trimmed.match(/\\(?:input|include|subfile)\{([^}]+)\}/);
       if (inputMatch) {
         let childName = inputMatch[1].trim();
@@ -143,91 +153,130 @@ export function createProjectSyncTeXMap(
         continue;
       }
 
-      // Skip pure comment lines
-      if (trimmed.startsWith('%')) {
-        continue;
-      }
-
       const isHeading = /\\(part|chapter|section|subsection|subsubsection|paragraph)\*?\{/.test(trimmed);
       const isPageBreak = /\\(newpage|clearpage|pagebreak)/.test(trimmed);
-      const weight = isHeading ? 80 : isPageBreak ? 150 : Math.max(10, trimmed.length);
+      const weight = isPageBreak ? 100 : isHeading ? 60 : 30 + Math.min(40, trimmed.length);
 
       bodyEntries.push({
         file: fileName,
         line: lineNum,
         weight,
-        isHeading,
+        isPageBreak,
       });
     }
   };
 
-  processFile(mainDocument, true);
+  processFile(effectiveMainDoc, true);
 
-  // If no body entries found (e.g. no \begin{document} in mainDocument), index all tex files directly
+  // Fallback: If no body entries found, map every line of main file
   if (bodyEntries.length === 0) {
-    files
-      .filter((f) => f.name.endsWith('.tex'))
-      .forEach((f) => {
-        const lines = (f.content || '').split('\n');
-        lines.forEach((l, idx) => {
-          const trimmed = l.trim();
-          if (!trimmed.startsWith('%')) {
-            bodyEntries.push({
-              file: f.name,
-              line: idx + 1,
-              weight: Math.max(10, trimmed.length),
-            });
-          }
-        });
+    mainLines.forEach((_, idx) => {
+      bodyEntries.push({
+        file: effectiveMainDoc,
+        line: idx + 1,
+        weight: 30,
       });
+    });
   }
 
-  // Calculate cumulative weights
-  const totalWeight = bodyEntries.reduce((sum, e) => sum + e.weight, 0) || 1;
-  let runningWeight = 0;
+  // Segment entries by explicit page breaks if present
+  const pageBreakIndices: number[] = [];
+  bodyEntries.forEach((entry, idx) => {
+    if (entry.isPageBreak) {
+      pageBreakIndices.push(idx);
+    }
+  });
 
   interface MappedEntry extends BodyLineEntry {
     page: number;
     yRatio: number;
-    globalFraction: number;
+    globalT: number; // 0.0 to 1.0 continuous
   }
 
-  const mappedEntries: MappedEntry[] = bodyEntries.map((entry) => {
-    const fraction = runningWeight / totalWeight;
-    runningWeight += entry.weight;
+  const mappedEntries: MappedEntry[] = [];
+  const totalWeight = bodyEntries.reduce((sum, e) => sum + e.weight, 0) || 1;
 
-    const pageFloat = 1 + fraction * (safePages - 0.05);
-    const page = Math.min(safePages, Math.max(1, Math.floor(pageFloat)));
+  if (pageBreakIndices.length > 0 && safePages > 1) {
+    // We have explicit \newpage markers
+    let currentSegmentStart = 0;
+    const segments: Array<{ start: number; end: number }> = [];
+    for (const pbIdx of pageBreakIndices) {
+      segments.push({ start: currentSegmentStart, end: pbIdx });
+      currentSegmentStart = pbIdx + 1;
+    }
+    if (currentSegmentStart < bodyEntries.length) {
+      segments.push({ start: currentSegmentStart, end: bodyEntries.length - 1 });
+    }
 
-    // Y-ratio inside page between 0.08 (top margin) and 0.90 (bottom margin)
-    const withinPageFraction = pageFloat - page;
-    const yRatio = Math.max(0.08, Math.min(0.92, 0.08 + withinPageFraction * 0.82));
+    segments.forEach((seg, segIdx) => {
+      const page = Math.min(safePages, segIdx + 1);
+      const segEntries = bodyEntries.slice(seg.start, seg.end + 1);
+      const segWeight = segEntries.reduce((sum, e) => sum + e.weight, 0) || 1;
+      let segRunning = 0;
 
-    return {
-      ...entry,
-      page,
-      yRatio,
-      globalFraction: fraction,
-    };
-  });
+      segEntries.forEach((entry) => {
+        const mid = segRunning + entry.weight / 2;
+        segRunning += entry.weight;
+        const localT = mid / segWeight; // 0.0 to 1.0 within page
+        const yRatio = Math.max(0.08, Math.min(0.92, 0.08 + localT * 0.82));
+        const globalT = ((page - 1) + localT) / safePages;
+
+        mappedEntries.push({
+          ...entry,
+          page,
+          yRatio,
+          globalT,
+        });
+      });
+    });
+  } else {
+    // Proportional continuous smooth mapping across safePages
+    let runningWeight = 0;
+    bodyEntries.forEach((entry) => {
+      const entryMidWeight = runningWeight + entry.weight / 2;
+      runningWeight += entry.weight;
+
+      const globalT = Math.max(0, Math.min(1, entryMidWeight / totalWeight));
+      const pageFloat = 1 + globalT * (safePages - 0.02);
+      const page = Math.min(safePages, Math.max(1, Math.floor(pageFloat)));
+
+      const withinPageFraction = pageFloat - page;
+      const yRatio = Math.max(0.08, Math.min(0.92, 0.08 + withinPageFraction * 0.82));
+
+      mappedEntries.push({
+        ...entry,
+        page,
+        yRatio,
+        globalT,
+      });
+    });
+  }
 
   return {
     forward(file: string, line: number) {
-      // If line is in preamble of mainDocument
-      if (file === mainDocument && line < preambleEndLineInMain) {
+      const targetFile = fileMap.has(file) ? file : effectiveMainDoc;
+
+      // If line is before \begin{document} in main file
+      if (targetFile === effectiveMainDoc && beginDocLine !== -1 && line < beginDocLine) {
         return { page: 1, yRatio: 0.08 };
       }
 
-      // Find exact or closest line in the file
-      const fileEntries = mappedEntries.filter((e) => e.file === file);
-      if (fileEntries.length === 0) {
-        return { page: 1, yRatio: 0.1 };
+      // If line is after \end{document} in main file
+      if (targetFile === effectiveMainDoc && endDocLine !== -1 && line > endDocLine) {
+        return { page: safePages, yRatio: 0.90 };
       }
 
-      // Find exact line or next line
+      let fileEntries = mappedEntries.filter((e) => e.file === targetFile);
+      if (fileEntries.length === 0) {
+        fileEntries = mappedEntries;
+      }
+      if (fileEntries.length === 0) {
+        return { page: 1, yRatio: 0.08 };
+      }
+
+      // Find exact or closest line
       let match = fileEntries.find((e) => e.line === line);
       if (!match) {
-        // Find closest preceding line
         const before = fileEntries.filter((e) => e.line <= line);
         if (before.length > 0) {
           match = before[before.length - 1];
@@ -236,38 +285,33 @@ export function createProjectSyncTeXMap(
         }
       }
 
-      if (match) {
-        return {
-          page: match.page,
-          yRatio: match.yRatio,
-        };
-      }
-
-      return { page: 1, yRatio: 0.1 };
+      return {
+        page: Math.min(safePages, Math.max(1, match.page)),
+        yRatio: Math.max(0.05, Math.min(0.95, match.yRatio)),
+      };
     },
 
     reverse(page: number, yRatio: number) {
       if (mappedEntries.length === 0) {
-        return { file: mainDocument, line: 1 };
+        return { file: effectiveMainDoc, line: Math.max(1, beginDocLine) };
       }
 
-      // If page 1 at very top, jump to preamble / line 1
-      if (page === 1 && yRatio <= 0.10) {
-        return { file: mainDocument, line: 1 };
+      const clampedPage = Math.min(safePages, Math.max(1, page));
+      // Top margin of Page 1 -> Preamble / begin document
+      if (clampedPage === 1 && yRatio <= 0.09) {
+        return { file: effectiveMainDoc, line: Math.max(1, beginDocLine) };
       }
 
-      // Calculate target global fraction from page and yRatio
       const clampedY = Math.max(0.08, Math.min(0.92, yRatio));
       const withinPage = (clampedY - 0.08) / 0.82;
-      const targetPageFloat = page - 1 + withinPage;
-      const targetFraction = Math.max(0, Math.min(1, targetPageFloat / safePages));
+      const targetPageFloat = (clampedPage - 1) + withinPage;
+      const targetGlobalT = Math.max(0, Math.min(1, targetPageFloat / safePages));
 
-      // Find closest entry in mappedEntries
       let closest = mappedEntries[0];
       let minDiff = Infinity;
 
       for (const entry of mappedEntries) {
-        const diff = Math.abs(entry.globalFraction - targetFraction);
+        const diff = Math.abs(entry.globalT - targetGlobalT);
         if (diff < minDiff) {
           minDiff = diff;
           closest = entry;

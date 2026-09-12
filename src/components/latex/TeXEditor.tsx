@@ -68,6 +68,7 @@ export interface TeXEditorProps {
   editorActionRequest?: { id: number; action: string };
   onCursorLine?: (line: number, explicit?: boolean) => void;
   targetLine?: number;
+  targetLineJump?: { line: number; id: number };
   errors?: ParsedTeXIssue[];
   onMount?: (view: EditorView) => void;
   settings?: ProjectSettings;
@@ -306,7 +307,32 @@ const errorField = StateField.define<DecorationSet>({
   provide: (f) => EditorView.decorations.from(f),
 });
 
+const setSyncHighlightEffect = StateEffect.define<{ line: number } | null>();
 
+const syncHighlightField = StateField.define<DecorationSet>({
+  create() {
+    return Decoration.none;
+  },
+  update(decorations, tr) {
+    for (const e of tr.effects) {
+      if (e.is(setSyncHighlightEffect)) {
+        if (!e.value || !e.value.line) return Decoration.none;
+        const lineNum = e.value.line;
+        if (lineNum > 0 && lineNum <= tr.state.doc.lines) {
+          const line = tr.state.doc.line(lineNum);
+          return Decoration.set([
+            Decoration.line({
+              class: 'cm-synctex-highlight-line',
+            }).range(line.from),
+          ]);
+        }
+        return Decoration.none;
+      }
+    }
+    return decorations.map(tr.changes);
+  },
+  provide: (f) => EditorView.decorations.from(f),
+});
 
 export default function TeXEditor({
   source,
@@ -317,6 +343,7 @@ export default function TeXEditor({
   editorActionRequest,
   onCursorLine,
   targetLine,
+  targetLineJump,
   errors,
   onMount,
   settings,
@@ -422,6 +449,14 @@ export default function TeXEditor({
           return true;
         },
       },
+      {
+        key: 'Mod-j',
+        run: (view) => {
+          const line = view.state.doc.lineAt(view.state.selection.main.head).number;
+          onCursorLineRef.current?.(line, true);
+          return true;
+        },
+      },
       ...foldKeymap,
       ...defaultKeymap,
       ...historyKeymap,
@@ -431,8 +466,17 @@ export default function TeXEditor({
 
     const domEvents = EditorView.domEventHandlers({
       dblclick: (event, view) => {
-        if (event.ctrlKey || event.metaKey || event.altKey) {
-          const line = view.state.doc.lineAt(view.state.selection.main.head).number;
+        const pos = view.posAtCoords({ x: event.clientX, y: event.clientY });
+        const head = pos !== null ? pos : view.state.selection.main.head;
+        const line = view.state.doc.lineAt(head).number;
+        onCursorLineRef.current?.(line, true);
+        return false;
+      },
+      click: (event, view) => {
+        if (event.ctrlKey || event.metaKey) {
+          const pos = view.posAtCoords({ x: event.clientX, y: event.clientY });
+          const head = pos !== null ? pos : view.state.selection.main.head;
+          const line = view.state.doc.lineAt(head).number;
           onCursorLineRef.current?.(line, true);
         }
         return false;
@@ -484,6 +528,7 @@ export default function TeXEditor({
         customKeymap,
         domEvents,
         errorField,
+        syncHighlightField,
         themeCompartment.current.of(
           getEditorThemeExtension(
             settings?.editorTheme,
@@ -629,16 +674,28 @@ export default function TeXEditor({
   // Sync targetLine jump (SyncTeX from PDF)
   useEffect(() => {
     const view = viewRef.current;
-    if (!view || !targetLine) return;
-    if (targetLine > 0 && targetLine <= view.state.doc.lines) {
-      const line = view.state.doc.line(targetLine);
+    if (!view) return;
+    const lineNum = targetLineJump ? targetLineJump.line : targetLine;
+    if (!lineNum) return;
+    if (lineNum > 0 && lineNum <= view.state.doc.lines) {
+      const line = view.state.doc.line(lineNum);
       view.dispatch({
         selection: { anchor: line.from },
         scrollIntoView: true,
+        effects: setSyncHighlightEffect.of({ line: lineNum }),
       });
       view.focus();
+
+      const timer = setTimeout(() => {
+        if (viewRef.current) {
+          viewRef.current.dispatch({
+            effects: setSyncHighlightEffect.of(null),
+          });
+        }
+      }, 3500);
+      return () => clearTimeout(timer);
     }
-  }, [targetLine]);
+  }, [targetLine, targetLineJump]);
 
   // Handle ribbon actions (Undo, Redo, Find, Bold, Italic, Link, Table, Code, Quote, SelectAll)
   useEffect(() => {

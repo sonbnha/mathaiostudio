@@ -39,3 +39,20 @@ html:not(.dark) {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Custom scrollbars for Overleaf clone */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #3d3d3d;
+  border: 2px solid #142333; /* match editor background to simulate thinness */
+  border-radius: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}

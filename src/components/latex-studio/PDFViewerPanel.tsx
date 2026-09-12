@@ -1,94 +1,91 @@
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
 import { useLaTeXStore } from '@/store/useLaTeXStore';
+import { 
+  ChevronDown, Download, Maximize, FileText,
+  ChevronUp, ExternalLink, Minus, Plus, CircleHalf
+} from 'lucide-react';
 import PDFViewerCore from './PDFViewerCore';
-import { ChevronDown, Download, FileWarning, ArrowUp, ArrowDown, ZoomIn, ZoomOut, Maximize, FileCode2 } from 'lucide-react';
 
 export default function PDFViewerPanel() {
-  const { isCompiling, autoCompile, setAutoCompile, pdfUrl } = useLaTeXStore();
+  const { pdfUrl } = useLaTeXStore();
+  const [scale, setScale] = useState(1.0);
 
   return (
-    <div className="w-full h-full flex flex-col bg-[#525659]">
+    <div className="flex flex-col h-full bg-[#525659]">
       
-      {/* 1. PDF TOOLBAR */}
-      <div className="h-[40px] bg-[#2a2b2c] border-b border-[#2d2d2d] flex items-center justify-between px-2 shrink-0">
+      {/* PDF TOOLBAR */}
+      <div className="flex items-center justify-between px-2 h-[40px] border-b border-[#3d3d3d] bg-[#2a2b2c] shrink-0 shadow-sm z-20">
         
-        {/* Left: Recompile, Logs, Download */}
-        <div className="flex items-center gap-3">
-          
-          {/* Recompile Split Button */}
-          <div className="flex shadow-sm">
-            <button className="bg-[#128a42] hover:bg-[#107c3b] text-white px-3 py-1 rounded-l text-[13px] font-semibold transition-colors border-r border-[#107c3b] h-[26px] flex items-center">
-              {isCompiling ? 'Compiling...' : 'Recompile'}
-            </button>
-            <button className="bg-[#128a42] hover:bg-[#107c3b] text-white px-1.5 py-1 rounded-r flex items-center justify-center transition-colors h-[26px]">
-              <ChevronDown className="w-[14px] h-[14px]" />
-            </button>
-          </div>
-
-          <div className="w-px h-5 bg-[#3d3d3d]" />
-
-          {/* Logs */}
-          <button className="text-slate-400 hover:text-white p-1 rounded hover:bg-[#3d3d3d] transition-colors relative" title="Logs and output files">
-            <FileWarning className="w-[15px] h-[15px]" />
-            <span className="absolute top-0 right-0 bg-red-500 text-white text-[9px] font-bold px-1 rounded-full border border-[#222223] -translate-y-1/2 translate-x-1/2">
-              1
-            </span>
-          </button>
-          
-          {/* Download */}
-          <button className="text-slate-400 hover:text-white p-1 rounded hover:bg-[#3d3d3d] transition-colors" title="Download PDF">
-            <Download className="w-[15px] h-[15px]" />
-          </button>
-        </div>
-
-        {/* Right: Sync, Pagination, Zoom */}
+        {/* Left Side */}
         <div className="flex items-center gap-2">
-          {/* Go to Code */}
-          <button className="text-slate-400 hover:text-white p-1 rounded hover:bg-[#3d3d3d] transition-colors" title="Go to code">
-            <svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor"><path d="M2 2h2v12H2V2zm11 3.5L9.5 2 8 3.5l2 2H5v2h5l-2 2 1.5 1.5 3.5-3.5z"/></svg>
+          
+          {/* Recompile Button (Unified) */}
+          <div className="flex items-center bg-[#128a42] hover:bg-[#107c3b] rounded cursor-pointer transition-colors shadow-sm">
+            <button className="px-3 py-1.5 text-white font-semibold text-[13px]">
+              Recompile
+            </button>
+            <div className="w-[1px] h-4 bg-[#107c3b] mx-[1px]" />
+            <button className="px-2 py-1.5 text-white">
+              <ChevronDown className="w-4 h-4" />
+            </button>
+          </div>
+          
+          {/* Logs */}
+          <button className="relative p-1.5 text-slate-300 hover:text-white rounded hover:bg-[#3d3d3d] transition-colors ml-1 group" title="Logs">
+            <FileText className="w-[16px] h-[16px]" />
+            {/* Exclamation mark inside file */}
+            <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[10px] font-bold mt-[1px]">!</span>
+            {/* Red Badge */}
+            <div className="absolute -top-1 -right-1 bg-red-600 text-white text-[9px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center border border-[#2a2b2c]">
+              1
+            </div>
           </button>
           
-          <div className="w-px h-5 bg-[#3d3d3d] mx-1" />
-
-          {/* Pagination */}
-          <div className="flex items-center gap-1 text-[13px] text-slate-300">
-            <button className="text-slate-400 hover:text-white p-1 rounded hover:bg-[#3d3d3d] transition-colors">
-              <ArrowUp className="w-[14px] h-[14px]" />
-            </button>
-            <button className="text-slate-400 hover:text-white p-1 rounded hover:bg-[#3d3d3d] transition-colors">
-              <ArrowDown className="w-[14px] h-[14px]" />
-            </button>
-            <span className="px-2">1 / 1</span>
-          </div>
-
-          <div className="w-px h-5 bg-[#3d3d3d] mx-1" />
-
-          {/* Zoom Controls */}
-          <div className="flex items-center gap-1 text-slate-300">
-            <button className="text-slate-400 hover:text-white p-1 rounded hover:bg-[#3d3d3d] transition-colors">
-              <ZoomOut className="w-[15px] h-[15px]" />
-            </button>
-            <button className="text-slate-400 hover:text-white p-1 rounded hover:bg-[#3d3d3d] transition-colors">
-              <ZoomIn className="w-[15px] h-[15px]" />
-            </button>
-            
-            <div className="flex items-center gap-1 ml-1 cursor-pointer hover:bg-[#3d3d3d] px-2 py-1 rounded transition-colors text-[13px]">
-              <span>70%</span>
-              <ChevronDown className="w-[14px] h-[14px] text-slate-400" />
-            </div>
-            
-            <button className="text-slate-400 hover:text-white p-1 rounded hover:bg-[#3d3d3d] transition-colors ml-1" title="Fit to width">
-              <Maximize className="w-[14px] h-[14px]" />
-            </button>
-          </div>
+          <button className="p-1.5 text-slate-300 hover:text-white rounded hover:bg-[#3d3d3d] transition-colors" title="Download PDF">
+            <Download className="w-[16px] h-[16px]" />
+          </button>
+          
+          <button className="p-1.5 text-slate-300 hover:text-white rounded hover:bg-[#3d3d3d] transition-colors" title="Pop-out">
+            <ExternalLink className="w-[16px] h-[16px]" />
+          </button>
+          
         </div>
 
+        {/* Right Side */}
+        <div className="flex items-center gap-1">
+          <div className="w-[1px] h-5 bg-[#4d4d4d] mx-2" />
+          
+          <button className="p-1.5 text-slate-300 hover:text-white rounded hover:bg-[#3d3d3d] transition-colors" title="Invert Colors">
+             <CircleHalf className="w-[15px] h-[15px]" />
+          </button>
+
+          <button className="p-1.5 text-slate-300 hover:text-white rounded hover:bg-[#3d3d3d] transition-colors ml-1">
+            <ChevronUp className="w-[16px] h-[16px]" />
+          </button>
+          <button className="p-1.5 text-slate-300 hover:text-white rounded hover:bg-[#3d3d3d] transition-colors">
+            <ChevronDown className="w-[16px] h-[16px]" />
+          </button>
+          
+          <span className="text-[13px] text-slate-300 mx-2 font-mono">2 / 2</span>
+          
+          <button className="p-1.5 text-slate-300 hover:text-white rounded hover:bg-[#3d3d3d] transition-colors ml-1" onClick={() => setScale(s => s - 0.1)}>
+            <Minus className="w-[15px] h-[15px]" />
+          </button>
+          <button className="p-1.5 text-slate-300 hover:text-white rounded hover:bg-[#3d3d3d] transition-colors" onClick={() => setScale(s => s + 0.1)}>
+            <Plus className="w-[15px] h-[15px]" />
+          </button>
+          
+          <div className="flex items-center gap-1 ml-1 cursor-pointer hover:bg-[#3d3d3d] px-2 py-1.5 rounded transition-colors text-[13px] text-slate-300">
+            <span>{Math.round(scale * 70)}%</span>
+            <ChevronDown className="w-[14px] h-[14px]" />
+          </div>
+        </div>
       </div>
 
-      {/* 2. PDF CANVAS AREA */}
-      <div className="flex-1 overflow-auto bg-[#525659] relative flex justify-center p-4">
-        <PDFViewerCore url={pdfUrl} scale={1.0} />
+      {/* PDF VIEWER AREA */}
+      <div className="flex-1 overflow-auto bg-[#525659] p-8 flex justify-center custom-scrollbar">
+        <PDFViewerCore url={pdfUrl} scale={scale} />
       </div>
 
     </div>

@@ -1,197 +1,169 @@
 'use client';
 import React, { useEffect, useRef } from 'react';
 import { useLaTeXStore } from '@/store/useLaTeXStore';
-import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter, drawSelection, dropCursor, rectangularSelection, crosshairCursor } from '@codemirror/view';
-import { EditorState, Compartment } from '@codemirror/state';
-import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
-import { searchKeymap } from '@codemirror/search';
-import { bracketMatching, syntaxHighlighting, defaultHighlightStyle, foldGutter } from '@codemirror/language';
+import { EditorView, basicSetup } from 'codemirror';
+import { Compartment, EditorState } from '@uiw/react-codemirror';
 import { stex } from '@codemirror/legacy-modes/mode/stex';
 import { StreamLanguage } from '@codemirror/language';
-import { oneDark } from '@codemirror/theme-one-dark';
-import { Bold, Italic, Type, Image as ImageIcon, Link2, Search, Eye, Code, X, Undo2, Redo2, Omega, List, AlignLeft, MoreHorizontal, FileText } from 'lucide-react';
+import { tags as t } from '@lezer/highlight';
+import { createTheme } from '@uiw/codemirror-themes';
+import { 
+  Undo2, Redo2, Bold, Italic, Type, Image as ImageIcon, Link, 
+  List, ListOrdered, MoreHorizontal, Search, SquarePen, Code, 
+  SquareFunction, Sigma, FileText, ChevronDown, CheckCircle
+} from 'lucide-react';
+
+const cobaltTheme = createTheme({
+  theme: 'dark',
+  settings: {
+    background: '#142333',
+    foreground: '#ffffff',
+    caret: '#ffffff',
+    selection: '#264f78',
+    selectionMatch: '#264f78',
+    lineHighlight: '#1f354c',
+    gutterBackground: '#142333',
+    gutterForeground: '#8599a6',
+  },
+  styles: [
+    { tag: t.keyword, color: '#ff9d00' }, // Cobalt has some orange, but Overleaf LaTeX commands are magenta. Wait, we'll use magenta.
+    { tag: [t.name, t.deleted, t.character, t.propertyName, t.macroName], color: '#ff66b2' }, // Magenta for \begin, \item
+    { tag: [t.variableName], color: '#ff66b2' }, 
+    { tag: [t.function(t.variableName)], color: '#ff66b2' },
+    { tag: [t.labelName], color: '#ff66b2' },
+    { tag: [t.color, t.constant(t.name), t.standard(t.name)], color: '#ff66b2' },
+    { tag: [t.definition(t.name), t.separator], color: '#ff66b2' },
+    { tag: [t.brace, t.bracket], color: '#8599a6' },
+    { tag: [t.annotation], color: '#ff66b2' },
+    { tag: [t.number, t.changed, t.annotation, t.modifier, t.self, t.val], color: '#3ad900' }, // Bright green
+    { tag: [t.string, t.special(t.brace)], color: '#3ad900' }, // Math strings green
+    { tag: t.operator, color: '#ffffff' },
+    { tag: t.comment, color: '#8599a6', fontStyle: 'italic' },
+    { tag: t.strong, fontWeight: 'bold' },
+    { tag: t.emphasis, fontStyle: 'italic' },
+  ],
+});
 
 export default function EditorPanel() {
-  const { files, activeFileId, openTabs, setActiveFile, closeTab, updateFileContent, editorMode, setEditorMode, setCursorLine, setPdfTargetLine } = useLaTeXStore();
-  
-  const editorRef = useRef<HTMLDivElement>(null);
-  const viewRef = useRef<EditorView | null>(null);
-  const readOnlyConfig = useRef(new Compartment());
-
+  const { files, activeFileId, updateFileContent } = useLaTeXStore();
   const activeFile = files.find(f => f.id === activeFileId);
-  const source = activeFile?.content || '';
+  const editorContainerRef = useRef<HTMLDivElement>(null);
+  const editorViewRef = useRef<EditorView | null>(null);
+  const contentCompartment = useRef(new Compartment());
 
   useEffect(() => {
-    if (!editorRef.current) return;
+    if (!editorContainerRef.current) return;
 
-    const compileKeymap = keymap.of([
-      {
-        key: 'Mod-Enter',
-        run: () => {
-          return true;
-        }
-      },
-      {
-        key: 'Mod-Click',
-        run: () => {
-          if (viewRef.current) {
-            const head = viewRef.current.state.selection.main.head;
-            const line = viewRef.current.state.doc.lineAt(head).number;
-            setPdfTargetLine(line);
-          }
-          return true;
+    if (!editorViewRef.current) {
+      const state = EditorState.create({
+        doc: activeFile ? activeFile.content : '',
+        extensions: [
+          basicSetup,
+          StreamLanguage.define(stex),
+          cobaltTheme,
+          EditorView.updateListener.of((update) => {
+            if (update.docChanged && activeFileId) {
+              updateFileContent(activeFileId, update.state.doc.toString());
+            }
+          }),
+        ],
+      });
+
+      const view = new EditorView({
+        state,
+        parent: editorContainerRef.current,
+      });
+
+      editorViewRef.current = view;
+    } else {
+      if (activeFile) {
+        const currentDoc = editorViewRef.current.state.doc.toString();
+        if (currentDoc !== activeFile.content) {
+          editorViewRef.current.dispatch({
+            changes: { from: 0, to: currentDoc.length, insert: activeFile.content }
+          });
         }
       }
-    ]);
-
-    const state = EditorState.create({
-      doc: source,
-      extensions: [
-        lineNumbers(),
-        highlightActiveLineGutter(),
-        foldGutter(),
-        drawSelection(),
-        dropCursor(),
-        EditorState.allowMultipleSelections.of(true),
-        rectangularSelection(),
-        crosshairCursor(),
-        highlightActiveLine(),
-        history(),
-        bracketMatching(),
-        syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
-        StreamLanguage.define(stex),
-        keymap.of([
-          ...defaultKeymap,
-          ...searchKeymap,
-          ...historyKeymap
-        ]),
-        compileKeymap,
-        oneDark,
-        readOnlyConfig.current.of(EditorState.readOnly.of(false)),
-        EditorView.updateListener.of((update) => {
-          if (update.docChanged && activeFileId) {
-            updateFileContent(activeFileId, update.state.doc.toString());
-          }
-          if (update.selectionSet) {
-            const head = update.state.selection.main.head;
-            const line = update.state.doc.lineAt(head).number;
-            setCursorLine(line);
-          }
-        }),
-        EditorView.theme({
-          "&": { backgroundColor: "#1a2634" }, // Overleaf dark blue-ish background
-          ".cm-content": { caretColor: "#fff" },
-          ".cm-gutters": { backgroundColor: "#1a2634", color: "#4f6579", borderRight: "none" },
-          ".cm-activeLine": { backgroundColor: "rgba(255, 255, 255, 0.05)" },
-          ".cm-activeLineGutter": { backgroundColor: "rgba(255, 255, 255, 0.05)", color: "#a0aab5" },
-        })
-      ]
-    });
-
-    const view = new EditorView({
-      state,
-      parent: editorRef.current
-    });
-    viewRef.current = view;
-
-    return () => {
-      view.destroy();
-      viewRef.current = null;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (viewRef.current && source !== viewRef.current.state.doc.toString()) {
-      viewRef.current.dispatch({
-        changes: { from: 0, to: viewRef.current.state.doc.length, insert: source }
-      });
     }
-  }, [source, activeFileId]);
+  }, [activeFileId, activeFile, updateFileContent]);
 
   return (
-    <div className="w-full h-full flex flex-col bg-[#1a2634]">
+    <div className="flex flex-col h-full bg-[#142333] text-slate-200">
       
-      {/* 1. TABS BAR */}
-      <div className="h-[40px] bg-[#1a1a1b] flex items-center shrink-0 border-b border-[#2d2d2d] overflow-x-auto hide-scrollbar">
-        {openTabs.map(tabId => {
-          const f = files.find(x => x.id === tabId);
-          if (!f) return null;
-          const isActive = activeFileId === tabId;
+      {/* TABS */}
+      <div className="flex bg-[#1a1a1b] h-[40px] items-end px-2 gap-1 border-b border-[#2d2d2d] overflow-x-auto shrink-0">
+        {files.map((f, i) => {
+          const isActive = activeFileId === f.id;
           return (
             <div 
-              key={tabId} 
-              className={`flex items-center gap-2 px-3 h-full text-[13px] cursor-pointer transition-colors border-r border-[#2d2d2d] ${isActive ? 'bg-[#1a2634] text-white' : 'bg-[#1a1a1b] text-slate-400 hover:bg-[#2d2d2d]'}`} 
-              onClick={() => setActiveFile(tabId)}
+              key={f.id} 
+              className={`flex items-center gap-2 px-3 py-2 min-w-[120px] max-w-[200px] rounded-t cursor-pointer border-t-2 ${isActive ? 'bg-[#142333] border-[#128a42]' : 'bg-[#1a1a1b] border-transparent hover:bg-[#2d2d2d]'}`}
             >
-              <FileText className={`w-[14px] h-[14px] ${isActive ? 'text-[#128a42]' : 'text-slate-500'}`} />
-              <span className="truncate max-w-[150px]">{f.name}</span>
-              <button 
-                className={`ml-1 rounded-sm p-0.5 transition-colors ${isActive ? 'text-slate-300 hover:bg-[#3d3d3d]' : 'text-slate-500 hover:bg-[#3d3d3d] hover:text-white'}`} 
-                onClick={(e) => { e.stopPropagation(); closeTab(tabId); }}
-              >
-                <X className="w-[14px] h-[14px]" />
-              </button>
+              <FileText className="w-3.5 h-3.5 text-[#128a42]" />
+              <span className={`truncate text-[13px] ${isActive ? 'text-white' : 'text-slate-400'}`}>{f.name}</span>
+              {!isActive && i > 0 && (
+                <button className="ml-auto p-0.5 text-slate-500 hover:text-white rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span className="text-[12px]">×</span>
+                </button>
+              )}
             </div>
           );
         })}
       </div>
 
-      {/* 2. RICH TEXT TOOLBAR (OVERLEAF EXACT) */}
-      <div className="h-[40px] border-b border-[#2d2d2d] bg-[#222223] flex items-center justify-between px-2 shrink-0">
-        <div className="flex items-center gap-0.5">
-          <button className="p-1 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded transition-colors" title="Undo"><Undo2 className="w-[15px] h-[15px]" /></button>
-          <button className="p-1 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded transition-colors" title="Redo"><Redo2 className="w-[15px] h-[15px]" /></button>
+      {/* EDITOR TOOLBAR */}
+      <div className="flex items-center justify-between px-2 h-[40px] border-b border-[#2d2d2d] bg-[#142333] shrink-0">
+        <div className="flex items-center gap-1">
+          <button className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-[#2d2d2d] transition-colors"><Undo2 className="w-[14px] h-[14px]" /></button>
+          <button className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-[#2d2d2d] transition-colors"><Redo2 className="w-[14px] h-[14px]" /></button>
           
-          <div className="w-px h-5 bg-[#3d3d3d] mx-1.5" />
-          
-          <button className="p-1 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded transition-colors font-serif font-bold" title="Bold"><Bold className="w-[15px] h-[15px]" /></button>
-          <button className="p-1 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded transition-colors font-serif italic" title="Italic"><Italic className="w-[15px] h-[15px]" /></button>
-          <button className="p-1 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded transition-colors font-serif" title="Text Size"><Type className="w-[15px] h-[15px]" /></button>
-          
-          <div className="w-px h-5 bg-[#3d3d3d] mx-1.5" />
-          
-          <button className="p-1 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded transition-colors" title="Insert Math"><Omega className="w-[15px] h-[15px]" /></button>
-          <button className="p-1 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded transition-colors" title="Insert Image"><ImageIcon className="w-[15px] h-[15px]" /></button>
-          <button className="p-1 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded transition-colors" title="List"><List className="w-[15px] h-[15px]" /></button>
-          <button className="p-1 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded transition-colors" title="Align"><AlignLeft className="w-[15px] h-[15px]" /></button>
-          
-          <button className="p-1 text-slate-400 hover:text-white hover:bg-[#3d3d3d] rounded transition-colors ml-1" title="More">
-            <MoreHorizontal className="w-[15px] h-[15px]" />
+          <button className="flex items-center p-1 text-slate-400 hover:text-white rounded hover:bg-[#2d2d2d] transition-colors ml-2 gap-0.5">
+            <span className="font-serif font-bold text-[14px]">T<span className="text-[10px]">T</span></span>
+            <ChevronDown className="w-3 h-3" />
           </button>
+          
+          <button className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-[#2d2d2d] transition-colors font-serif font-bold text-[14px]">B</button>
+          <button className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-[#2d2d2d] transition-colors font-serif italic text-[14px]">I</button>
+          
+          <button className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-[#2d2d2d] transition-colors ml-2" title="Math"><SquareFunction className="w-[14px] h-[14px]" /></button>
+          <button className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-[#2d2d2d] transition-colors font-serif text-[14px]" title="Symbols">Ω</button>
+          
+          <button className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-[#2d2d2d] transition-colors ml-2"><ImageIcon className="w-[14px] h-[14px]" /></button>
+          <button className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-[#2d2d2d] transition-colors"><Link className="w-[14px] h-[14px]" /></button>
+          <button className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-[#2d2d2d] transition-colors"><List className="w-[14px] h-[14px]" /></button>
+          <button className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-[#2d2d2d] transition-colors"><ListOrdered className="w-[14px] h-[14px]" /></button>
+          
+          <button className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-[#2d2d2d] transition-colors"><MoreHorizontal className="w-[14px] h-[14px]" /></button>
         </div>
-        
-        <div className="flex items-center gap-3">
-          <button className="text-slate-400 hover:text-white p-1 rounded hover:bg-[#3d3d3d] transition-colors" title="Search">
-            <Search className="w-[15px] h-[15px]" />
-          </button>
+
+        <div className="flex items-center gap-2">
+          <button className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-[#2d2d2d] transition-colors"><Search className="w-[14px] h-[14px]" /></button>
           
-          {/* Pill Toggle */}
-          <div className="flex items-center bg-[#1a1a1b] rounded-full border border-[#3d3d3d] p-0.5 mr-1">
-            <button 
-              className={`px-3 py-1 text-[11px] font-semibold rounded-full transition-colors flex items-center gap-1 ${editorMode === 'code' ? 'bg-[#128a42] text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
-              onClick={() => setEditorMode('code')}
-            >
+          {/* Code | Visual Toggle */}
+          <div className="flex items-center bg-[#2d2d2d] rounded-full p-0.5">
+            <button className="flex items-center gap-1.5 bg-[#128a42] text-white px-3 py-1 rounded-full text-[12px] font-semibold transition-colors">
               Code
             </button>
-            <button 
-              className={`px-3 py-1 text-[11px] font-semibold rounded-full transition-colors flex items-center gap-1 ${editorMode === 'visual' ? 'bg-[#128a42] text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
-              onClick={() => setEditorMode('visual')}
-            >
-              <Eye className="w-[14px] h-[14px]" />
-              Visual
+            <button className="flex items-center gap-1.5 text-slate-400 hover:text-white px-3 py-1 rounded-full text-[12px] font-semibold transition-colors">
+              Visual <SquarePen className="w-3 h-3" />
             </button>
           </div>
+
+          <button className="flex items-center p-1 text-slate-400 hover:text-white rounded hover:bg-[#2d2d2d] transition-colors ml-1 gap-0.5" title="Spellcheck">
+            <CheckCircle className="w-[14px] h-[14px]" />
+            <ChevronDown className="w-3 h-3" />
+          </button>
         </div>
       </div>
 
-      {/* 3. CODEMIRROR EDITOR CONTAINER */}
-      <div className="flex-1 min-h-0 w-full relative bg-[#1a2634]">
-        {!activeFile ? (
-          <div className="flex items-center justify-center w-full h-full text-slate-500 text-sm">
-            No file open
+      {/* EDITOR CONTENT */}
+      <div className="flex-1 overflow-auto relative custom-scrollbar">
+        {!activeFileId ? (
+          <div className="flex items-center justify-center h-full text-slate-400">
+            <p>Select a file to edit</p>
           </div>
         ) : (
-          <div ref={editorRef} className="w-full h-full overflow-hidden absolute inset-0 [&_.cm-editor]:h-full [&_.cm-scroller]:font-mono [&_.cm-scroller]:text-[13px]" />
+          <div ref={editorContainerRef} className="h-full w-full [&_.cm-editor]:h-full [&_.cm-scroller]:font-mono [&_.cm-scroller]:text-[13px] [&_.cm-activeLineGutter]:bg-transparent [&_.cm-activeLine]:bg-[#1a2b3c]"></div>
         )}
       </div>
 

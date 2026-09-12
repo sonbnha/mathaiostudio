@@ -150,11 +150,12 @@ export default function LaTeXStudioRoot() {
 
           {/* VERTICAL RESIZER 1 (Sidebar | Editor) */}
           <PanelResizeHandle className="w-[10px] bg-[#222c38] border-x border-[#171f28] hover:bg-[#2b3746] transition-colors cursor-col-resize z-30 relative shrink-0">
-            {/* Upper 3-dot grip (symmetrical at 36%) */}
-            <div className="absolute top-[36%] left-1/2 -translate-x-1/2 flex flex-col gap-[4px] pointer-events-none">
-              <div className="w-[2.5px] h-[2.5px] rounded-full bg-slate-400 opacity-80" />
-              <div className="w-[2.5px] h-[2.5px] rounded-full bg-slate-400 opacity-80" />
-              <div className="w-[2.5px] h-[2.5px] rounded-full bg-slate-400 opacity-80" />
+            {/* Upper 4 square dots grip (pushed high up at 30%) */}
+            <div className="absolute top-[30%] left-1/2 -translate-x-1/2 flex flex-col gap-[3px] pointer-events-none">
+              <div className="w-[2.5px] h-[2.5px] bg-slate-400 opacity-80" />
+              <div className="w-[2.5px] h-[2.5px] bg-slate-400 opacity-80" />
+              <div className="w-[2.5px] h-[2.5px] bg-slate-400 opacity-80" />
+              <div className="w-[2.5px] h-[2.5px] bg-slate-400 opacity-80" />
             </div>
 
             {/* Collapse Tab (10px wide, 56px long, centered dead center vertically & horizontally) */}
@@ -165,11 +166,12 @@ export default function LaTeXStudioRoot() {
               <span className="text-[9px] font-bold leading-none select-none text-slate-200">{'<'}</span>
             </div>
 
-            {/* Lower 3-dot grip (symmetrical at 64%) */}
-            <div className="absolute top-[64%] left-1/2 -translate-x-1/2 flex flex-col gap-[4px] pointer-events-none">
-              <div className="w-[2.5px] h-[2.5px] rounded-full bg-slate-400 opacity-80" />
-              <div className="w-[2.5px] h-[2.5px] rounded-full bg-slate-400 opacity-80" />
-              <div className="w-[2.5px] h-[2.5px] rounded-full bg-slate-400 opacity-80" />
+            {/* Lower 4 square dots grip (pushed far down at 80%) */}
+            <div className="absolute top-[80%] left-1/2 -translate-x-1/2 flex flex-col gap-[3px] pointer-events-none">
+              <div className="w-[2.5px] h-[2.5px] bg-slate-400 opacity-80" />
+              <div className="w-[2.5px] h-[2.5px] bg-slate-400 opacity-80" />
+              <div className="w-[2.5px] h-[2.5px] bg-slate-400 opacity-80" />
+              <div className="w-[2.5px] h-[2.5px] bg-slate-400 opacity-80" />
             </div>
           </PanelResizeHandle>
 
@@ -184,9 +186,9 @@ export default function LaTeXStudioRoot() {
 
               {/* VERTICAL RESIZER 2 (Editor | PDF) */}
               <PanelResizeHandle className="w-[10px] bg-[#222c38] border-x border-[#171f28] hover:bg-[#2b3746] transition-colors cursor-col-resize z-30 relative shrink-0">
-                {/* SyncTeX Pill (Centered at 20%) */}
+                {/* SyncTeX Pill (Centered at 18%) */}
                 <div 
-                  className="absolute top-[20%] left-1/2 -translate-x-1/2 w-[25px] h-[52px] bg-[#1a232f] hover:bg-[#243040] rounded-full flex flex-col items-center justify-center cursor-pointer border border-[#323f52] shadow-md z-40 transition-colors"
+                  className="absolute top-[18%] left-1/2 -translate-x-1/2 w-[25px] h-[52px] bg-[#1a232f] hover:bg-[#243040] rounded-full flex flex-col items-center justify-center cursor-pointer border border-[#323f52] shadow-md z-40 transition-colors"
                   title="SyncTeX (Code <-> PDF)"
                 >
                   <button 
@@ -204,11 +206,12 @@ export default function LaTeXStudioRoot() {
                   </button>
                 </div>
 
-                {/* Upper 3-dot grip (symmetrical at 36%) */}
-                <div className="absolute top-[36%] left-1/2 -translate-x-1/2 flex flex-col gap-[4px] pointer-events-none">
-                  <div className="w-[2.5px] h-[2.5px] rounded-full bg-slate-400 opacity-80" />
-                  <div className="w-[2.5px] h-[2.5px] rounded-full bg-slate-400 opacity-80" />
-                  <div className="w-[2.5px] h-[2.5px] rounded-full bg-slate-400 opacity-80" />
+                {/* Upper 4 square dots grip (at 32% right below SyncTeX) */}
+                <div className="absolute top-[32%] left-1/2 -translate-x-1/2 flex flex-col gap-[3px] pointer-events-none">
+                  <div className="w-[2.5px] h-[2.5px] bg-slate-400 opacity-80" />
+                  <div className="w-[2.5px] h-[2.5px] bg-slate-400 opacity-80" />
+                  <div className="w-[2.5px] h-[2.5px] bg-slate-400 opacity-80" />
+                  <div className="w-[2.5px] h-[2.5px] bg-slate-400 opacity-80" />
                 </div>
 
                 {/* Collapse PDF Tab (10px wide, 56px long, centered dead center vertically & horizontally) */}
@@ -219,11 +222,12 @@ export default function LaTeXStudioRoot() {
                   <span className="text-[9px] font-bold leading-none select-none text-slate-200">{'>'}</span>
                 </div>
 
-                {/* Lower 3-dot grip (symmetrical at 64%) */}
-                <div className="absolute top-[64%] left-1/2 -translate-x-1/2 flex flex-col gap-[4px] pointer-events-none">
-                  <div className="w-[2.5px] h-[2.5px] rounded-full bg-slate-400 opacity-80" />
-                  <div className="w-[2.5px] h-[2.5px] rounded-full bg-slate-400 opacity-80" />
-                  <div className="w-[2.5px] h-[2.5px] rounded-full bg-slate-400 opacity-80" />
+                {/* Lower 4 square dots grip (pushed far down at 80%) */}
+                <div className="absolute top-[80%] left-1/2 -translate-x-1/2 flex flex-col gap-[3px] pointer-events-none">
+                  <div className="w-[2.5px] h-[2.5px] bg-slate-400 opacity-80" />
+                  <div className="w-[2.5px] h-[2.5px] bg-slate-400 opacity-80" />
+                  <div className="w-[2.5px] h-[2.5px] bg-slate-400 opacity-80" />
+                  <div className="w-[2.5px] h-[2.5px] bg-slate-400 opacity-80" />
                 </div>
               </PanelResizeHandle>
 

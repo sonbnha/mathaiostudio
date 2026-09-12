@@ -43,7 +43,7 @@ export default function LaTeXStudioRoot() {
         <PanelGroup orientation="horizontal">
           
           {/* COLUMN 1: LEFT SIDEBAR */}
-          <Panel defaultSize={15} minSize={5} className="bg-slate-50 dark:bg-[#252526] flex flex-col">
+          <Panel defaultSize={15} minSize={5} className="bg-slate-50 dark:bg-[#252526] flex flex-col z-30">
             <div className="p-3 font-semibold text-xs tracking-wider uppercase text-slate-500 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
               <span>Files</span>
             </div>
@@ -60,25 +60,30 @@ export default function LaTeXStudioRoot() {
             </div>
           </Panel>
 
-          <PanelResizeHandle className="w-1.5 bg-slate-200 dark:bg-slate-800 hover:bg-blue-500 transition-colors cursor-col-resize z-20" />
+          <PanelResizeHandle className="w-1.5 bg-slate-200 dark:bg-slate-800 hover:bg-blue-500 transition-colors cursor-col-resize z-40" />
 
-          {/* COLUMN 2: EDITOR */}
-          <Panel defaultSize={45} minSize={25} className="bg-white dark:bg-[#1e1e1e] flex flex-col z-10 shadow-[0_0_15px_rgba(0,0,0,0.05)] dark:shadow-[0_0_15px_rgba(0,0,0,0.2)]">
-             <EditorPanel />
-          </Panel>
+          {/* COLUMN 2 & 3: EDITOR + PDF VIEWER */}
+          <Panel defaultSize={85} minSize={20} className="flex flex-col">
+            <PanelGroup orientation="horizontal">
+              {/* COLUMN 2: EDITOR */}
+              <Panel defaultSize={50} minSize={10} className="bg-white dark:bg-[#1e1e1e] flex flex-col z-10 shadow-[0_0_15px_rgba(0,0,0,0.05)] dark:shadow-[0_0_15px_rgba(0,0,0,0.2)]">
+                 <EditorPanel />
+              </Panel>
 
-          <PanelResizeHandle className="w-1.5 bg-slate-200 dark:bg-slate-800 hover:bg-blue-500 transition-colors cursor-col-resize z-20" />
+              <PanelResizeHandle className="w-1.5 bg-slate-200 dark:bg-slate-800 hover:bg-blue-500 transition-colors cursor-col-resize z-20" />
 
-          {/* COLUMN 3: PDF VIEWER */}
-          <Panel defaultSize={40} minSize={20} className="bg-slate-100 dark:bg-[#333333] flex flex-col relative">
-             <div className="absolute top-4 right-4 z-10 flex gap-2">
-                <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded-md font-medium text-sm shadow-md transition-colors">
-                  Recompile
-                </button>
-             </div>
-             <div className="flex-1 flex items-center justify-center text-slate-400 text-sm">
-               [PDF Viewer Panel Coming Soon]
-             </div>
+              {/* COLUMN 3: PDF VIEWER */}
+              <Panel defaultSize={50} minSize={10} className="bg-slate-100 dark:bg-[#333333] flex flex-col relative z-10">
+                 <div className="absolute top-4 right-4 z-10 flex gap-2">
+                    <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded-md font-medium text-sm shadow-md transition-colors">
+                      Recompile
+                    </button>
+                 </div>
+                 <div className="flex-1 flex items-center justify-center text-slate-400 text-sm">
+                   [PDF Viewer Panel Coming Soon]
+                 </div>
+              </Panel>
+            </PanelGroup>
           </Panel>
 
         </PanelGroup>

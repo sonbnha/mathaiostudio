@@ -159,10 +159,10 @@ export default function LaTeXStudioRoot() {
 
             {/* Collapse Tab (extra slender & longer, centered on splitter line) */}
             <div 
-              className="absolute top-[52%] left-1/2 -translate-x-1/2 w-[8px] h-[44px] bg-[#3a4656] hover:bg-[#4a586d] rounded-[2px] flex items-center justify-center cursor-pointer text-slate-200 border border-[#232c37] shadow-sm z-40 transition-colors"
+              className="absolute top-[52%] left-1/2 -translate-x-1/2 w-[11px] h-[44px] bg-[#3a4656] hover:bg-[#4a586d] rounded-[2px] flex items-center justify-center cursor-pointer text-slate-200 border border-[#232c37] shadow-sm z-40 transition-colors"
               title="Collapse file tree"
             >
-              <span className="text-[8px] font-bold leading-none select-none text-slate-200">{'<'}</span>
+              <span className="text-[9px] font-bold leading-none select-none text-slate-200">{'<'}</span>
             </div>
 
             {/* Lower 3-dot grip with wider spacing */}
@@ -213,10 +213,10 @@ export default function LaTeXStudioRoot() {
 
                 {/* Collapse PDF Tab (extra slender & longer, centered on splitter line) */}
                 <div 
-                  className="absolute top-[52%] left-1/2 -translate-x-1/2 w-[8px] h-[44px] bg-[#3a4656] hover:bg-[#4a586d] rounded-[2px] flex items-center justify-center cursor-pointer text-slate-200 border border-[#232c37] shadow-sm z-40 transition-colors"
+                  className="absolute top-[52%] left-1/2 -translate-x-1/2 w-[11px] h-[44px] bg-[#3a4656] hover:bg-[#4a586d] rounded-[2px] flex items-center justify-center cursor-pointer text-slate-200 border border-[#232c37] shadow-sm z-40 transition-colors"
                   title="Collapse PDF viewer"
                 >
-                  <span className="text-[8px] font-bold leading-none select-none text-slate-200">{'>'}</span>
+                  <span className="text-[9px] font-bold leading-none select-none text-slate-200">{'>'}</span>
                 </div>
 
                 {/* Lower 3-dot grip with wider spacing */}

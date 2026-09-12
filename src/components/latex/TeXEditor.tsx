@@ -66,7 +66,7 @@ export interface TeXEditorProps {
   onCompile: () => void;
   insertRequest?: { id: number; text: string };
   editorActionRequest?: { id: number; action: string };
-  onCursorLine?: (line: number) => void;
+  onCursorLine?: (line: number, explicit?: boolean) => void;
   targetLine?: number;
   errors?: ParsedTeXIssue[];
   onMount?: (view: EditorView) => void;
@@ -414,6 +414,14 @@ export default function TeXEditor({
           return true;
         },
       },
+      {
+        key: 'Mod-\\',
+        run: (view) => {
+          const line = view.state.doc.lineAt(view.state.selection.main.head).number;
+          onCursorLineRef.current?.(line, true);
+          return true;
+        },
+      },
       ...foldKeymap,
       ...defaultKeymap,
       ...historyKeymap,
@@ -421,13 +429,23 @@ export default function TeXEditor({
       indentWithTab,
     ]);
 
+    const domEvents = EditorView.domEventHandlers({
+      dblclick: (event, view) => {
+        if (event.ctrlKey || event.metaKey || event.altKey) {
+          const line = view.state.doc.lineAt(view.state.selection.main.head).number;
+          onCursorLineRef.current?.(line, true);
+        }
+        return false;
+      },
+    });
+
     const updateListener = EditorView.updateListener.of((update: ViewUpdate) => {
       if (update.docChanged) {
         onChangeRef.current(update.state.doc.toString());
       }
       if (update.selectionSet) {
         const line = update.state.doc.lineAt(update.state.selection.main.head).number;
-        onCursorLineRef.current?.(line);
+        onCursorLineRef.current?.(line, false);
       }
     });
 
@@ -464,6 +482,7 @@ export default function TeXEditor({
         syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
         EditorView.lineWrapping,
         customKeymap,
+        domEvents,
         errorField,
         themeCompartment.current.of(
           getEditorThemeExtension(

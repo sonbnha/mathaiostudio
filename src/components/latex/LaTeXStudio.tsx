@@ -1494,12 +1494,11 @@ export default function LaTeXStudio({
   const handleSyncCodeToPDF = useCallback(
     (lineNumber: number, explicit = false) => {
       setCursorLine(lineNumber);
-      if (!explicit) return; // Only perform forward scroll and target ping when user explicitly clicks Sync button
+      if (!explicit) return; // Only perform forward scroll and target ping when user explicitly clicks Sync button or presses shortcut
       const res = synctexMap.forward(activeFileName || 'main.tex', lineNumber);
       if (res) {
         setHighlightTarget({ page: res.page, yRatio: res.yRatio, id: Date.now() });
         setPdfCurrentPage(res.page);
-        setJumpToPage(res.page);
       }
     },
     [synctexMap, activeFileName]

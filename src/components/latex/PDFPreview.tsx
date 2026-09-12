@@ -33,6 +33,7 @@ const PDFSinglePage = memo(function PDFSinglePage({
   onPageClick,
   onPageDoubleClick,
   highlightYRatio,
+  highlightId,
   invertColors = false,
 }: {
   number: number;
@@ -40,6 +41,7 @@ const PDFSinglePage = memo(function PDFSinglePage({
   onPageClick?: (page: number, ratio: number) => void;
   onPageDoubleClick?: (page: number, ratio: number) => void;
   highlightYRatio?: number;
+  highlightId?: number;
   invertColors?: boolean;
 }) {
   const element = useRef<HTMLDivElement>(null);
@@ -62,7 +64,7 @@ const PDFSinglePage = memo(function PDFSinglePage({
 
   // Animate target highlight indicator on forward sync
   useEffect(() => {
-    if (highlightYRatio !== undefined) {
+    if (highlightYRatio !== undefined && highlightId) {
       setHighlightVisible(true);
       const timer = setTimeout(() => {
         setHighlightVisible(false);
@@ -71,7 +73,7 @@ const PDFSinglePage = memo(function PDFSinglePage({
     } else {
       setHighlightVisible(false);
     }
-  }, [highlightYRatio]);
+  }, [highlightYRatio, highlightId]);
 
   const pageHeight = Math.round(width * ratio);
 
@@ -104,23 +106,6 @@ const PDFSinglePage = memo(function PDFSinglePage({
       aria-label={`Trang ${number} - Nhấp đúp để nhảy tới mã nguồn (Reverse Sync)`}
       title="Nhấp đúp hoặc Ctrl+Click để nhảy tới đúng dòng trong mã nguồn (SyncTeX)"
     >
-      {/* Overleaf-Style Target Line / Highlight Box */}
-      {highlightVisible && highlightYRatio !== undefined && (
-        <div
-          className="absolute left-0 right-0 pointer-events-none z-20 flex items-center transition-all duration-300"
-          style={{
-            top: `${Math.max(0, Math.min(0.96, highlightYRatio)) * 100}%`,
-            transform: 'translateY(-50%)',
-          }}
-        >
-          <div className="w-full h-7 bg-amber-400/40 dark:bg-amber-300/40 border-y-2 border-amber-500 shadow-md flex items-center px-2 animate-pulse">
-            <span className="text-[10px] font-mono font-bold bg-amber-500 text-white px-1.5 py-0.5 rounded shadow-xs">
-              SyncTeX
-            </span>
-          </div>
-        </div>
-      )}
-
       {visible ? (
         <Page
           pageNumber={number}
@@ -149,7 +134,27 @@ const PDFSinglePage = memo(function PDFSinglePage({
           Trang {number}
         </div>
       )}
-      <span className="absolute bottom-1 right-2 text-[10px] text-slate-400 font-mono select-none pointer-events-none">
+
+      {/* Overleaf-Style Target Line / Highlight Box on top of Canvas */}
+      {highlightVisible && highlightYRatio !== undefined && (
+        <div
+          className="absolute left-0 right-0 pointer-events-none z-30 flex items-center transition-all duration-300"
+          style={{
+            top: `${Math.max(0.04, Math.min(0.96, highlightYRatio)) * 100}%`,
+            transform: 'translateY(-50%)',
+          }}
+        >
+          <div className="w-full h-8 bg-amber-400/40 dark:bg-amber-300/40 border-y-2 border-amber-500 shadow-[0_0_16px_rgba(245,158,11,0.6)] flex items-center justify-between px-3 animate-pulse">
+            <div className="flex items-center gap-1.5 bg-amber-500 text-slate-950 font-bold text-[10px] font-mono px-2 py-0.5 rounded shadow-xs">
+              <span>SyncTeX</span>
+              <span>➜</span>
+            </div>
+            <div className="h-2 w-2 rounded-full bg-amber-600 animate-ping" />
+          </div>
+        </div>
+      )}
+
+      <span className="absolute bottom-1 right-2 text-[10px] text-slate-400 font-mono select-none pointer-events-none z-10">
         Trang {number}
       </span>
     </div>
@@ -225,20 +230,29 @@ export default function PDFPreview({
 
   // Scroll to forward sync target position
   useEffect(() => {
-    if (highlightTarget && highlightTarget.page <= numPages) {
-      const pageEl = document.getElementById(`pdf-page-${highlightTarget.page}`);
-      const hostEl = host.current;
-      if (pageEl && hostEl) {
-        const pageRect = pageEl.getBoundingClientRect();
-        const hostRect = hostEl.getBoundingClientRect();
-        const targetOffsetInPage = pageRect.height * Math.max(0, Math.min(1, highlightTarget.yRatio));
-        const targetGlobalY = hostEl.scrollTop + (pageRect.top - hostRect.top) + targetOffsetInPage;
-        const scrollToY = Math.max(0, targetGlobalY - hostRect.height / 2);
+    if (highlightTarget && highlightTarget.page <= numPages && numPages >= 1) {
+      const targetPage = highlightTarget.page;
+      const targetY = highlightTarget.yRatio;
 
-        hostEl.scrollTo({ top: scrollToY, behavior: 'smooth' });
-        setActivePage(highlightTarget.page);
-        onActivePageChange?.(highlightTarget.page);
-      }
+      const performScroll = () => {
+        const pageEl = document.getElementById(`pdf-page-${targetPage}`);
+        const hostEl = host.current;
+        if (pageEl && hostEl) {
+          const pageRect = pageEl.getBoundingClientRect();
+          const hostRect = hostEl.getBoundingClientRect();
+          const targetOffsetInPage = pageRect.height * Math.max(0.02, Math.min(0.98, targetY));
+          const targetGlobalY = hostEl.scrollTop + (pageRect.top - hostRect.top) + targetOffsetInPage;
+          const scrollToY = Math.max(0, targetGlobalY - hostRect.height / 2);
+
+          hostEl.scrollTo({ top: scrollToY, behavior: 'smooth' });
+          setActivePage(targetPage);
+          onActivePageChange?.(targetPage);
+        }
+      };
+
+      performScroll();
+      const frameId = requestAnimationFrame(performScroll);
+      return () => cancelAnimationFrame(frameId);
     } else if (highlightPage && highlightPage <= numPages) {
       const el = document.getElementById(`pdf-page-${highlightPage}`);
       if (el) {
@@ -514,21 +528,22 @@ export default function PDFPreview({
             </div>
           }
         >
-          {Array.from({ length: numPages }, (_, i) => (
-            <PDFSinglePage
-              key={i + 1}
-              number={i + 1}
-              width={computedWidth}
-              onPageClick={onSync}
-              onPageDoubleClick={onReverseSync}
-              highlightYRatio={
-                highlightTarget && highlightTarget.page === i + 1
-                  ? highlightTarget.yRatio
-                  : undefined
-              }
-              invertColors={invertColors}
-            />
-          ))}
+          {Array.from({ length: numPages }, (_, i) => {
+            const pageNum = i + 1;
+            const isTarget = Boolean(highlightTarget && highlightTarget.page === pageNum);
+            return (
+              <PDFSinglePage
+                key={pageNum}
+                number={pageNum}
+                width={computedWidth}
+                onPageClick={onSync}
+                onPageDoubleClick={onReverseSync}
+                highlightYRatio={isTarget && highlightTarget ? highlightTarget.yRatio : undefined}
+                highlightId={isTarget && highlightTarget ? highlightTarget.id : undefined}
+                invertColors={invertColors}
+              />
+            );
+          })}
         </Document>
       </div>
     </div>

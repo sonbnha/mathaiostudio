@@ -80,6 +80,13 @@ export function parseSyncTeXString(synctexContent: string): SyncTeXLocation[] {
   return locations;
 }
 
+interface BodyLineEntry {
+  file: string;
+  line: number;
+  weight: number;
+  isHeading?: boolean;
+}
+
 /**
  * Intelligent Structural Multi-file SyncTeX Correlator
  * Built to provide exact file-aware forward & reverse synchronization
@@ -90,174 +97,187 @@ export function createProjectSyncTeXMap(
   mainDocument: string = 'main.tex',
   totalPages: number = 1
 ): SyncTeXMap {
-  // 1. Build document structure tree (including \input and \include)
   const fileMap = new Map<string, StudioFile>();
   files.forEach((f) => fileMap.set(f.name, f));
 
-  interface TextSegment {
-    file: string;
-    lineStart: number;
-    lineEnd: number;
-    weight: number; // character length
-    isHeading?: boolean;
-    isMath?: boolean;
-  }
+  const bodyEntries: BodyLineEntry[] = [];
+  let preambleEndLineInMain = 1;
+  const safePages = Math.max(1, totalPages);
 
-  const segments: TextSegment[] = [];
+  // 1. Process files in inclusion order starting with mainDocument
+  const visited = new Set<string>();
 
-  const processFile = (fileName: string, visited: Set<string>) => {
+  const processFile = (fileName: string, isRoot: boolean) => {
     if (visited.has(fileName)) return;
     visited.add(fileName);
 
     const file = fileMap.get(fileName);
-    if (!file || !file.content) return;
+    if (!file || typeof file.content !== 'string') return;
 
     const lines = file.content.split('\n');
-    let currentWeight = 0;
-    let segStart = 1;
+    let insideDocument = !isRoot; // Non-root subfiles are treated as body content
 
     for (let i = 0; i < lines.length; i++) {
       const lineNum = i + 1;
-      const text = lines[i].trim();
+      const rawLine = lines[i];
+      const trimmed = rawLine.trim();
 
-      // Check for \input{filename} or \include{filename}
-      const inputMatch = text.match(/\\(?:input|include|subfile)\{([^}]+)\}/);
-      if (inputMatch) {
-        if (currentWeight > 0) {
-          segments.push({
-            file: fileName,
-            lineStart: segStart,
-            lineEnd: lineNum - 1,
-            weight: currentWeight,
-          });
-          currentWeight = 0;
+      if (isRoot && !insideDocument) {
+        if (trimmed.includes('\\begin{document}')) {
+          insideDocument = true;
+          preambleEndLineInMain = lineNum;
         }
-
-        let childName = inputMatch[1].trim();
-        if (!childName.endsWith('.tex')) childName += '.tex';
-        processFile(childName, visited);
-        segStart = lineNum;
         continue;
       }
 
-      if (text.startsWith('%')) continue;
-
-      const isHeading = /\\(part|chapter|section|subsection|subsubsection|paragraph)\*?\{/.test(text);
-      const isMath = /\\begin\{(equation|align|gather)\}/.test(text) || text.includes('$$');
-      const isPageBreak = /\\(newpage|clearpage|pagebreak)/.test(text);
-
-      const lineWeight = Math.max(10, text.length);
-      currentWeight += lineWeight;
-
-      if (isHeading || isPageBreak || currentWeight > 600 || i === lines.length - 1) {
-        segments.push({
-          file: fileName,
-          lineStart: segStart,
-          lineEnd: lineNum,
-          weight: currentWeight + (isHeading ? 200 : 0) + (isPageBreak ? 400 : 0),
-          isHeading,
-          isMath,
-        });
-        currentWeight = 0;
-        segStart = lineNum + 1;
+      if (trimmed.includes('\\end{document}')) {
+        break;
       }
+
+      // Check for \input{child} or \include{child} or \subfile{child}
+      const inputMatch = trimmed.match(/\\(?:input|include|subfile)\{([^}]+)\}/);
+      if (inputMatch) {
+        let childName = inputMatch[1].trim();
+        if (!childName.endsWith('.tex')) childName += '.tex';
+        processFile(childName, false);
+        continue;
+      }
+
+      // Skip pure comment lines
+      if (trimmed.startsWith('%')) {
+        continue;
+      }
+
+      const isHeading = /\\(part|chapter|section|subsection|subsubsection|paragraph)\*?\{/.test(trimmed);
+      const isPageBreak = /\\(newpage|clearpage|pagebreak)/.test(trimmed);
+      const weight = isHeading ? 80 : isPageBreak ? 150 : Math.max(10, trimmed.length);
+
+      bodyEntries.push({
+        file: fileName,
+        line: lineNum,
+        weight,
+        isHeading,
+      });
     }
   };
 
-  processFile(mainDocument, new Set<string>());
+  processFile(mainDocument, true);
 
-  // If no mainDoc found, process all tex files
-  if (segments.length === 0) {
+  // If no body entries found (e.g. no \begin{document} in mainDocument), index all tex files directly
+  if (bodyEntries.length === 0) {
     files
       .filter((f) => f.name.endsWith('.tex'))
       .forEach((f) => {
         const lines = (f.content || '').split('\n');
-        segments.push({
-          file: f.name,
-          lineStart: 1,
-          lineEnd: lines.length,
-          weight: Math.max(100, (f.content || '').length),
+        lines.forEach((l, idx) => {
+          const trimmed = l.trim();
+          if (!trimmed.startsWith('%')) {
+            bodyEntries.push({
+              file: f.name,
+              line: idx + 1,
+              weight: Math.max(10, trimmed.length),
+            });
+          }
         });
       });
   }
 
-  const totalWeight = segments.reduce((acc, s) => acc + s.weight, 0) || 1;
-  const safePages = Math.max(1, totalPages);
+  // Calculate cumulative weights
+  const totalWeight = bodyEntries.reduce((sum, e) => sum + e.weight, 0) || 1;
+  let runningWeight = 0;
 
-  // Cumulative distribution mapping to page & yRatio
-  let accumulated = 0;
-  const mappedSegments = segments.map((seg) => {
-    const startWeight = accumulated;
-    accumulated += seg.weight;
-    const endWeight = accumulated;
+  interface MappedEntry extends BodyLineEntry {
+    page: number;
+    yRatio: number;
+    globalFraction: number;
+  }
 
-    const startGlobalRatio = startWeight / totalWeight;
-    const endGlobalRatio = endWeight / totalWeight;
+  const mappedEntries: MappedEntry[] = bodyEntries.map((entry) => {
+    const fraction = runningWeight / totalWeight;
+    runningWeight += entry.weight;
 
-    const startPageFloat = 1 + startGlobalRatio * (safePages - 0.05);
-    const endPageFloat = 1 + endGlobalRatio * (safePages - 0.05);
+    const pageFloat = 1 + fraction * (safePages - 0.05);
+    const page = Math.min(safePages, Math.max(1, Math.floor(pageFloat)));
 
-    const startPage = Math.min(safePages, Math.floor(startPageFloat));
-    const startYRatio = startPageFloat - startPage;
+    // Y-ratio inside page between 0.08 (top margin) and 0.90 (bottom margin)
+    const withinPageFraction = pageFloat - page;
+    const yRatio = Math.max(0.08, Math.min(0.92, 0.08 + withinPageFraction * 0.82));
 
     return {
-      ...seg,
-      startPage,
-      startYRatio: Math.max(0.05, Math.min(0.95, startYRatio)),
-      endPageFloat,
+      ...entry,
+      page,
+      yRatio,
+      globalFraction: fraction,
     };
   });
 
   return {
     forward(file: string, line: number) {
-      const match = mappedSegments.find(
-        (s) => s.file === file && line >= s.lineStart && line <= s.lineEnd
-      );
-      if (match) {
-        const lineFraction =
-          match.lineEnd > match.lineStart
-            ? (line - match.lineStart) / (match.lineEnd - match.lineStart)
-            : 0;
-        const page = match.startPage;
-        const yRatio = Math.max(0.05, Math.min(0.95, match.startYRatio + lineFraction * 0.15));
-        return { page, yRatio };
+      // If line is in preamble of mainDocument
+      if (file === mainDocument && line < preambleEndLineInMain) {
+        return { page: 1, yRatio: 0.08 };
       }
 
-      // Fallback for file match
-      const fileSegments = mappedSegments.filter((s) => s.file === file);
-      if (fileSegments.length > 0) {
-        return { page: fileSegments[0].startPage, yRatio: fileSegments[0].startYRatio };
+      // Find exact or closest line in the file
+      const fileEntries = mappedEntries.filter((e) => e.file === file);
+      if (fileEntries.length === 0) {
+        return { page: 1, yRatio: 0.1 };
       }
 
-      return null;
-    },
-
-    reverse(page: number, yRatio: number) {
-      const targetGlobalRatio = (Math.max(1, page) - 1 + Math.max(0, Math.min(1, yRatio))) / safePages;
-
-      let closest = mappedSegments[0];
-      let minDiff = Infinity;
-
-      for (const seg of mappedSegments) {
-        const segGlobalRatio = (seg.startPage - 1 + seg.startYRatio) / safePages;
-        const diff = Math.abs(segGlobalRatio - targetGlobalRatio);
-        if (diff < minDiff) {
-          minDiff = diff;
-          closest = seg;
+      // Find exact line or next line
+      let match = fileEntries.find((e) => e.line === line);
+      if (!match) {
+        // Find closest preceding line
+        const before = fileEntries.filter((e) => e.line <= line);
+        if (before.length > 0) {
+          match = before[before.length - 1];
+        } else {
+          match = fileEntries[0];
         }
       }
 
-      if (closest) {
-        const line = Math.round(
-          closest.lineStart + (closest.lineEnd - closest.lineStart) * Math.min(1, Math.max(0, yRatio))
-        );
+      if (match) {
         return {
-          file: closest.file,
-          line: Math.max(1, line),
+          page: match.page,
+          yRatio: match.yRatio,
         };
       }
 
-      return { file: mainDocument, line: 1 };
+      return { page: 1, yRatio: 0.1 };
+    },
+
+    reverse(page: number, yRatio: number) {
+      if (mappedEntries.length === 0) {
+        return { file: mainDocument, line: 1 };
+      }
+
+      // If page 1 at very top, jump to preamble / line 1
+      if (page === 1 && yRatio <= 0.10) {
+        return { file: mainDocument, line: 1 };
+      }
+
+      // Calculate target global fraction from page and yRatio
+      const clampedY = Math.max(0.08, Math.min(0.92, yRatio));
+      const withinPage = (clampedY - 0.08) / 0.82;
+      const targetPageFloat = page - 1 + withinPage;
+      const targetFraction = Math.max(0, Math.min(1, targetPageFloat / safePages));
+
+      // Find closest entry in mappedEntries
+      let closest = mappedEntries[0];
+      let minDiff = Infinity;
+
+      for (const entry of mappedEntries) {
+        const diff = Math.abs(entry.globalFraction - targetFraction);
+        if (diff < minDiff) {
+          minDiff = diff;
+          closest = entry;
+        }
+      }
+
+      return {
+        file: closest.file,
+        line: closest.line,
+      };
     },
   };
 }

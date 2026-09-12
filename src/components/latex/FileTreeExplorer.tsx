@@ -183,6 +183,7 @@ export interface FileTreeExplorerProps {
   onRenameFile: (oldName: string, newName: string) => void;
   onSetMainDocument?: (fileName: string) => void;
   onUploadAsset: (file: File) => void;
+  onOpenAddFilesModal?: (tab: 'new_file' | 'upload' | 'from_project' | 'from_url') => void;
   onJumpToLine?: (line: number) => void;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
@@ -199,6 +200,7 @@ export default function FileTreeExplorer({
   onRenameFile,
   onSetMainDocument,
   onUploadAsset,
+  onOpenAddFilesModal,
   onJumpToLine,
   isCollapsed,
   onToggleCollapse,
@@ -473,10 +475,14 @@ export default function FileTreeExplorer({
             <button
               type="button"
               onClick={() => {
-                if (!isTreeExpanded) setIsTreeExpanded(true);
-                setIsAddingFile(true);
-                setIsAddingFolder(false);
-                setNewFileName('');
+                if (onOpenAddFilesModal) {
+                  onOpenAddFilesModal('new_file');
+                } else {
+                  if (!isTreeExpanded) setIsTreeExpanded(true);
+                  setIsAddingFile(true);
+                  setIsAddingFolder(false);
+                  setNewFileName('');
+                }
               }}
               className="p-0.5 rounded text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-200/70 dark:hover:bg-slate-800 transition cursor-pointer"
               title="Tạo tệp mới (+ File)"
@@ -498,7 +504,13 @@ export default function FileTreeExplorer({
             </button>
             <button
               type="button"
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => {
+                if (onOpenAddFilesModal) {
+                  onOpenAddFilesModal('upload');
+                } else {
+                  fileInputRef.current?.click();
+                }
+              }}
               className="p-0.5 rounded text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-200/70 dark:hover:bg-slate-800 transition cursor-pointer"
               title="Tải tệp / ảnh lên"
             >
@@ -724,10 +736,14 @@ export default function FileTreeExplorer({
                               type="button"
                               onClick={() => {
                                 setActiveMenuFileName(null);
-                                if (!isTreeExpanded) setIsTreeExpanded(true);
-                                setIsAddingFile(true);
-                                setIsAddingFolder(false);
-                                setNewFileName('');
+                                if (onOpenAddFilesModal) {
+                                  onOpenAddFilesModal('new_file');
+                                } else {
+                                  if (!isTreeExpanded) setIsTreeExpanded(true);
+                                  setIsAddingFile(true);
+                                  setIsAddingFolder(false);
+                                  setNewFileName('');
+                                }
                               }}
                               className="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200 hover:text-white transition-colors cursor-pointer text-xs flex items-center justify-between"
                             >
@@ -750,7 +766,11 @@ export default function FileTreeExplorer({
                               type="button"
                               onClick={() => {
                                 setActiveMenuFileName(null);
-                                fileInputRef.current?.click();
+                                if (onOpenAddFilesModal) {
+                                  onOpenAddFilesModal('upload');
+                                } else {
+                                  fileInputRef.current?.click();
+                                }
                               }}
                               className="w-full text-left px-3 py-1.5 hover:bg-slate-800 text-slate-200 hover:text-white transition-colors cursor-pointer text-xs flex items-center justify-between"
                             >

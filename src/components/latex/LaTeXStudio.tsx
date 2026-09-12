@@ -95,6 +95,7 @@ import {
 } from '@/components/latex/projectSettings';
 import ProjectSettingsModal from '@/components/latex/ProjectSettingsModal';
 import ShareProjectModal from '@/components/latex/ShareProjectModal';
+import AddFilesModal, { type AddFilesTab } from '@/components/latex/AddFilesModal';
 import ProjectHistoryView from '@/components/latex/ProjectHistoryView';
 import { createSnapshot, type ProjectSnapshot } from '@/lib/projectHistory';
 import { useAuth } from '@/context/AuthContext';
@@ -359,6 +360,10 @@ export default function LaTeXStudio({
   const [activeToolbarPopover, setActiveToolbarPopover] = useState<'heading' | 'math' | 'image' | 'table' | null>(null);
   const [tableHoverSize, setTableHoverSize] = useState<{ rows: number; cols: number }>({ rows: 0, cols: 0 });
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [addFilesModal, setAddFilesModal] = useState<{
+    isOpen: boolean;
+    defaultTab: AddFilesTab;
+  }>({ isOpen: false, defaultTab: 'new_file' });
   const [copiedShareLink, setCopiedShareLink] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const desktopMenuRef = useRef<HTMLDivElement>(null);
@@ -1042,6 +1047,51 @@ export default function LaTeXStudio({
     }
   };
 
+  const handleOpenAddFilesModal = (tab: AddFilesTab = 'new_file') => {
+    setAddFilesModal({ isOpen: true, defaultTab: tab });
+  };
+
+  const handleAddFileWithContent = (fileName: string, content?: string) => {
+    if (files.some((f) => f.name.toLowerCase() === fileName.toLowerCase())) {
+      handleSelectFile(fileName);
+      return;
+    }
+    const newFile: StudioFile = {
+      name: fileName,
+      content: content !== undefined ? content : `% Tệp: ${fileName}\n% Được nhúng bằng: \\input{${fileName}}\n`,
+    };
+    setFiles((prev) => [...prev, newFile]);
+    setOpenTabs((prev) => (prev.includes(fileName) ? prev : [...prev, fileName]));
+    setActiveFileName(fileName);
+    setSource(newFile.content);
+  };
+
+  const handleUploadMultipleAssets = async (uploadedFiles: File[]) => {
+    for (const file of uploadedFiles) {
+      if (
+        file.name.endsWith('.tex') ||
+        file.name.endsWith('.bib') ||
+        file.name.endsWith('.cls') ||
+        file.name.endsWith('.sty')
+      ) {
+        const text = await file.text();
+        const newFile: StudioFile = { name: file.name, content: text };
+        setFiles((prev) => [...prev.filter((f) => f.name !== file.name), newFile]);
+        setActiveFileName(file.name);
+        setSource(text);
+        setOpenTabs((prev) => (prev.includes(file.name) ? prev : [...prev, file.name]));
+      } else {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const dataUrl = reader.result as string;
+          setImages((prev) => [...prev, { name: file.name, dataUrl }]);
+          handleInsert(`\n\\includegraphics[width=0.7\\linewidth]{${file.name}}\n`);
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+  };
+
   const handleSetMainDocument = useCallback(
     (fileName: string) => {
       setProjectSettings((prev) => {
@@ -1266,8 +1316,7 @@ export default function LaTeXStudio({
                     type="button"
                     onClick={() => {
                       setActiveDesktopMenu(null);
-                      const name = prompt('Nhập tên tệp LaTeX mới (vd: baitap.tex):');
-                      if (name) handleCreateFile(name);
+                      handleOpenAddFilesModal('new_file');
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-slate-700 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-[#2c3238] hover:text-slate-900 dark:hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
@@ -1290,31 +1339,7 @@ export default function LaTeXStudio({
                     type="button"
                     onClick={() => {
                       setActiveDesktopMenu(null);
-                      const input = document.createElement('input');
-                      input.type = 'file';
-                      input.accept = '.tex,.png,.jpg,.jpeg,.pdf,.svg,.bib,.cls,.sty';
-                      input.onchange = (e: any) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          if (file.type.startsWith('image/')) {
-                            handleUploadAsset(file);
-                          } else {
-                            const reader = new FileReader();
-                            reader.onload = () => {
-                              const content = String(reader.result || '');
-                              const newFiles = [...files, { name: file.name, content }];
-                              setFiles(newFiles);
-                              setActiveFileName(file.name);
-                              setSource(content);
-                              if (!openTabs.includes(file.name)) {
-                                setOpenTabs([...openTabs, file.name]);
-                              }
-                            };
-                            reader.readAsText(file);
-                          }
-                        }
-                      };
-                      input.click();
+                      handleOpenAddFilesModal('upload');
                     }}
                     className="w-full flex items-center justify-between px-3 py-1.5 text-slate-700 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-[#2c3238] hover:text-slate-900 dark:hover:text-white text-left text-[13px] transition-colors cursor-pointer"
                   >
@@ -2475,6 +2500,7 @@ export default function LaTeXStudio({
                 onRenameFile={handleRenameFile}
                 onSetMainDocument={handleSetMainDocument}
                 onUploadAsset={handleUploadAsset}
+                onOpenAddFilesModal={handleOpenAddFilesModal}
                 onJumpToLine={(line) => setTargetLine(line)}
                 isCollapsed={false}
                 onToggleCollapse={() => setIsSidebarOpen(false)}
@@ -2808,11 +2834,8 @@ export default function LaTeXStudio({
 
                 <button
                   type="button"
-                  onClick={() => {
-                    const name = prompt('Nhập tên tệp LaTeX mới (vd: baitap.tex):');
-                    if (name) handleCreateFile(name);
-                  }}
-                  className="p-0.5 rounded text-slate-400 hover:text-cyan-600 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition"
+                  onClick={() => handleOpenAddFilesModal('new_file')}
+                  className="p-0.5 rounded text-slate-400 hover:text-cyan-600 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition cursor-pointer"
                   title="Tạo tệp mới"
                 >
                   <Plus className="w-3 h-3" />
@@ -3753,6 +3776,17 @@ export default function LaTeXStudio({
         settings={projectSettings}
         onUpdateSettings={handleUpdateSettings}
         texFiles={files.filter((f) => f.name.endsWith('.tex')).map((f) => f.name)}
+      />
+
+      {/* Add Files Modal (Overleaf 4-tab style) */}
+      <AddFilesModal
+        isOpen={addFilesModal.isOpen}
+        onClose={() => setAddFilesModal((prev) => ({ ...prev, isOpen: false }))}
+        defaultTab={addFilesModal.defaultTab}
+        currentDocId={currentDocId || docId}
+        existingFileNames={files.map((f) => f.name)}
+        onAddFile={handleAddFileWithContent}
+        onUploadFiles={handleUploadMultipleAssets}
       />
     </div>
   );
